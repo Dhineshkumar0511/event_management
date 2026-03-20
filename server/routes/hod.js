@@ -1114,4 +1114,103 @@ router.delete('/availability/:id', async (req, res) => {
   }
 });
 
+// @route   GET /api/hod/audit-logs
+// @desc    Get activity audit trail with filters
+// @access  HOD
+router.get('/audit-logs', async (req, res) => {
+  try {
+    const { action, user_id, entity_type, limit = 100, offset = 0 } = req.query;
+    const params = [];
+    const conditions = [];
+
+    if (action) { conditions.push('al.action = ?'); params.push(action); }
+    if (user_id) { conditions.push('al.user_id = ?'); params.push(user_id); }
+    if (entity_type) { conditions.push('al.entity_type = ?'); params.push(entity_type); }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const [logs] = await pool.query(`
+      SELECT al.id, al.action, al.entity_type, al.entity_id, al.details,
+             al.created_at, u.name AS actor_name, u.role AS actor_role
+      FROM activity_logs al
+      JOIN users u ON al.user_id = u.id
+      ${where}
+      ORDER BY al.created_at DESC
+      LIMIT ? OFFSET ?
+    `, [...params, parseInt(limit), parseInt(offset)]);
+
+    const [[{ total }]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM activity_logs al ${where}`,
+      params
+    );
+
+    // Distinct action types for filter dropdown
+    const [actions] = await pool.query(
+      'SELECT DISTINCT action FROM activity_logs ORDER BY action'
+    );
+
+    res.json({ success: true, data: { logs, total, actions: actions.map(a => a.action) } });
+  } catch (error) {
+    console.error('Audit logs error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch audit logs' });
+  }
+});
+
+// @route   POST /api/hod/users/bulk-import
+// @desc    Bulk create users from CSV data
+// @access  HOD
+router.post('/users/bulk-import', [
+  body('users').isArray({ min: 1 }).withMessage('Users array required'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
+
+  const { users } = req.body;
+  const bcrypt = await import('bcryptjs');
+
+  const results = { created: 0, skipped: 0, errors: [] };
+
+  for (const u of users) {
+    const { name, email, employee_id, role, department, phone } = u;
+    if (!name || !email || !employee_id || !role) {
+      results.errors.push({ email: email || '?', reason: 'Missing required fields' });
+      results.skipped++;
+      continue;
+    }
+    const validRoles = ['student', 'staff', 'hod'];
+    if (!validRoles.includes(role)) {
+      results.errors.push({ email, reason: `Invalid role: ${role}` });
+      results.skipped++;
+      continue;
+    }
+    try {
+      const [[existing]] = await pool.query(
+        'SELECT id FROM users WHERE email = ? OR employee_id = ?', [email, employee_id]
+      );
+      if (existing) {
+        results.errors.push({ email, reason: 'Email or ID already exists' });
+        results.skipped++;
+        continue;
+      }
+      const defaultPassword = employee_id; // Default password = employee ID
+      const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+      await pool.query(
+        'INSERT INTO users (name, email, employee_id, password, role, department, phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [name.trim(), email.trim().toLowerCase(), employee_id.trim(), hashedPassword, role, department || null, phone || null]
+      );
+      results.created++;
+    } catch (err) {
+      results.errors.push({ email, reason: err.message });
+      results.skipped++;
+    }
+  }
+
+  await pool.query(
+    `INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)`,
+    [req.user.id, 'HOD_BULK_IMPORT', 'users', null, JSON.stringify({ created: results.created, skipped: results.skipped })]
+  );
+
+  res.json({ success: true, data: results });
+});
+
 export default router;

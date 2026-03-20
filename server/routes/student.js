@@ -37,6 +37,26 @@ router.post('/od-request', isStudent, uploadDocuments, [
       parent_email, emergency_contact, team_members
     } = req.body;
 
+    // Duplicate check: same student, overlapping date range, not rejected/cancelled
+    const [existing] = await pool.query(
+      `SELECT id, event_name, status, event_start_date, event_end_date
+       FROM od_requests
+       WHERE student_id = ?
+         AND status NOT IN ('rejected', 'cancelled')
+         AND NOT (DATE(event_end_date) < ? OR DATE(event_start_date) > ?)`,
+      [req.user.id, event_start_date, event_end_date]
+    );
+    if (existing.length > 0) {
+      const ex = existing[0];
+      const fmtD = d => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      return res.status(409).json({
+        success: false,
+        message: `You already have a ${ex.status === 'hod_review' ? 'pending HOD review' : ex.status} OD request for "${ex.event_name}" on overlapping dates (${fmtD(ex.event_start_date)} – ${fmtD(ex.event_end_date)}). Please check My Requests.`,
+        duplicate: true,
+        existingRequestId: ex.id
+      });
+    }
+
     const requestId = `OD${Date.now().toString().slice(-8)}`;
     
     // Handle uploaded documents

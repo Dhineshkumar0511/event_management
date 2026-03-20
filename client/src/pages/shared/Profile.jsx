@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../../store/authStore'
 import { useTheme } from '../../context/ThemeContext'
@@ -14,7 +14,8 @@ import {
   CheckIcon,
   ShieldCheckIcon,
   ClockIcon,
-  PencilSquareIcon
+  PencilSquareIcon,
+  CameraIcon
 } from '@heroicons/react/24/outline'
 
 export default function Profile() {
@@ -23,7 +24,9 @@ export default function Profile() {
   const [editing, setEditing] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [stats, setStats] = useState(null)
+  const photoInputRef = useRef(null)
   const [formData, setFormData] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
@@ -77,8 +80,7 @@ export default function Profile() {
       toast.error('Passwords do not match')
       return
     }
-    if (passwordData.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters')
+    if (passwordData.newPassword.length < 6) {      toast.error('Password must be at least 6 characters')
       return
     }
 
@@ -95,6 +97,35 @@ export default function Profile() {
       toast.error(error.response?.data?.message || 'Failed to change password')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be under 5MB')
+      return
+    }
+    setUploadingPhoto(true)
+    try {
+      const formData = new FormData()
+      formData.append('profile', file)
+      const res = await api.post('/auth/profile-photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      // Update zustand store with new user data
+      useAuthStore.setState({ user: res.data.user })
+      toast.success('Profile photo updated!')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload photo')
+    } finally {
+      setUploadingPhoto(false)
+      if (photoInputRef.current) photoInputRef.current.value = ''
     }
   }
 
@@ -116,12 +147,34 @@ export default function Profile() {
       >
         <div className={`bg-gradient-to-r ${roleColor[user?.role]} h-32 relative`}>
           <div className="absolute -bottom-12 left-8">
-            <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-bold text-white shadow-lg ${
-              isDark ? 'bg-gray-700' : 'bg-white'
-            }`}>
-              <span className={`bg-gradient-to-r ${roleColor[user?.role]} bg-clip-text text-transparent`}>
-                {user?.name?.charAt(0)?.toUpperCase()}
-              </span>
+            <div className="relative w-24 h-24">
+              {user?.profile_image ? (
+                <img
+                  src={user.profile_image}
+                  alt={user.name}
+                  className="w-24 h-24 rounded-2xl object-cover shadow-lg border-2 border-white"
+                />
+              ) : (
+                <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-bold text-white shadow-lg ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
+                  <span className={`bg-gradient-to-r ${roleColor[user?.role]} bg-clip-text text-transparent`}>
+                    {user?.name?.charAt(0)?.toUpperCase()}
+                  </span>
+                </div>
+              )}
+              {/* Photo upload overlay */}
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="absolute inset-0 w-24 h-24 rounded-2xl bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                title="Change photo"
+              >
+                {uploadingPhoto ? (
+                  <div className="w-5 h-5 border-2 border-white/70 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <CameraIcon className="w-7 h-7 text-white" />
+                )}
+              </button>
+              <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
             </div>
           </div>
         </div>

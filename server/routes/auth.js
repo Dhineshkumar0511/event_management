@@ -6,6 +6,7 @@ import nodemailer from 'nodemailer';
 import { body, validationResult } from 'express-validator';
 import pool from '../database/connection.js';
 import { authenticate } from '../middleware/auth.js';
+import { uploadProfile } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -244,6 +245,30 @@ router.put('/profile', authenticate, async (req, res) => {
       success: false, 
       message: 'Failed to update profile' 
     });
+  }
+});
+
+// @route   POST /api/auth/profile-photo
+// @desc    Upload/update profile photo
+// @access  Private
+router.post('/profile-photo', authenticate, (req, res, next) => {
+  uploadProfile(req, res, (err) => {
+    if (err) return res.status(400).json({ success: false, message: err.message });
+    next();
+  });
+}, async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+    const imageUrl = req.file.path;
+    await pool.query('UPDATE users SET profile_image = ? WHERE id = ?', [imageUrl, req.user.id]);
+    const [users] = await pool.query(
+      'SELECT id, employee_id, email, name, role, department, year_of_study, section, phone, profile_image FROM users WHERE id = ?',
+      [req.user.id]
+    );
+    res.json({ success: true, user: users[0] });
+  } catch (error) {
+    console.error('Profile photo upload error:', error);
+    res.status(500).json({ success: false, message: 'Failed to upload photo' });
   }
 });
 

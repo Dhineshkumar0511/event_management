@@ -25,7 +25,8 @@ import {
   SunIcon,
   Cog6ToothIcon,
   ChartPieIcon,
-  CalendarDaysIcon
+  CalendarDaysIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline'
 
 // Navigation items based on role
@@ -56,6 +57,7 @@ const getNavItems = (role) => {
       { name: 'All Requests', path: '/hod/all-requests', icon: DocumentTextIcon },
       { name: 'Event Calendar', path: '/hod/calendar', icon: CalendarDaysIcon },
       { name: 'Reports', path: '/hod/reports', icon: ChartPieIcon },
+      { name: 'Audit Trail', path: '/hod/audit-trail', icon: ClipboardDocumentListIcon },
       { name: 'Live Tracking', path: '/hod/tracking', icon: MapPinIcon },
       { name: 'Manage Users', path: '/hod/users', icon: UsersIcon },
       { name: 'Event Results', path: '/hod/results', icon: TrophyIcon },

@@ -30,6 +30,15 @@ function formatCountdown(minutes) {
   return `${h}h ${m}m`
 }
 
+function haversineMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000
+  const toRad = d => d * Math.PI / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLon = toRad(lon2 - lon1)
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2
+  return 2 * R * Math.asin(Math.sqrt(a))
+}
+
 export default function ActiveEvent() {
   const [activeRequests, setActiveRequests] = useState([])
   const [selectedRequest, setSelectedRequest] = useState(null)
@@ -40,6 +49,7 @@ export default function ActiveEvent() {
   const [notes, setNotes] = useState('')
   const [minutesSinceCheckin, setMinutesSinceCheckin] = useState(null)
   const [checkinType, setCheckinType] = useState('manual')
+  const [geofenceStatus, setGeofenceStatus] = useState(null) // null | { distance, isWithin, radius, loading }
   const { isDark } = useTheme()
   const timerRef = useRef()
 
@@ -59,6 +69,27 @@ export default function ActiveEvent() {
       fetchCheckins(selectedRequest.id)
     }
   }, [selectedRequest])
+
+  // Auto-check geofence whenever selected request changes and has venue coordinates
+  useEffect(() => {
+    if (!selectedRequest?.venue_latitude || !selectedRequest?.venue_longitude) {
+      setGeofenceStatus(null)
+      return
+    }
+    setGeofenceStatus({ loading: true })
+    getCurrentLocation()
+      .then(loc => {
+        setLocation(loc)
+        const distance = haversineMeters(
+          loc.latitude, loc.longitude,
+          parseFloat(selectedRequest.venue_latitude),
+          parseFloat(selectedRequest.venue_longitude)
+        )
+        const radius = selectedRequest.venue_radius_meters || 5000
+        setGeofenceStatus({ distance, isWithin: distance <= radius, radius, loading: false })
+      })
+      .catch(() => setGeofenceStatus(null))
+  }, [selectedRequest?.id])
 
   // Live timer — update every 30 seconds
   useEffect(() => {
@@ -377,6 +408,46 @@ export default function ActiveEvent() {
                       rows={3}
                     />
                   </div>
+
+                  {/* Geofence Status Panel */}
+                  {selectedRequest.venue_latitude && selectedRequest.venue_longitude && (
+                    <div className={`p-3 rounded-xl border text-sm ${
+                      geofenceStatus?.loading ? isDark ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'
+                      : geofenceStatus?.isWithin ? isDark ? 'bg-emerald-900/20 border-emerald-700' : 'bg-emerald-50 border-emerald-200'
+                      : geofenceStatus ? isDark ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200'
+                      : isDark ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'
+                    }`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <ShieldCheckIcon className={`w-4 h-4 flex-shrink-0 ${
+                          geofenceStatus?.isWithin ? 'text-emerald-500'
+                          : geofenceStatus && !geofenceStatus.loading ? 'text-red-500'
+                          : 'text-gray-400'
+                        }`} />
+                        <span className={`font-semibold ${
+                          geofenceStatus?.isWithin ? isDark ? 'text-emerald-300' : 'text-emerald-700'
+                          : geofenceStatus && !geofenceStatus.loading ? isDark ? 'text-red-300' : 'text-red-700'
+                          : isDark ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
+                          Geofence Active · {((selectedRequest.venue_radius_meters || 5000) / 1000).toFixed(1)}km allowed radius
+                        </span>
+                      </div>
+                      {geofenceStatus?.loading && (
+                        <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Checking your location…</p>
+                      )}
+                      {geofenceStatus && !geofenceStatus.loading && (
+                        <p className={`text-xs font-medium ${
+                          geofenceStatus.isWithin ? isDark ? 'text-emerald-400' : 'text-emerald-700' : isDark ? 'text-red-400' : 'text-red-700'
+                        }`}>
+                          {geofenceStatus.isWithin
+                            ? `✓ Within venue — ${(geofenceStatus.distance / 1000).toFixed(2)}km from venue center`
+                            : `✗ ${(geofenceStatus.distance / 1000).toFixed(2)}km from venue — check-in will be blocked`}
+                        </p>
+                      )}
+                      {!geofenceStatus && (
+                        <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Location check pending…</p>
+                      )}
+                    </div>
+                  )}
 
                   <button
                     onClick={handleCheckIn}

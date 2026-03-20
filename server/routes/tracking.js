@@ -69,6 +69,18 @@ router.post('/checkin', isStudent, uploadCheckInPhoto, [
       isWithinVenue = true; // fallback if venue coords not set
     }
 
+    // Enforce geofencing — block check-in if student is outside the venue radius
+    if (isWithinVenue === false) {
+      const enforcedRadius = requests[0].venue_radius_meters || 5000;
+      return res.status(403).json({
+        success: false,
+        message: `You are ${(distanceFromVenue / 1000).toFixed(2)}km from the event venue — outside the allowed ${(enforcedRadius / 1000).toFixed(1)}km radius. Please move closer to the event location and try again.`,
+        outsideVenue: true,
+        distanceFromVenue: Math.round(distanceFromVenue),
+        venueRadius: enforcedRadius
+      });
+    }
+
     const photoPath = req.file ? req.file.path : null; // Cloudinary secure_url
 
     const [result] = await pool.query(

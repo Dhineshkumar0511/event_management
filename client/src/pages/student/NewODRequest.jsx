@@ -61,6 +61,7 @@ export default function NewODRequest() {
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loadingEdit, setLoadingEdit] = useState(false)
+  const [existingRequests, setExistingRequests] = useState([])
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { isDark } = useTheme()
@@ -75,6 +76,14 @@ export default function NewODRequest() {
 
   const [teamMembers, setTeamMembers] = useState([])
   const [documents, setDocuments] = useState([])
+
+  useEffect(() => {
+    if (!editId) {
+      api.get('/student/od-requests', { params: { limit: 100 } })
+        .then(r => setExistingRequests((r.data.data || []).filter(x => !['rejected', 'cancelled'].includes(x.status))))
+        .catch(() => {})
+    }
+  }, [])
 
   useEffect(() => {
     if (!editId) return
@@ -404,6 +413,33 @@ export default function NewODRequest() {
                         <p className="font-bold">{urgent ? 'Less than 24 hours until event!' : 'Less than 48 hours until event!'}</p>
                         <p className="text-xs mt-0.5 opacity-80">
                           Submit immediately and notify your staff reviewer. Late submissions may not be processed in time.
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* Duplicate overlap warning */}
+                {formData.event_start_date && formData.event_end_date && (() => {
+                  const overlap = existingRequests.find(r => {
+                    const rStart = r.event_start_date?.split('T')[0]
+                    const rEnd = r.event_end_date?.split('T')[0]
+                    return !(rEnd < formData.event_start_date || rStart > formData.event_end_date)
+                  })
+                  if (!overlap) return null
+                  const fmtD = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''
+                  return (
+                    <div className={`sm:col-span-2 flex items-start gap-3 p-3.5 rounded-xl border ${
+                      isDark ? 'bg-orange-900/20 border-orange-700 text-orange-300' : 'bg-orange-50 border-orange-200 text-orange-800'
+                    }`}>
+                      <ExclamationTriangleIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-bold">Possible Duplicate Request</p>
+                        <p className="text-xs mt-0.5 opacity-80">
+                          You already have a <strong>{overlap.status === 'hod_review' ? 'pending' : overlap.status}</strong> OD request
+                          for &ldquo;<strong>{overlap.event_name}</strong>&rdquo; covering{' '}
+                          <strong>{fmtD(overlap.event_start_date)} – {fmtD(overlap.event_end_date)}</strong>.
+                          Submitting again will be rejected by the server.
                         </p>
                       </div>
                     </div>

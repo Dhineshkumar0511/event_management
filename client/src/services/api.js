@@ -118,6 +118,8 @@ export const hodAPI = {
   getStudentActivity: (params) => api.get('/hod/student-activity', { params }),
   getStudentMonitor: (studentId) => api.get(`/hod/student-monitor/${studentId}`),
   getReports: () => api.get('/hod/reports'),
+  getAuditLogs: (params) => api.get('/hod/audit-logs', { params }),
+  bulkImportUsers: (users) => api.post('/hod/users/bulk-import', { users }),
 }
 
 // Tracking APIs

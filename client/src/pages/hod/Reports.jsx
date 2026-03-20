@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import * as XLSX from 'xlsx'
 import { hodAPI } from '../../services/api'
 import { useTheme } from '../../context/ThemeContext'
 import {
@@ -11,7 +12,9 @@ import {
   ClockIcon,
   CheckCircleIcon,
   XCircleIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  TableCellsIcon,
+  PrinterIcon
 } from '@heroicons/react/24/outline'
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -87,6 +90,101 @@ export default function Reports() {
     URL.revokeObjectURL(url)
   }
 
+  const exportExcel = () => {
+    if (!data) return
+    const wb = XLSX.utils.book_new()
+    const dateStr = new Date().toISOString().split('T')[0]
+    const rate = data.overallStats.total_requests > 0
+      ? ((data.overallStats.total_approved / data.overallStats.total_requests) * 100).toFixed(1)
+      : 0
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Metric', 'Value'],
+      ['Total Requests', data.overallStats.total_requests],
+      ['Approved', data.overallStats.total_approved],
+      ['Rejected', data.overallStats.total_rejected],
+      ['Pending', data.overallStats.total_pending],
+      ['Unique Students', data.overallStats.unique_students],
+      ['Approval Rate (%)', rate],
+    ]), 'Overview')
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Month', 'Total', 'Approved', 'Rejected', 'Pending'],
+      ...data.monthlyTrends.map(m => [m.month, m.total, m.approved, m.rejected, m.total - m.approved - m.rejected])
+    ]), 'Monthly Trends')
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Department', 'Total', 'Approved', 'Rejected'],
+      ...data.departments.map(d => [d.department || 'Unknown', d.total, d.approved, d.rejected])
+    ]), 'Departments')
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Staff', 'Reviewed', 'Forwarded', 'Rejected', 'Avg Review (hrs)'],
+      ...data.staffPerformance.map(s => [
+        s.staff_name, s.total_reviewed, s.forwarded, s.rejected,
+        s.avg_review_hours ? Math.round(s.avg_review_hours) : 'N/A'
+      ])
+    ]), 'Staff Performance')
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Name', 'Roll No', 'Department', 'Total Requests', 'Approved', 'Rate (%)'],
+      ...data.topStudents.map(s => [
+        s.name, s.roll_number, s.department || '-', s.total_requests, s.approved,
+        ((s.approved / s.total_requests) * 100).toFixed(0)
+      ])
+    ]), 'Top Students')
+
+    XLSX.writeFile(wb, `eventpass-reports-${dateStr}.xlsx`)
+  }
+
+  const exportPDF = () => {
+    if (!data) return
+    const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+    const rate = data.overallStats.total_requests > 0
+      ? ((data.overallStats.total_approved / data.overallStats.total_requests) * 100).toFixed(1)
+      : 0
+    const html = `<!DOCTYPE html><html><head><title>EventPass Reports</title><style>
+      body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:20px}
+      h1{font-size:20px;margin-bottom:4px}h2{font-size:14px;margin-top:20px;margin-bottom:8px;border-bottom:1px solid #ccc;padding-bottom:4px}
+      .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+      .stat{border:1px solid #ddd;padding:10px;border-radius:6px;text-align:center}
+      .stat-val{font-size:22px;font-weight:bold}.stat-lbl{font-size:10px;color:#666}
+      table{width:100%;border-collapse:collapse;margin-bottom:16px}
+      th{background:#f5f5f5;text-align:left;padding:6px 8px;font-size:11px;border:1px solid #ddd}
+      td{padding:5px 8px;border:1px solid #eee;font-size:11px}tr:nth-child(even)td{background:#fafafa}
+      footer{font-size:10px;color:#999;text-align:center;margin-top:30px}
+      @media print{@page{margin:15mm}}
+    </style></head><body>
+    <h1>EventPass — Reports &amp; Analytics</h1>
+    <p style="color:#666;font-size:11px">Generated on ${date}</p>
+    <h2>Overview</h2>
+    <div class="grid">
+      <div class="stat"><div class="stat-val">${data.overallStats.total_requests}</div><div class="stat-lbl">Total Requests</div></div>
+      <div class="stat"><div class="stat-val" style="color:#16a34a">${data.overallStats.total_approved}</div><div class="stat-lbl">Approved</div></div>
+      <div class="stat"><div class="stat-val" style="color:#dc2626">${data.overallStats.total_rejected}</div><div class="stat-lbl">Rejected</div></div>
+      <div class="stat"><div class="stat-val" style="color:#d97706">${data.overallStats.total_pending}</div><div class="stat-lbl">Pending</div></div>
+      <div class="stat"><div class="stat-val" style="color:#7c3aed">${rate}%</div><div class="stat-lbl">Approval Rate</div></div>
+    </div>
+    <h2>Monthly Trends</h2>
+    <table><tr><th>Month</th><th>Total</th><th>Approved</th><th>Rejected</th><th>Pending</th></tr>
+    ${data.monthlyTrends.map(m => `<tr><td>${m.month}</td><td>${m.total}</td><td>${m.approved}</td><td>${m.rejected}</td><td>${m.total - m.approved - m.rejected}</td></tr>`).join('')}</table>
+    <h2>Department Breakdown</h2>
+    <table><tr><th>Department</th><th>Total</th><th>Approved</th><th>Rejected</th></tr>
+    ${data.departments.map(d => `<tr><td>${d.department || 'Unknown'}</td><td>${d.total}</td><td>${d.approved}</td><td>${d.rejected}</td></tr>`).join('')}</table>
+    <h2>Staff Performance</h2>
+    <table><tr><th>Staff</th><th>Reviewed</th><th>Forwarded</th><th>Rejected</th><th>Avg Time</th></tr>
+    ${data.staffPerformance.map(s => `<tr><td>${s.staff_name}</td><td>${s.total_reviewed}</td><td>${s.forwarded}</td><td>${s.rejected}</td><td>${s.avg_review_hours ? Math.round(s.avg_review_hours)+'h' : 'N/A'}</td></tr>`).join('')}</table>
+    <h2>Top Students</h2>
+    <table><tr><th>#</th><th>Name</th><th>Roll No</th><th>Department</th><th>Total</th><th>Approved</th><th>Rate</th></tr>
+    ${data.topStudents.map((s, i) => `<tr><td>${i+1}</td><td>${s.name}</td><td>${s.roll_number}</td><td>${s.department || '-'}</td><td>${s.total_requests}</td><td>${s.approved}</td><td>${((s.approved/s.total_requests)*100).toFixed(0)}%</td></tr>`).join('')}</table>
+    <footer>EventPass OD Management System &bull; Confidential &bull; ${date}</footer>
+    </body></html>`
+    const win = window.open('', '_blank', 'width=920,height=700')
+    win.document.write(html)
+    win.document.close()
+    win.onload = () => win.print()
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -123,10 +221,20 @@ export default function Reports() {
             Comprehensive insights into OD request management
           </p>
         </div>
-        <button onClick={exportCSV} className="btn btn-primary flex items-center gap-2">
-          <ArrowDownTrayIcon className="w-4 h-4" />
-          Export CSV
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={exportCSV} className="btn btn-outline flex items-center gap-2 text-sm">
+            <ArrowDownTrayIcon className="w-4 h-4" />
+            CSV
+          </button>
+          <button onClick={exportExcel} className="btn flex items-center gap-2 text-sm bg-green-600 hover:bg-green-700 text-white border-0">
+            <TableCellsIcon className="w-4 h-4" />
+            Excel
+          </button>
+          <button onClick={exportPDF} className="btn flex items-center gap-2 text-sm bg-red-600 hover:bg-red-700 text-white border-0">
+            <PrinterIcon className="w-4 h-4" />
+            PDF
+          </button>
+        </div>
       </div>
 
       {/* Overview Stats */}

@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { hodAPI } from '../../services/api'
 import { exportToCSV } from '../../utils/export'
 import toast from 'react-hot-toast'
@@ -11,7 +11,11 @@ import {
   UserCircleIcon,
   XMarkIcon,
   ArrowDownTrayIcon,
-  UsersIcon
+  ArrowUpTrayIcon,
+  UsersIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  DocumentArrowUpIcon
 } from '@heroicons/react/24/outline'
 
 const roleColors = {
@@ -27,6 +31,11 @@ export default function ManageUsers() {
   const [roleFilter, setRoleFilter] = useState('all')
   const [showModal, setShowModal] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importRows, setImportRows] = useState([])
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState(null)
+  const importFileRef = useRef(null)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -135,6 +144,75 @@ export default function ManageUsers() {
     exportToCSV(data, 'users-export')
   }
 
+  const downloadCSVTemplate = () => {
+    const template = 'name,email,employee_id,role,department,phone\nJohn Doe,john@example.com,STU001,student,CSE,9876543210\nJane Smith,jane@example.com,STF001,staff,CSE,'
+    const blob = new Blob([template], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'user-import-template.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImportFile = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (!file.name.endsWith('.csv')) {
+      toast.error('Please select a .csv file')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const text = ev.target.result
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+      if (lines.length < 2) { toast.error('CSV has no data rows'); return }
+      const headers = lines[0].toLowerCase().split(',').map(h => h.trim().replace(/["']/g, ''))
+      const nameIdx = headers.indexOf('name')
+      const emailIdx = headers.indexOf('email')
+      const empIdx = headers.findIndex(h => h.includes('employee') || h.includes('id') || h.includes('roll'))
+      const roleIdx = headers.indexOf('role')
+      const deptIdx = headers.indexOf('department')
+      const phoneIdx = headers.indexOf('phone')
+      if (nameIdx < 0 || emailIdx < 0 || empIdx < 0 || roleIdx < 0) {
+        toast.error('CSV must have columns: name, email, employee_id, role')
+        return
+      }
+      const rows = []
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''))
+        if (!cols[nameIdx] && !cols[emailIdx]) continue
+        rows.push({
+          name: cols[nameIdx] || '',
+          email: cols[emailIdx] || '',
+          employee_id: cols[empIdx] || '',
+          role: cols[roleIdx] || 'student',
+          department: deptIdx >= 0 ? cols[deptIdx] || '' : '',
+          phone: phoneIdx >= 0 ? cols[phoneIdx] || '' : '',
+        })
+      }
+      setImportRows(rows)
+      setImportResult(null)
+    }
+    reader.readAsText(file)
+  }
+
+  const submitImport = async () => {
+    if (!importRows.length) return
+    setImporting(true)
+    try {
+      const res = await hodAPI.bulkImportUsers(importRows)
+      const result = res.data.data
+      setImportResult(result)
+      toast.success(`Imported ${result.created} users${result.skipped ? `, skipped ${result.skipped}` : ''}`)
+      fetchUsers()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Import failed')
+    } finally {
+      setImporting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -142,7 +220,15 @@ export default function ManageUsers() {
           <h1 className="text-2xl font-bold text-gray-900">Manage Users</h1>
           <p className="text-gray-500">Add, edit, or remove system users</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={downloadCSVTemplate} className="btn btn-outline inline-flex items-center gap-1.5 text-sm">
+            <ArrowDownTrayIcon className="w-4 h-4" />
+            Template
+          </button>
+          <button onClick={() => { setShowImportModal(true); setImportRows([]); setImportResult(null) }} className="btn btn-outline inline-flex items-center gap-1.5 text-sm bg-teal-50 border-teal-300 text-teal-700 hover:bg-teal-100">
+            <ArrowUpTrayIcon className="w-4 h-4" />
+            Import CSV
+          </button>
           {filteredUsers.length > 0 && (
             <button onClick={handleExportUsers} className="btn btn-outline inline-flex items-center gap-1.5">
               <ArrowDownTrayIcon className="w-5 h-5" />
@@ -387,6 +473,143 @@ export default function ManageUsers() {
           </motion.div>
         </div>
       )}
+
+      {/* CSV Import Modal */}
+      <AnimatePresence>
+        {showImportModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+            >
+              <div className="p-5 border-b flex items-center justify-between flex-shrink-0">
+                <div className="flex items-center gap-3">
+                  <DocumentArrowUpIcon className="w-6 h-6 text-teal-600" />
+                  <div>
+                    <h2 className="text-lg font-semibold">Bulk Import Users</h2>
+                    <p className="text-xs text-gray-500">Upload a CSV to create multiple users at once</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowImportModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                {/* Upload area */}
+                {!importResult && (
+                  <div
+                    onClick={() => importFileRef.current?.click()}
+                    className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50 transition-colors"
+                  >
+                    <ArrowUpTrayIcon className="w-10 h-10 mx-auto text-gray-400 mb-3" />
+                    <p className="font-medium text-gray-700">Click to upload CSV file</p>
+                    <p className="text-sm text-gray-500 mt-1">Required columns: name, email, employee_id, role</p>
+                    <p className="text-xs text-gray-400 mt-1">Default password = employee_id</p>
+                    <input
+                      ref={importFileRef}
+                      type="file"
+                      accept=".csv"
+                      className="hidden"
+                      onChange={handleImportFile}
+                    />
+                  </div>
+                )}
+
+                {/* Preview table */}
+                {importRows.length > 0 && !importResult && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-2">{importRows.length} records to import:</p>
+                    <div className="overflow-x-auto rounded-xl border border-gray-200">
+                      <table className="w-full text-xs">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            {['Name', 'Email', 'ID', 'Role', 'Department', 'Phone'].map(h => (
+                              <th key={h} className="px-3 py-2 text-left text-gray-500 font-medium">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {importRows.slice(0, 10).map((r, i) => (
+                            <tr key={i}>
+                              <td className="px-3 py-2 font-medium text-gray-900">{r.name}</td>
+                              <td className="px-3 py-2 text-gray-600">{r.email}</td>
+                              <td className="px-3 py-2 text-gray-600">{r.employee_id}</td>
+                              <td className="px-3 py-2">
+                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold capitalize ${roleColors[r.role]?.bg || 'bg-gray-100'} ${roleColors[r.role]?.text || 'text-gray-700'}`}>{r.role}</span>
+                              </td>
+                              <td className="px-3 py-2 text-gray-500">{r.department || '-'}</td>
+                              <td className="px-3 py-2 text-gray-500">{r.phone || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {importRows.length > 10 && (
+                        <p className="px-3 py-2 text-xs text-gray-400 bg-gray-50">+ {importRows.length - 10} more rows…</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Results */}
+                {importResult && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-4 rounded-xl bg-green-50 border border-green-200">
+                      <CheckCircleIcon className="w-8 h-8 text-green-600 flex-shrink-0" />
+                      <div>
+                        <p className="font-semibold text-green-800">{importResult.created} users created successfully</p>
+                        {importResult.skipped > 0 && (
+                          <p className="text-sm text-green-700">{importResult.skipped} rows skipped</p>
+                        )}
+                      </div>
+                    </div>
+                    {importResult.errors?.length > 0 && (
+                      <div className="rounded-xl border border-amber-200 overflow-hidden">
+                        <div className="px-4 py-2 bg-amber-50 flex items-center gap-2">
+                          <ExclamationTriangleIcon className="w-4 h-4 text-amber-600" />
+                          <span className="text-sm font-medium text-amber-800">Skipped rows</span>
+                        </div>
+                        <div className="divide-y divide-amber-100">
+                          {importResult.errors.map((e, i) => (
+                            <div key={i} className="px-4 py-2 flex items-center justify-between">
+                              <span className="text-sm text-gray-700">{e.email}</span>
+                              <span className="text-xs text-amber-700">{e.reason}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="p-5 border-t flex-shrink-0 flex gap-3">
+                <button
+                  onClick={() => setShowImportModal(false)}
+                  className="btn btn-outline flex-1"
+                >
+                  {importResult ? 'Close' : 'Cancel'}
+                </button>
+                {!importResult && (
+                  <button
+                    onClick={submitImport}
+                    disabled={!importRows.length || importing}
+                    className="btn btn-primary flex-1 flex items-center justify-center gap-2"
+                  >
+                    {importing ? (
+                      <><span className="spinner w-4 h-4" /> Importing…</>
+                    ) : (
+                      <><ArrowUpTrayIcon className="w-4 h-4" /> Import {importRows.length} Users</>
+                    )}
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

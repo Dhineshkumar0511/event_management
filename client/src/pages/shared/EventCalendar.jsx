@@ -207,6 +207,15 @@ export default function EventCalendar() {
                   {day && (
                     <>
                       <span className="font-medium">{day}</span>
+                      {/* Pending OD count badge for staff/HOD */}
+                      {(role === 'staff' || role === 'hod') && (() => {
+                        const pendingCount = dayEvents.filter(e => e.status === 'pending' || e.status === 'staff_review' || e.status === 'hod_review').length
+                        return pendingCount > 0 ? (
+                          <span className={`absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full text-[10px] font-bold flex items-center justify-center px-0.5 ${isSelected ? 'bg-white text-primary-700' : 'bg-amber-500 text-white'}`}>
+                            {pendingCount}
+                          </span>
+                        ) : null
+                      })()}
                       <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
                         {dayEvents.slice(0, 3).map((e, i) => (
                           <span key={i} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : (statusStyles[e.status]?.dot || 'bg-gray-400')}`} />
@@ -249,6 +258,17 @@ export default function EventCalendar() {
               <h3 className={`font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {MONTHS[month]} {selectedDate}
               </h3>
+
+              {/* Pending summary badge for staff/HOD */}
+              {(role === 'staff' || role === 'hod') && (() => {
+                const pending = selectedEvents.filter(e => e.status === 'pending' || e.status === 'staff_review' || e.status === 'hod_review').length
+                return pending > 0 ? (
+                  <div className="mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" />
+                    <span className="text-xs font-semibold text-amber-800">{pending} pending review on this date</span>
+                  </div>
+                ) : null
+              })()}
 
               {/* Events for the day */}
               {selectedEvents.length > 0 ? (

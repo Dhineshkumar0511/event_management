@@ -40,6 +40,7 @@ import AllRequests from './pages/hod/AllRequests'
 import ManageUsers from './pages/hod/ManageUsers'
 import LiveTracking from './pages/hod/LiveTracking'
 import Reports from './pages/hod/Reports'
+import AuditTrail from './pages/hod/AuditTrail'
 
 // Shared Pages
 import Profile from './pages/shared/Profile'
@@ -139,7 +140,7 @@ function App() {
           <Route path="achievements" element={<AchievementWall />} />
         </Route>
 
-        {/* Staff Routes */}}
+        {/* Staff Routes */}
         <Route 
           path="/staff" 
           element={
@@ -160,7 +161,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
         </Route>
 
-        {/* HOD Routes */}}
+        {/* HOD Routes */}
         <Route 
           path="/hod" 
           element={
@@ -178,13 +179,14 @@ function App() {
           <Route path="users" element={<ManageUsers />} />
           <Route path="tracking" element={<LiveTracking />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="audit-trail" element={<AuditTrail />} />
           <Route path="calendar" element={<EventCalendar />} />
           <Route path="results" element={<EventResults />} />
           <Route path="achievements" element={<AchievementWall />} />
           <Route path="profile" element={<Profile />} />
         </Route>
 
-        {/* 404 */}}
+        {/* 404 */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </ThemeProvider>
