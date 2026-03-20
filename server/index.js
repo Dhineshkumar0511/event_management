@@ -89,6 +89,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Serve React frontend in production
+if (process.env.NODE_ENV === 'production') {
+  const clientDistPath = path.join(__dirname, '../client/dist');
+  app.use(express.static(clientDistPath));
+  // SPA catch-all: must be after all API routes
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
+
 // Error handling
 app.use(errorHandler);
 

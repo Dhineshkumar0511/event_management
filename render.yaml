@@ -1,0 +1,54 @@
+services:
+  - type: web
+    name: eventpass
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && cd client && npm install && npm run build
+    startCommand: node server/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+
+      # Database — paste your TiDB Cloud connection string
+      - key: DATABASE_URL
+        sync: false
+
+      # JWT — auto-generated on first deploy
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 1h
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+
+      # Cerebras AI keys (add in Render dashboard)
+      - key: CEREBRAS_API_KEY_1
+        sync: false
+      - key: CEREBRAS_API_KEY_2
+        sync: false
+      - key: CEREBRAS_API_KEY_3
+        sync: false
+      - key: CEREBRAS_API_KEY_4
+        sync: false
+      - key: CEREBRAS_API_KEY_5
+        sync: false
+      - key: CEREBRAS_API_KEY_6
+        sync: false
+
+      # Cloudinary (add in Render dashboard)
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      # Set this AFTER first deploy — use your Render service URL
+      # e.g. https://eventpass.onrender.com
+      - key: CLIENT_URL
+        sync: false
