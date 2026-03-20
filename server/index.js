@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
@@ -49,6 +50,9 @@ app.use(securityHeaders);
 
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Cookie parsing - MUST be before CSRF protection
+app.use(cookieParser());
 
 // Input sanitization
 app.use(inputSanitizer);

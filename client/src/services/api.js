@@ -4,8 +4,56 @@ const api = axios.create({
   baseURL: '/api',
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  withCredentials: true // Enable cookie handling CRITICALLY IMPORTANT
 })
+
+// Helper to get CSRF token from cookie
+const getCsrfTokenFromCookie = () => {
+  return document.cookie
+    .split('; ')
+    .find(row => row.startsWith('csrf-token='))
+    ?.split('=')[1]
+}
+
+// Helper to fetch CSRF token from server
+const fetchCsrfToken = async () => {
+  try {
+    const response = await axios.get('/api/auth/csrf-token', { 
+      withCredentials: true 
+    })
+    return response.data.token
+  } catch (error) {
+    console.warn('Failed to fetch CSRF token:', error.message)
+    return null
+  }
+}
+
+// Request interceptor to add CSRF token
+api.interceptors.request.use(
+  async (config) => {
+    // For POST/PUT/PATCH/DELETE requests, attach CSRF token
+    if (['post', 'put', 'patch', 'delete'].includes(config.method)) {
+      // Try to get token from cookie first
+      let csrfToken = getCsrfTokenFromCookie()
+      
+      // If no token in cookie, fetch it from server
+      if (!csrfToken) {
+        console.log('[API] No CSRF token in cookie, fetching...')
+        csrfToken = await fetchCsrfToken()
+      }
+      
+      if (csrfToken) {
+        config.headers['x-csrf-token'] = csrfToken
+        console.log('[API] CSRF token attached:', csrfToken.substring(0, 10) + '...')
+      } else {
+        console.warn('[API] No CSRF token available')
+      }
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
+)
 
 // Response interceptor for error handling
 api.interceptors.response.use(

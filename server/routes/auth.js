@@ -299,4 +299,14 @@ router.put('/change-password', authenticate, [
   }
 });
 
+// @route   GET /api/auth/csrf-token
+// @desc    Get CSRF token for form submission
+// @access  Public
+router.get('/csrf-token', (req, res) => {
+  res.json({
+    success: true,
+    token: req.csrfToken
+  });
+});
+
 export default router;

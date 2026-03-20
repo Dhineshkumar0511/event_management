@@ -9,14 +9,23 @@ const generateToken = () => {
 };
 
 export const csrfProtection = (req, res, next) => {
-  // Generate CSRF token and set in secure HttpOnly cookie
-  const token = generateToken();
-  res.cookie('csrf-token', token, {
-    httpOnly: false, // Allow JS to read for sending in headers
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 3600000 // 1 hour
-  });
+  // Check if token already exists in cookie (reuse if present)
+  let token = req.cookies?.['csrf-token'];
+  
+  // Only generate new token if one doesn't exist
+  if (!token) {
+    token = generateToken();
+    res.cookie('csrf-token', token, {
+      httpOnly: false, // Allow JS to read for sending in headers
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax', // Changed from 'strict' to 'lax' to allow cross-site cookie sending
+      maxAge: 3600000, // 1 hour
+      path: '/' // Ensure cookie is sent to all paths
+    });
+    console.log('[CSRF] Generated new token:', token.substring(0, 10) + '...');
+  } else {
+    console.log('[CSRF] Reused existing token:', token.substring(0, 10) + '...');
+  }
   
   // Attach token to request for response
   req.csrfToken = token;
@@ -25,7 +34,7 @@ export const csrfProtection = (req, res, next) => {
 };
 
 export const csrfValidate = (req, res, next) => {
-  // Skip CSRF validation for GET, HEAD, OPTIONS requests
+  // Skip CSRF validation for GET, HEAD, OPTIONS requests, auth endpoints
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();
   }
@@ -35,7 +44,7 @@ export const csrfValidate = (req, res, next) => {
   const cookieToken = req.cookies?.['csrf-token'];
   
   // Debug logging
-  console.log(`[CSRF] Method: ${req.method}, Token Header: ${token?.substring(0, 10)}..., Cookie: ${cookieToken?.substring(0, 10)}...`);
+  console.log(`[CSRF] Method: ${req.method}, URL: ${req.path}, Token Header: ${token?.substring(0, 10) || 'undefined'}..., Cookie: ${cookieToken?.substring(0, 10) || 'undefined'}...`);
   
   // Validate tokens match
   if (!token || !cookieToken || token !== cookieToken) {
