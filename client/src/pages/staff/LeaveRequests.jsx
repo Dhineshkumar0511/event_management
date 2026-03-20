@@ -253,15 +253,14 @@ export default function StaffLeaveRequests() {
                         Review
                       </button>
                     )}
-                    {['staff_approved', 'approved'].includes(leave.status) && (
-                      <Link
-                        to={`/staff/leave-letter/${leave.id}`}
-                        onClick={e => e.stopPropagation()}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
-                      >
-                        <DocumentTextIcon className="h-3.5 w-3.5" /> Letter
-                      </Link>
-                    )}
+                    {/* Letter link visible for all leaves */}
+                    <Link
+                      to={`/staff/leave-letter/${leave.id}`}
+                      onClick={e => e.stopPropagation()}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                    >
+                      <DocumentTextIcon className="h-3.5 w-3.5" /> Letter
+                    </Link>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                       leave.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' :
                       ['staff_approved','approved'].includes(leave.status) ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :

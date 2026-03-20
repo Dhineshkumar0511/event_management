@@ -291,15 +291,14 @@ export default function HodLeaveManagement() {
                         Final Decision
                       </button>
                     )}
-                    {leave.status === 'approved' && (
-                      <Link
-                        to={`/hod/leave-letter/${leave.id}`}
-                        onClick={e => e.stopPropagation()}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
-                      >
-                        <DocumentTextIcon className="h-3.5 w-3.5" /> Letter
-                      </Link>
-                    )}
+                    {/* Letter link visible for all leaves */}
+                    <Link
+                      to={`/hod/leave-letter/${leave.id}`}
+                      onClick={e => e.stopPropagation()}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                    >
+                      <DocumentTextIcon className="h-3.5 w-3.5" /> Letter
+                    </Link>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_BADGE[leave.status] || STATUS_BADGE.pending}`}>
                       {leave.status.replace(/_/g, ' ')}
                     </span>

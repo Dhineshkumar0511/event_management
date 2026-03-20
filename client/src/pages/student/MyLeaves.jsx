@@ -287,15 +287,13 @@ export default function MyLeaves() {
                         </div>
 
                         <div className="flex items-center justify-between flex-wrap gap-2">
-                          {/* View Letter button for approved/staff_approved */}
-                          {['staff_approved', 'approved'].includes(leave.status) && (
-                            <Link
-                              to={`/student/leave-letter/${leave.id}`}
-                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
-                            >
-                              <DocumentTextIcon className="h-3.5 w-3.5" /> View Letter
-                            </Link>
-                          )}
+                          {/* View Letter button — visible for any non-cancelled status */}
+                          <Link
+                            to={`/student/leave-letter/${leave.id}`}
+                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                          >
+                            <DocumentTextIcon className="h-3.5 w-3.5" /> View Letter
+                          </Link>
 
                           {/* Cancel for pending */}
                           {leave.status === 'pending' && (
