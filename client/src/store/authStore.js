@@ -56,7 +56,10 @@ export const useAuthStore = create(
           
           return { success: true, user }
         } catch (error) {
-          const message = error.response?.data?.message || 'Registration failed'
+          const data = error.response?.data
+          const message = data?.message ||
+            (Array.isArray(data?.errors) && data.errors[0]?.msg) ||
+            'Registration failed'
           set({ isLoading: false, error: message })
           return { success: false, error: message }
         }

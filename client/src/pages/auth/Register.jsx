@@ -19,6 +19,7 @@ export default function Register() {
     phone: '',
     employee_id: ''
   })
+  const [customDepartment, setCustomDepartment] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const { register, isLoading, error } = useAuthStore()
   const navigate = useNavigate()
@@ -26,10 +27,12 @@ export default function Register() {
   const departments = [
     'Computer Science',
     'Information Technology',
+    'Artificial Intelligence and Data Science',
     'Electronics',
     'Mechanical',
     'Civil',
-    'Electrical'
+    'Electrical',
+    'Others'
   ]
 
   const handleChange = (e) => {
@@ -45,8 +48,12 @@ export default function Register() {
       toast.error('Passwords do not match')
       return false
     }
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters')
+    if (formData.password.length < 12) {
+      toast.error('Password must be at least 12 characters')
+      return false
+    }
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(formData.password)) {
+      toast.error('Password must contain uppercase, lowercase, number, and special character (@$!%*?&)')
       return false
     }
     return true
@@ -63,6 +70,9 @@ export default function Register() {
     
     const submitData = { ...formData }
     delete submitData.confirmPassword
+    if (submitData.department === 'Others') {
+      submitData.department = customDepartment.trim() || 'Others'
+    }
     
     const result = await register(submitData)
     
@@ -148,7 +158,7 @@ export default function Register() {
                     value={formData.password}
                     onChange={handleChange}
                     className="input pr-12"
-                    placeholder="Create a password"
+                    placeholder="Min 12 chars, A-Z, a-z, 0-9, @$!%*?&"
                     required
                   />
                   <button
@@ -219,6 +229,16 @@ export default function Register() {
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
+                {formData.department === 'Others' && (
+                  <input
+                    type="text"
+                    value={customDepartment}
+                    onChange={e => setCustomDepartment(e.target.value)}
+                    className="input mt-2"
+                    placeholder="Enter your department name"
+                    required
+                  />
+                )}
               </div>
 
               {formData.role === 'student' && (
@@ -251,6 +271,8 @@ export default function Register() {
                         <option value="A">A</option>
                         <option value="B">B</option>
                         <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="E">E</option>
                       </select>
                     </div>
                   </div>
