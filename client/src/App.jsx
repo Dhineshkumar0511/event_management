@@ -24,6 +24,7 @@ import EventCalendar from './pages/shared/EventCalendar'
 // Shared Result Page
 import EventResults from './pages/shared/EventResults'
 import ODLetterView from './pages/shared/ODLetterView'
+import LeaveLetterView from './pages/shared/LeaveLetterView'
 import AchievementWall from './pages/shared/AchievementWall'
 
 // Staff Pages
@@ -41,6 +42,12 @@ import ManageUsers from './pages/hod/ManageUsers'
 import LiveTracking from './pages/hod/LiveTracking'
 import Reports from './pages/hod/Reports'
 import AuditTrail from './pages/hod/AuditTrail'
+import LeaveManagement from './pages/hod/LeaveManagement'
+
+// Leave Pages
+import NewLeaveRequest from './pages/student/NewLeaveRequest'
+import MyLeaves from './pages/student/MyLeaves'
+import StaffLeaveRequests from './pages/staff/LeaveRequests'
 
 // Shared Pages
 import Profile from './pages/shared/Profile'
@@ -138,6 +145,9 @@ function App() {
           <Route path="calendar" element={<EventCalendar />} />
           <Route path="profile" element={<Profile />} />
           <Route path="achievements" element={<AchievementWall />} />
+          <Route path="leaves" element={<MyLeaves />} />
+          <Route path="leaves/new" element={<NewLeaveRequest />} />
+          <Route path="leave-letter/:id" element={<LeaveLetterView />} />
         </Route>
 
         {/* Staff Routes */}
@@ -159,6 +169,8 @@ function App() {
           <Route path="results" element={<EventResults />} />
           <Route path="achievements" element={<AchievementWall />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="leaves" element={<StaffLeaveRequests />} />
+          <Route path="leave-letter/:id" element={<LeaveLetterView />} />
         </Route>
 
         {/* HOD Routes */}
@@ -184,6 +196,8 @@ function App() {
           <Route path="results" element={<EventResults />} />
           <Route path="achievements" element={<AchievementWall />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="leaves" element={<LeaveManagement />} />
+          <Route path="leave-letter/:id" element={<LeaveLetterView />} />
         </Route>
 
         {/* 404 */}

@@ -314,6 +314,41 @@ const migrate = async () => {
     }
     console.log('✅ Password reset columns added to users');
 
+    // ═══════════════════════════════════════════════════════════════
+    // Leave Request system
+    // ═══════════════════════════════════════════════════════════════
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS leave_requests (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        leave_id VARCHAR(50) UNIQUE NOT NULL,
+        student_id INT NOT NULL,
+        leave_type ENUM('sick','casual','emergency','medical','family','other') NOT NULL,
+        leave_mode ENUM('pre_leave','post_leave') NOT NULL DEFAULT 'pre_leave',
+        from_date DATE NOT NULL,
+        to_date DATE NOT NULL,
+        days_count INT NOT NULL DEFAULT 1,
+        reason TEXT NOT NULL,
+        contact_during_leave VARCHAR(20),
+        parent_name VARCHAR(100),
+        parent_phone VARCHAR(20),
+        document_url VARCHAR(500),
+        status ENUM('pending','staff_approved','staff_rejected','approved','rejected') NOT NULL DEFAULT 'pending',
+        staff_id INT,
+        staff_remarks TEXT,
+        staff_reviewed_at TIMESTAMP NULL,
+        hod_remarks TEXT,
+        hod_reviewed_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (staff_id) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_student (student_id),
+        INDEX idx_status (status),
+        INDEX idx_from_date (from_date)
+      )
+    `);
+    console.log('✅ Leave Requests table created');
+
     console.log('\n✨ All migrations completed successfully!');
   } catch (error) {
     console.error('❌ Migration failed:', error.message);

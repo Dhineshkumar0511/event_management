@@ -15,6 +15,7 @@ import hodRoutes from './routes/hod.js';
 import trackingRoutes from './routes/tracking.js';
 import aiRoutes from './routes/ai.js';
 import odLetterRoutes from './routes/odletter.js';
+import leaveRoutes from './routes/leave.js';
 
 // Middleware imports
 import { errorHandler } from './middleware/errorHandler.js';
@@ -79,6 +80,7 @@ app.use('/api/hod', hodRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/od-letter', odLetterRoutes);
+app.use('/api/leave', leaveRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

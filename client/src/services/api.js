@@ -146,4 +146,23 @@ export const aiAPI = {
   verifyEvent: (data) => api.post('/ai/verify-event', data),
   summarize: (data) => api.post('/ai/summarize', data),
   chat: (data) => api.post('/ai/chat', data),
-}
+};
+
+export const leaveAPI = {
+  // Student
+  submitRequest: (data) => api.post('/leave/request', data),
+  getMyLeaves: (params) => api.get('/leave/my-leaves', { params }),
+  cancelRequest: (id) => api.delete(`/leave/request/${id}`),
+  // Shared detail
+  getDetail: (id) => api.get(`/leave/detail/${id}`),
+  // Staff
+  getStaffPending: () => api.get('/leave/staff/pending'),
+  getStaffAll: (params) => api.get('/leave/staff/all', { params }),
+  staffReview: (id, data) => api.put(`/leave/${id}/staff-review`, data),
+  // HOD
+  getHodPending: () => api.get('/leave/hod/pending'),
+  getHodAll: (params) => api.get('/leave/hod/all', { params }),
+  hodReview: (id, data) => api.put(`/leave/${id}/hod-review`, data),
+  // Signature
+  signLetter: (id, data) => api.put(`/leave/${id}/sign`, data),
+};

@@ -36,6 +36,7 @@ const getNavItems = (role) => {
       { name: 'Dashboard', path: '/student/dashboard', icon: HomeIcon },
       { name: 'New Request', path: '/student/new-request', icon: DocumentPlusIcon },
       { name: 'My Requests', path: '/student/my-requests', icon: DocumentTextIcon },
+      { name: 'My Leaves', path: '/student/leaves', icon: ClipboardDocumentListIcon },
       { name: 'Event Calendar', path: '/student/calendar', icon: CalendarDaysIcon },
       { name: 'Active Event', path: '/student/active-event', icon: MapPinIcon },
       { name: 'Submit Result', path: '/student/submit-result', icon: TrophyIcon },
@@ -45,6 +46,7 @@ const getNavItems = (role) => {
     staff: [
       { name: 'Dashboard', path: '/staff/dashboard', icon: HomeIcon },
       { name: 'Pending Requests', path: '/staff/requests', icon: ClockIcon },
+      { name: 'Leave Requests', path: '/staff/leaves', icon: ClipboardDocumentListIcon },
       { name: 'Review History', path: '/staff/history', icon: CheckCircleIcon },
       { name: 'Event Calendar', path: '/staff/calendar', icon: CalendarDaysIcon },
       { name: 'Event Results', path: '/staff/results', icon: TrophyIcon },
@@ -54,6 +56,7 @@ const getNavItems = (role) => {
     hod: [
       { name: 'Dashboard', path: '/hod/dashboard', icon: HomeIcon },
       { name: 'Pending Approvals', path: '/hod/requests', icon: ClockIcon },
+      { name: 'Leave Management', path: '/hod/leaves', icon: ClipboardDocumentListIcon },
       { name: 'All Requests', path: '/hod/all-requests', icon: DocumentTextIcon },
       { name: 'Event Calendar', path: '/hod/calendar', icon: CalendarDaysIcon },
       { name: 'Reports', path: '/hod/reports', icon: ChartPieIcon },
