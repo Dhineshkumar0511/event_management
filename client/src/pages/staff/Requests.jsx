@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { staffAPI } from '../../services/api'
 import { useTheme } from '../../context/ThemeContext'
@@ -36,6 +36,7 @@ export default function StaffRequests() {
   const [toast, setToast] = useState(null)
   const [quickActionId, setQuickActionId] = useState(null)
   const { isDark } = useTheme()
+  const navigate = useNavigate()
 
   useEffect(() => { fetchRequests() }, [filter])
 
@@ -82,11 +83,12 @@ export default function StaffRequests() {
     setQuickActionId(id)
     try {
       await staffAPI.approveRequest(id, { comments: 'Approved (quick action)' })
-      showToast('Request approved & forwarded to HOD ✓')
-      setRequests(requests.filter(r => r.id !== id))
+      showToast('Approved! Taking you to sign the OD letter...')
+      navigate(`/staff/od-letter/${id}`)
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to approve', 'error')
-    } finally { setQuickActionId(null) }
+      setQuickActionId(null)
+    }
   }
 
   const handleQuickReject = async (id) => {

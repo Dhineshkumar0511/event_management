@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { hodAPI } from '../../services/api'
 import { exportToCSV, formatRequestForExport } from '../../utils/export'
@@ -7,7 +8,8 @@ import {
   CalendarIcon,
   MagnifyingGlassIcon,
   TrashIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline'
 
 const statusConfig = {
@@ -229,6 +231,9 @@ export default function AllRequests() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Submitted
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Letter
+                  </th>
                   {deletableCount > 0 && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Action
@@ -277,6 +282,14 @@ export default function AllRequests() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(request.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Link
+                        to={`/hod/od-letter/${request.id}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                      >
+                        <DocumentTextIcon className="w-3.5 h-3.5" /> Letter
+                      </Link>
                     </td>
                     {canDelete(request.status) && (
                       <td className="px-6 py-4 whitespace-nowrap">

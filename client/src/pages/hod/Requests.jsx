@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { hodAPI } from '../../services/api'
 import toast from 'react-hot-toast'
@@ -86,11 +86,10 @@ export default function HODRequests() {
     setActionId(id)
     try {
       await hodAPI.approveRequest(id, { comments: 'Approved' })
-      toast.success('Request approved!')
-      setRequests(prev => prev.filter(r => r.id !== id))
+      toast.success('Approved! Sign the OD letter now.')
+      navigate(`/hod/od-letter/${id}`)
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to approve')
-    } finally {
       setActionId(null)
     }
   }
@@ -111,6 +110,7 @@ export default function HODRequests() {
   }
 
   const { isDark } = useTheme()
+  const navigate = useNavigate()
 
   if (loading) {
     return (

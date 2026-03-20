@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '../../context/ThemeContext'
@@ -12,6 +12,9 @@ import {
   PencilSquareIcon,
   CheckCircleIcon,
   XMarkIcon,
+  PencilIcon,
+  LanguageIcon,
+  ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline'
 
 const COLLEGE_NAME = 'Sri Manakula Vinayagar Engineering College'
@@ -46,7 +49,12 @@ export default function LeaveLetterView() {
   const [loading, setLoading] = useState(true)
   const [showSignPad, setShowSignPad] = useState(false)
   const [signing, setSigning] = useState(false)
+  // signature mode: 'draw' | 'type' | 'upload'
+  const [signMode, setSignMode] = useState('draw')
   const [isDrawing, setIsDrawing] = useState(false)
+  const [signText, setSignText] = useState('')
+  const [signFont, setSignFont] = useState('Dancing Script')
+  const [uploadedSig, setUploadedSig] = useState(null) // base64 data url
 
   useEffect(() => { fetchLeave() }, [id])
 
@@ -61,7 +69,7 @@ export default function LeaveLetterView() {
     }
   }
 
-  // ── Signature pad ──────────────────────────────────────────
+  // ── Draw mode ──────────────────────────────────────────────
   const startDraw = (e) => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -80,7 +88,7 @@ export default function LeaveLetterView() {
     const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left
     const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
     ctx.lineTo(x, y)
-    ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 2; ctx.lineCap = 'round'
+    ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'
     ctx.stroke()
   }
   const endDraw = () => setIsDrawing(false)
@@ -89,18 +97,71 @@ export default function LeaveLetterView() {
     if (!canvas) return
     canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
   }
+
+  // ── Upload mode ─────────────────────────────────────────────
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { toast.error('Please upload an image file'); return }
+    if (file.size > 2 * 1024 * 1024) { toast.error('Image too large (max 2MB)'); return }
+    const reader = new FileReader()
+    reader.onload = (ev) => setUploadedSig(ev.target.result)
+    reader.readAsDataURL(file)
+  }
+
+  // ── Get final signature data URL ───────────────────────────
+  const getFinalSignature = useCallback(() => {
+    if (signMode === 'draw') {
+      const canvas = canvasRef.current
+      if (!canvas) return null
+      const blank = document.createElement('canvas')
+      blank.width = canvas.width; blank.height = canvas.height
+      if (canvas.toDataURL() === blank.toDataURL()) return null
+      return canvas.toDataURL('image/png')
+    }
+    if (signMode === 'type') {
+      if (!signText.trim()) return null
+      // Render text to canvas
+      const c = document.createElement('canvas')
+      c.width = 400; c.height = 120
+      const ctx = c.getContext('2d')
+      // Load font first (it's a Google Font, so we use a system-safe fallback for canvas)
+      const fontFamilies = {
+        'Dancing Script': 'cursive',
+        'Pacifico': 'cursive',
+        'Pinyon Script': 'cursive',
+        'Great Vibes': 'cursive',
+        'Sacramento': 'cursive',
+      }
+      const fontFace = fontFamilies[signFont] || 'cursive'
+      ctx.clearRect(0, 0, c.width, c.height)
+      ctx.font = `52px "${signFont}", ${fontFace}`
+      ctx.fillStyle = '#1e293b'
+      ctx.textBaseline = 'middle'
+      ctx.textAlign = 'center'
+      ctx.fillText(signText.trim(), 200, 60)
+      return c.toDataURL('image/png')
+    }
+    if (signMode === 'upload') {
+      return uploadedSig || null
+    }
+    return null
+  }, [signMode, signText, signFont, uploadedSig])
+
   const submitSignature = async () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const blank = document.createElement('canvas')
-    blank.width = canvas.width; blank.height = canvas.height
-    if (canvas.toDataURL() === blank.toDataURL()) {
-      toast.error('Please draw your signature first'); return
+    const sigData = getFinalSignature()
+    if (!sigData) {
+      toast.error(
+        signMode === 'draw' ? 'Please draw your signature first' :
+        signMode === 'type' ? 'Please type your name first' :
+        'Please upload a signature image'
+      )
+      return
     }
     setSigning(true)
     try {
-      await api.put(`/leave/${id}/sign`, { signature: canvas.toDataURL('image/png') })
-      toast.success('Signature saved!')
+      await api.put(`/leave/${id}/sign`, { signature: sigData })
+      toast.success('Signature saved successfully!')
       setShowSignPad(false)
       fetchLeave()
     } catch (err) {
@@ -108,6 +169,14 @@ export default function LeaveLetterView() {
     } finally {
       setSigning(false)
     }
+  }
+
+  const resetModal = () => {
+    setSignMode('draw')
+    setSignText('')
+    setUploadedSig(null)
+    clearCanvas()
+    setShowSignPad(false)
   }
 
   // ── Print ──────────────────────────────────────────────────
@@ -141,8 +210,8 @@ export default function LeaveLetterView() {
   }
 
   const canSign =
-    (user.role === 'staff' && leave?.status === 'staff_approved' && !leave?.staff_signature) ||
-    (user.role === 'hod' && leave?.status === 'approved' && !leave?.hod_signature)
+    (user.role === 'staff' && ['pending', 'staff_approved', 'approved'].includes(leave?.status) && !leave?.staff_signature) ||
+    (user.role === 'hod' && ['staff_approved', 'approved'].includes(leave?.status) && !leave?.hod_signature)
 
   if (loading) {
     return (
@@ -191,16 +260,35 @@ export default function LeaveLetterView() {
       </motion.div>
 
       {/* Status badge */}
-      {leave.status !== 'approved' && (
-        <div className={`px-4 py-2 rounded-lg text-sm font-medium text-center ${
-          ['staff_rejected','rejected'].includes(leave.status) ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300' :
-          leave.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300' :
-          'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-        }`}>
-          {leave.status === 'pending' ? '⏳ Awaiting Staff Review' :
-           leave.status === 'staff_approved' ? '✓ Staff Approved — Awaiting HOD Decision' :
-           leave.status === 'staff_rejected' ? '✗ Rejected by Staff' :
-           leave.status === 'rejected' ? '✗ Rejected by HOD' : leave.status}
+      {leave.status === 'approved' ? (
+        <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+          <CheckCircleIcon className="w-5 h-5 text-green-600" />
+          <span className="text-sm font-semibold text-green-700 dark:text-green-400">APPROVED — Leave Granted</span>
+        </div>
+      ) : ['staff_rejected', 'rejected'].includes(leave.status) ? (
+        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 overflow-hidden">
+          <div className="flex items-center justify-center gap-2 py-2.5">
+            <XMarkIcon className="w-5 h-5 text-red-600" />
+            <span className="text-sm font-semibold text-red-700 dark:text-red-400">
+              {leave.status === 'staff_rejected' ? 'REJECTED BY STAFF' : 'REJECTED BY HOD'}
+            </span>
+          </div>
+          {(leave.staff_remarks || leave.hod_remarks) && (
+            <div className="border-t border-red-200 dark:border-red-800 px-4 py-2 text-center">
+              <p className="text-xs text-red-600 dark:text-red-400 italic">
+                Reason: {leave.hod_remarks || leave.staff_remarks}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : leave.status === 'staff_approved' ? (
+        <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+          <CheckCircleIcon className="w-5 h-5 text-blue-500" />
+          <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">Staff Approved — Awaiting HOD Decision</span>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+          <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">&#x23F3; Awaiting Staff Review</span>
         </div>
       )}
 
@@ -315,14 +403,14 @@ export default function LeaveLetterView() {
           </div>
 
           {/* Signature section */}
-          <div className="flex flex-col sm:flex-row justify-between items-end gap-8 mt-10 pt-6"
+          <div className="sig-section flex flex-col sm:flex-row justify-between items-end gap-8 mt-10 pt-6"
             style={{ borderTop: '1px solid #d1d5db' }}
           >
             {/* Staff */}
-            <div className="text-center" style={{ minWidth: '180px' }}>
+            <div className="sig-block text-center" style={{ minWidth: '180px' }}>
               <p className="text-xs italic mb-2" style={{ color: '#888' }}>Forward to the HOD Sir</p>
               {leave.staff_signature ? (
-                <img src={leave.staff_signature} alt="Staff signature" className="mx-auto max-h-16 mb-1" />
+                <img src={leave.staff_signature} alt="Staff signature" className="mx-auto max-h-16 mb-1" style={{ display: 'block' }} />
               ) : (
                 <div className="w-48 h-16 mx-auto rounded-lg border-2 border-dashed flex items-center justify-center"
                   style={{ borderColor: '#d1d5db', backgroundColor: '#f9fafb' }}
@@ -330,19 +418,19 @@ export default function LeaveLetterView() {
                   <span className="text-xs" style={{ color: '#9ca3af' }}>Staff Signature</span>
                 </div>
               )}
-              <p className="text-xs mt-1" style={{ color: '#666', borderTop: '1px solid #ccc', paddingTop: '4px' }}>
+              <p className="sig-label text-xs mt-1" style={{ color: '#666', borderTop: '1px solid #ccc', paddingTop: '4px' }}>
                 {leave.staff_name || 'Class Advisor / Staff'}
               </p>
               {leave.staff_reviewed_at && (
-                <p className="text-xs" style={{ color: '#999' }}>{fmtDate(leave.staff_reviewed_at)}</p>
+                <p className="text-[10px]" style={{ color: '#999' }}>{fmtDate(leave.staff_reviewed_at)}</p>
               )}
             </div>
 
             {/* HOD */}
-            <div className="text-center" style={{ minWidth: '180px' }}>
-              <p className="text-xs italic mb-2" style={{ color: '#888' }}>Approved by HOD</p>
+            <div className="sig-block text-center" style={{ minWidth: '180px' }}>
+              <p className="text-xs italic mb-2" style={{ color: '#888' }}>Approved / Reviewed by HOD</p>
               {leave.hod_signature ? (
-                <img src={leave.hod_signature} alt="HOD signature" className="mx-auto max-h-16 mb-1" />
+                <img src={leave.hod_signature} alt="HOD signature" className="mx-auto max-h-16 mb-1" style={{ display: 'block' }} />
               ) : (
                 <div className="w-48 h-16 mx-auto rounded-lg border-2 border-dashed flex items-center justify-center"
                   style={{ borderColor: '#d1d5db', backgroundColor: '#f9fafb' }}
@@ -350,65 +438,176 @@ export default function LeaveLetterView() {
                   <span className="text-xs" style={{ color: '#9ca3af' }}>HOD Signature</span>
                 </div>
               )}
-              <p className="text-xs mt-1" style={{ color: '#666', borderTop: '1px solid #ccc', paddingTop: '4px' }}>
+              <p className="sig-label text-xs mt-1" style={{ color: '#666', borderTop: '1px solid #ccc', paddingTop: '4px' }}>
                 Head of Department
               </p>
               {leave.hod_reviewed_at && (
-                <p className="text-xs" style={{ color: '#999' }}>{fmtDate(leave.hod_reviewed_at)}</p>
+                <p className="text-[10px]" style={{ color: '#999' }}>{fmtDate(leave.hod_reviewed_at)}</p>
               )}
             </div>
           </div>
 
-          {/* Leave ID watermark */}
-          <p className="text-center text-xs mt-6" style={{ color: '#bbb' }}>
-            Leave Ref: {leave.leave_id} · Generated on {fmtDate(new Date())}
-          </p>
+          {/* APPROVED banner */}
+          {leave.status === 'approved' && (
+            <div className="mt-6 flex items-center justify-center gap-2 py-2 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+              <CheckCircleIcon className="w-5 h-5 text-green-600" />
+              <span className="text-sm font-semibold text-green-700 dark:text-green-400">APPROVED</span>
+            </div>
+          )}
+          {['rejected', 'staff_rejected'].includes(leave.status) && (
+            <div className="mt-6 flex items-center justify-center gap-2 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+              <XMarkIcon className="w-5 h-5 text-red-600" />
+              <span className="text-sm font-semibold text-red-700 dark:text-red-400">
+                {leave.status === 'staff_rejected' ? 'REJECTED BY STAFF' : 'REJECTED'}
+              </span>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="mt-8 text-center text-[10px]" style={{ color: '#bbb' }}>
+            <p>This is a digitally generated leave letter.</p>
+            <p>Leave Ref: {leave.leave_id} | Generated on: {fmtDate(new Date())}</p>
+          </div>
         </div>
       </motion.div>
 
-      {/* Signature pad modal */}
+      {/* Signature modal */}
       <AnimatePresence>
         {showSignPad && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className={`rounded-2xl shadow-2xl w-full max-w-md p-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+              className={`rounded-2xl shadow-2xl w-full max-w-lg p-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>Draw Signature</h3>
-                <button onClick={() => setShowSignPad(false)}
+              {/* Header */}
+              <div className="flex items-center justify-between mb-5">
+                <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>Sign Letter</h3>
+                <button onClick={resetModal}
                   className={`p-1 rounded-lg ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
-              <div className="border-2 border-dashed rounded-xl overflow-hidden"
-                style={{ borderColor: isDark ? '#4b5563' : '#d1d5db', backgroundColor: '#f8f9fa' }}
-              >
-                <canvas
-                  ref={canvasRef} width={400} height={160}
-                  className="w-full cursor-crosshair touch-none"
-                  onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
-                  onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw}
-                />
+
+              {/* Mode Tabs */}
+              <div className={`flex rounded-xl p-1 mb-5 ${isDark ? 'bg-gray-900' : 'bg-gray-100'}`}>
+                {[
+                  { id: 'draw',   label: 'Draw',   icon: PencilIcon },
+                  { id: 'type',   label: 'Type',   icon: LanguageIcon },
+                  { id: 'upload', label: 'Upload', icon: ArrowUpTrayIcon },
+                ].map(tab => (
+                  <button key={tab.id} onClick={() => setSignMode(tab.id)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      signMode === tab.id
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow'
+                        : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4" />{tab.label}
+                  </button>
+                ))}
               </div>
-              <p className="text-xs text-gray-400 mt-1 text-center">Sign above with mouse or touch</p>
-              <div className="flex gap-3 mt-4">
-                <button onClick={clearCanvas}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                >
-                  Clear
-                </button>
-                <button onClick={submitSignature} disabled={signing}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-60 flex items-center justify-center gap-2"
-                >
-                  {signing ? (
-                    <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Saving...</>
-                  ) : (
-                    <><CheckCircleIcon className="w-4 h-4" />Save Signature</>
+
+              {/* Draw Mode */}
+              {signMode === 'draw' && (
+                <div>
+                  <div className="rounded-xl overflow-hidden border-2 border-dashed"
+                    style={{ borderColor: isDark ? '#4b5563' : '#d1d5db', backgroundColor: '#f8f9fa' }}
+                  >
+                    <canvas
+                      ref={canvasRef} width={460} height={160}
+                      className="w-full cursor-crosshair touch-none"
+                      onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
+                      onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1 text-center">Draw your signature above</p>
+                  <button onClick={clearCanvas}
+                    className={`mt-2 w-full py-2 rounded-xl text-sm font-medium border ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                  >Clear</button>
+                </div>
+              )}
+
+              {/* Type Mode */}
+              {signMode === 'type' && (
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={signText}
+                    onChange={e => setSignText(e.target.value)}
+                    placeholder="Type your name..."
+                    maxLength={40}
+                    className={`w-full px-4 py-3 rounded-xl border text-base font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
+                  />
+                  <div>
+                    <p className={`text-xs mb-2 font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Choose Style</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'Dancing Script', label: 'Elegant' },
+                        { id: 'Pacifico', label: 'Bold' },
+                        { id: 'Great Vibes', label: 'Flowing' },
+                        { id: 'Sacramento', label: 'Classic' },
+                      ].map(f => (
+                        <button key={f.id} onClick={() => setSignFont(f.id)}
+                          className={`py-2.5 px-3 rounded-xl border-2 text-sm transition-all ${
+                            signFont === f.id
+                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                              : isDark ? 'border-gray-600 hover:border-gray-500' : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          style={{ fontFamily: `"${f.id}", cursive` }}
+                        >
+                          <span className={`block text-lg leading-tight ${signFont === f.id ? 'text-indigo-600 dark:text-indigo-300' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                            {signText || 'Your Name'}
+                          </span>
+                          <span className={`text-[10px] block mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{f.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Google Fonts loader */}
+                  <link rel="preconnect" href="https://fonts.googleapis.com" />
+                  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Pacifico&family=Great+Vibes&family=Sacramento&display=swap" rel="stylesheet" />
+                </div>
+              )}
+
+              {/* Upload Mode */}
+              {signMode === 'upload' && (
+                <div>
+                  <label className={`flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                    uploadedSig ? 'border-indigo-400' :
+                    isDark ? 'border-gray-600 hover:border-gray-500 bg-gray-900/50' : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+                  }`}>
+                    {uploadedSig ? (
+                      <img src={uploadedSig} alt="Uploaded signature" className="max-h-28 max-w-full object-contain p-2 rounded" />
+                    ) : (
+                      <div className="text-center">
+                        <ArrowUpTrayIcon className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                        <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Click to upload signature image</p>
+                        <p className="text-xs text-gray-400 mt-1">PNG, JPG, GIF · Max 2MB</p>
+                      </div>
+                    )}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+                  </label>
+                  {uploadedSig && (
+                    <button onClick={() => setUploadedSig(null)}
+                      className="mt-2 w-full py-1.5 rounded-xl text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      Remove &amp; Upload Different
+                    </button>
                   )}
-                </button>
-              </div>
+                </div>
+              )}
+
+              {/* Save Button */}
+              <button onClick={submitSignature} disabled={signing}
+                className="w-full mt-5 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 transition-all"
+              >
+                {signing ? (
+                  <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Saving...</>
+                ) : (
+                  <><CheckCircleIcon className="w-4 h-4" />Save Signature</>
+                )}
+              </button>
             </motion.div>
           </div>
         )}

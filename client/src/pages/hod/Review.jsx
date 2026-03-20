@@ -46,12 +46,13 @@ export default function HODReview() {
     try {
       if (actionType === 'approve') {
         await hodAPI.approveRequest(id, { comments })
-        toast.success('Request approved! OD letter generated.')
+        toast.success('Request approved! Sign the OD letter now.')
+        navigate(`/hod/od-letter/${id}`)
       } else {
         await hodAPI.rejectRequest(id, { comments })
         toast.success('Request rejected')
+        navigate('/hod/requests')
       }
-      navigate('/hod/requests')
     } catch (error) {
       toast.error(`Failed to ${actionType} request`)
       console.error('Submit error:', error)

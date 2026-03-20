@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '../../context/ThemeContext'
@@ -12,6 +12,9 @@ import {
   PencilSquareIcon,
   CheckCircleIcon,
   XMarkIcon,
+  PencilIcon,
+  LanguageIcon,
+  ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline'
 
 const COLLEGE_NAME = 'Sri Manakula Vinayagar Engineering College'
@@ -32,6 +35,11 @@ export default function ODLetterView() {
   const [showSignPad, setShowSignPad] = useState(false)
   const [signing, setSigning] = useState(false)
   const [isDrawing, setIsDrawing] = useState(false)
+  // signature mode: 'draw' | 'type' | 'upload'
+  const [signMode, setSignMode] = useState('draw')
+  const [signText, setSignText] = useState('')
+  const [signFont, setSignFont] = useState('Dancing Script')
+  const [uploadedSig, setUploadedSig] = useState(null)
 
   useEffect(() => {
     fetchLetter()
@@ -98,22 +106,60 @@ export default function ODLetterView() {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
   }
 
+  // ── Upload mode ─────────────────────────────────────────────
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { toast.error('Please upload an image file'); return }
+    if (file.size > 2 * 1024 * 1024) { toast.error('Image too large (max 2MB)'); return }
+    const reader = new FileReader()
+    reader.onload = (ev) => setUploadedSig(ev.target.result)
+    reader.readAsDataURL(file)
+  }
+
+  // ── Get final signature data URL ───────────────────────────
+  const getFinalSignature = useCallback(() => {
+    if (signMode === 'draw') {
+      const canvas = canvasRef.current
+      if (!canvas) return null
+      const blank = document.createElement('canvas')
+      blank.width = canvas.width; blank.height = canvas.height
+      if (canvas.toDataURL() === blank.toDataURL()) return null
+      return canvas.toDataURL('image/png')
+    }
+    if (signMode === 'type') {
+      if (!signText.trim()) return null
+      const c = document.createElement('canvas')
+      c.width = 400; c.height = 120
+      const ctx = c.getContext('2d')
+      ctx.clearRect(0, 0, c.width, c.height)
+      ctx.font = `52px "${signFont}", cursive`
+      ctx.fillStyle = '#1e293b'
+      ctx.textBaseline = 'middle'
+      ctx.textAlign = 'center'
+      ctx.fillText(signText.trim(), 200, 60)
+      return c.toDataURL('image/png')
+    }
+    if (signMode === 'upload') {
+      return uploadedSig || null
+    }
+    return null
+  }, [signMode, signText, signFont, uploadedSig])
+
   const submitSignature = async () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const dataUrl = canvas.toDataURL('image/png')
-    // Check if canvas is blank
-    const blank = document.createElement('canvas')
-    blank.width = canvas.width
-    blank.height = canvas.height
-    if (canvas.toDataURL() === blank.toDataURL()) {
-      toast.error('Please draw your signature first')
+    const sigData = getFinalSignature()
+    if (!sigData) {
+      toast.error(
+        signMode === 'draw' ? 'Please draw your signature first' :
+        signMode === 'type' ? 'Please type your name first' :
+        'Please upload a signature image'
+      )
       return
     }
     setSigning(true)
     try {
       await api.put(`/od-letter/${id}/sign`, {
-        signature: dataUrl,
+        signature: sigData,
         role: user.role,
       })
       toast.success('Signature saved!')
@@ -125,6 +171,14 @@ export default function ODLetterView() {
     } finally {
       setSigning(false)
     }
+  }
+
+  const resetModal = () => {
+    setSignMode('draw')
+    setSignText('')
+    setUploadedSig(null)
+    clearCanvas()
+    setShowSignPad(false)
   }
 
   const handlePrint = () => {
@@ -455,64 +509,147 @@ export default function ODLetterView() {
         </div>
       </motion.div>
 
-      {/* Signature Pad Modal */}
+      {/* Signature Pad Modal — 3 modes: Draw / Type / Upload */}
       <AnimatePresence>
         {showSignPad && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowSignPad(false)}
-          >
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className={`rounded-2xl p-6 w-full max-w-md shadow-2xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-              onClick={e => e.stopPropagation()}
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className={`rounded-2xl shadow-2xl w-full max-w-lg p-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  <PencilSquareIcon className="w-5 h-5 inline mr-2 text-indigo-500" />
-                  Draw Your Signature
+              {/* Header */}
+              <div className="flex items-center justify-between mb-5">
+                <h3 className={`font-bold text-lg flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <PencilSquareIcon className="w-5 h-5 text-indigo-500" />
+                  Sign OD Letter
                 </h3>
-                <button onClick={() => setShowSignPad(false)}
-                  className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                <button onClick={resetModal}
+                  className={`p-1 rounded-lg ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
 
-              <p className={`text-xs mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                Use your mouse or finger to draw your signature below. This will be placed on the OD letter.
-              </p>
-
-              <div className={`rounded-xl border-2 overflow-hidden mb-4 ${isDark ? 'border-gray-600 bg-white' : 'border-gray-300 bg-white'}`}>
-                <canvas
-                  ref={canvasRef}
-                  width={360}
-                  height={150}
-                  className="w-full cursor-crosshair touch-none"
-                  style={{ background: '#fff' }}
-                  onMouseDown={startDraw}
-                  onMouseMove={draw}
-                  onMouseUp={endDraw}
-                  onMouseLeave={endDraw}
-                  onTouchStart={startDraw}
-                  onTouchMove={draw}
-                  onTouchEnd={endDraw}
-                />
+              {/* Mode Tabs */}
+              <div className={`flex rounded-xl p-1 mb-5 ${isDark ? 'bg-gray-900' : 'bg-gray-100'}`}>
+                {[
+                  { id: 'draw',   label: 'Draw',   icon: PencilIcon },
+                  { id: 'type',   label: 'Type',   icon: LanguageIcon },
+                  { id: 'upload', label: 'Upload', icon: ArrowUpTrayIcon },
+                ].map(tab => (
+                  <button key={tab.id} onClick={() => setSignMode(tab.id)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      signMode === tab.id
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow'
+                        : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4" />{tab.label}
+                  </button>
+                ))}
               </div>
 
-              <div className="flex gap-2">
-                <button onClick={clearCanvas}
-                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                >
-                  Clear
-                </button>
-                <button onClick={submitSignature} disabled={signing}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/30 disabled:opacity-50"
-                >
-                  {signing ? 'Saving…' : 'Confirm Signature'}
-                </button>
-              </div>
+              {/* Draw Mode */}
+              {signMode === 'draw' && (
+                <div>
+                  <div className="rounded-xl overflow-hidden border-2 border-dashed"
+                    style={{ borderColor: isDark ? '#4b5563' : '#d1d5db', backgroundColor: '#f8f9fa' }}
+                  >
+                    <canvas
+                      ref={canvasRef} width={460} height={160}
+                      className="w-full cursor-crosshair touch-none"
+                      onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
+                      onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1 text-center">Draw your signature above</p>
+                  <button onClick={clearCanvas}
+                    className={`mt-2 w-full py-2 rounded-xl text-sm font-medium border ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                  >Clear</button>
+                </div>
+              )}
+
+              {/* Type Mode */}
+              {signMode === 'type' && (
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={signText}
+                    onChange={e => setSignText(e.target.value)}
+                    placeholder="Type your name..."
+                    maxLength={40}
+                    className={`w-full px-4 py-3 rounded-xl border text-base font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
+                  />
+                  <div>
+                    <p className={`text-xs mb-2 font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Choose Style</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'Dancing Script', label: 'Elegant' },
+                        { id: 'Pacifico',       label: 'Bold' },
+                        { id: 'Great Vibes',    label: 'Flowing' },
+                        { id: 'Sacramento',     label: 'Classic' },
+                      ].map(f => (
+                        <button key={f.id} onClick={() => setSignFont(f.id)}
+                          className={`py-2.5 px-3 rounded-xl border-2 text-sm transition-all ${
+                            signFont === f.id
+                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                              : isDark ? 'border-gray-600 hover:border-gray-500' : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          style={{ fontFamily: `"${f.id}", cursive` }}
+                        >
+                          <span className={`block text-lg leading-tight ${signFont === f.id ? 'text-indigo-600 dark:text-indigo-300' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                            {signText || 'Your Name'}
+                          </span>
+                          <span className={`text-[10px] block mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{f.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <link rel="preconnect" href="https://fonts.googleapis.com" />
+                  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Pacifico&family=Great+Vibes&family=Sacramento&display=swap" rel="stylesheet" />
+                </div>
+              )}
+
+              {/* Upload Mode */}
+              {signMode === 'upload' && (
+                <div>
+                  <label className={`flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                    uploadedSig ? 'border-indigo-400' :
+                    isDark ? 'border-gray-600 hover:border-gray-500 bg-gray-900/50' : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+                  }`}>
+                    {uploadedSig ? (
+                      <img src={uploadedSig} alt="Uploaded signature" className="max-h-28 max-w-full object-contain p-2 rounded" />
+                    ) : (
+                      <div className="text-center">
+                        <ArrowUpTrayIcon className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                        <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Click to upload signature image</p>
+                        <p className="text-xs text-gray-400 mt-1">PNG, JPG, GIF · Max 2MB</p>
+                      </div>
+                    )}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+                  </label>
+                  {uploadedSig && (
+                    <button onClick={() => setUploadedSig(null)}
+                      className="mt-2 w-full py-1.5 rounded-xl text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      Remove &amp; Upload Different
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Save Button */}
+              <button onClick={submitSignature} disabled={signing}
+                className="w-full mt-5 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 transition-all"
+              >
+                {signing ? (
+                  <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Saving...</>
+                ) : (
+                  <><CheckCircleIcon className="w-4 h-4" />Save Signature</>
+                )}
+              </button>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

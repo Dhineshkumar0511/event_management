@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { studentAPI } from '../../services/api'
+import { studentAPI, leaveAPI } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 import { useTheme } from '../../context/ThemeContext'
 import {
   DocumentPlusIcon, ClockIcon, CheckCircleIcon, XCircleIcon,
   CalendarIcon, MapPinIcon, ArrowRightIcon, DocumentTextIcon,
-  TrophyIcon, BoltIcon, SignalIcon, ExclamationTriangleIcon,
+  TrophyIcon, BoltIcon, SignalIcon, ExclamationTriangleIcon, InboxIcon,
 } from '@heroicons/react/24/outline'
 
 const STATUS = {
@@ -21,6 +21,7 @@ const STATUS = {
 
 export default function StudentDashboard() {
   const [data, setData] = useState(null)
+  const [leaveStats, setLeaveStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const { user } = useAuthStore()
   const { isDark } = useTheme()
@@ -29,8 +30,22 @@ export default function StudentDashboard() {
 
   const fetchDashboard = async () => {
     try {
-      const response = await studentAPI.getDashboard()
+      const [response, lRes] = await Promise.all([
+        studentAPI.getDashboard(),
+        leaveAPI.getMyLeaves({ limit: 100 }).catch(() => null),
+      ])
       setData(response.data.data)
+      if (lRes) {
+        const leaves = lRes.data.data || []
+        setLeaveStats({
+          total: leaves.length,
+          pending: leaves.filter(l => l.status === 'pending').length,
+          approved: leaves.filter(l => l.status === 'approved').length,
+          rejected: leaves.filter(l => ['staff_rejected','rejected'].includes(l.status)).length,
+          days: leaves.filter(l => l.status === 'approved').reduce((s, l) => s + (l.days_count || 0), 0),
+          recent: leaves.slice(0, 3),
+        })
+      }
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
@@ -267,6 +282,66 @@ export default function StudentDashboard() {
           ))}
         </div>
       </motion.div>
+
+      {/* Leave Overview */}
+      {leaveStats !== null && (
+        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.55 }}
+          className={`rounded-2xl shadow-sm border overflow-hidden ${isDark?'bg-gray-800 border-gray-700':'bg-white border-gray-100'}`}
+        >
+          <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark?'border-gray-700':'border-gray-100'}`}>
+            <h2 className={`font-bold flex items-center gap-2 ${isDark?'text-white':'text-gray-900'}`}>
+              <InboxIcon className="w-4 h-4 text-indigo-500" /> My Leave Summary
+            </h2>
+            <Link to="/student/leaves" className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1 font-semibold">
+              View All <ArrowRightIcon className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="p-5">
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              {[
+                { label:'Total', value: leaveStats.total,    color:'from-indigo-400 to-purple-500' },
+                { label:'Pending', value: leaveStats.pending,  color:'from-amber-400 to-orange-500' },
+                { label:'Approved', value: leaveStats.approved, color:'from-emerald-400 to-green-500' },
+                { label:'Days Off', value: leaveStats.days,     color:'from-sky-400 to-blue-500' },
+              ].map(s => (
+                <div key={s.label} className={`rounded-xl bg-gradient-to-br ${s.color} p-3 text-center shadow`}>
+                  <p className="text-2xl font-black text-white">{s.value}</p>
+                  <p className="text-white/70 text-[10px] font-semibold uppercase tracking-wide mt-0.5">{s.label}</p>
+                </div>
+              ))}
+            </div>
+            {leaveStats.recent.length > 0 ? (
+              <div className={`divide-y ${isDark?'divide-gray-700':'divide-gray-50'} rounded-xl overflow-hidden border ${isDark?'border-gray-700':'border-gray-100'}`}>
+                {leaveStats.recent.map(l => (
+                  <Link key={l.id} to={`/student/leave-letter/${l.id}`}
+                    className={`flex items-center gap-3 px-4 py-2.5 ${isDark?'hover:bg-gray-700/40':'hover:bg-gray-50'} transition-colors`}
+                  >
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      l.status==='approved'?'bg-emerald-400':l.status==='pending'?'bg-amber-400':'bg-red-400'
+                    }`} />
+                    <span className={`flex-1 text-sm font-medium capitalize truncate ${isDark?'text-gray-200':'text-gray-800'}`}>
+                      {l.leave_type} — {l.days_count}d
+                    </span>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
+                      l.status==='approved'?'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300':
+                      l.status==='pending'?'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300':
+                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                    }`}>{l.status.replace(/_/g,' ')}</span>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <Link to="/student/leaves/new"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
+                >
+                  <DocumentPlusIcon className="w-4 h-4" /> Apply for Leave
+                </Link>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
     </div>
   )
 }

@@ -67,12 +67,13 @@ export default function Review() {
     try {
       if (actionType === 'approve') {
         await staffAPI.approveRequest(id, { comments })
-        toast.success('Request approved and forwarded to HOD')
+        toast.success('Request approved! Sign the OD letter now.')
+        navigate(`/staff/od-letter/${id}`)
       } else if (actionType === 'reject') {
         await staffAPI.rejectRequest(id, { comments })
         toast.success('Request rejected')
+        navigate('/staff/requests')
       }
-      navigate('/staff/requests')
     } catch (error) {
       toast.error(`Failed to ${actionType} request`)
       console.error('Submit error:', error)

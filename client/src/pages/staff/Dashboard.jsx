@@ -1,17 +1,18 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { staffAPI } from '../../services/api'
+import { staffAPI, leaveAPI } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 import { useTheme } from '../../context/ThemeContext'
 import {
   DocumentTextIcon, ClockIcon, CheckCircleIcon, XCircleIcon,
-  ArrowTrendingUpIcon, ChartBarIcon, ArrowRightIcon,
+  ArrowTrendingUpIcon, ChartBarIcon, ArrowRightIcon, InboxStackIcon,
 } from '@heroicons/react/24/outline'
 
 export default function StaffDashboard() {
   const [stats, setStats] = useState({ pending:0, reviewed_today:0, approved:0, rejected:0 })
   const [pendingRequests, setPendingRequests] = useState([])
+  const [leaveStats, setLeaveStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const { user } = useAuthStore()
   const { isDark } = useTheme()
@@ -20,9 +21,17 @@ export default function StaffDashboard() {
 
   const fetchDashboard = async () => {
     try {
-      const [sRes, rRes] = await Promise.all([staffAPI.getDashboard(), staffAPI.getPendingRequests()])
+      const [sRes, rRes, lRes] = await Promise.all([
+        staffAPI.getDashboard(),
+        staffAPI.getPendingRequests(),
+        leaveAPI.getStaffPending().catch(() => null),
+      ])
       setStats(sRes.data.data || {})
       setPendingRequests(rRes.data.data?.slice(0,5) || [])
+      if (lRes) {
+        const leaves = lRes.data.data || []
+        setLeaveStats({ pending: leaves.length, recent: leaves.slice(0, 4) })
+      }
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
@@ -169,6 +178,50 @@ export default function StaffDashboard() {
           </div>
         </motion.div>
       </div>
+
+      {/* Leave Requests Widget */}
+      {leaveStats !== null && (
+        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.5 }}
+          className={`rounded-2xl shadow-sm border overflow-hidden ${isDark?'bg-gray-800 border-gray-700':'bg-white border-gray-100'}`}
+        >
+          <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark?'border-gray-700':'border-gray-100'}`}>
+            <h2 className={`font-bold flex items-center gap-2 ${isDark?'text-white':'text-gray-900'}`}>
+              <InboxStackIcon className="w-4 h-4 text-violet-500" /> Pending Leave Requests
+              {leaveStats.pending > 0 && (
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-black">{leaveStats.pending}</span>
+              )}
+            </h2>
+            <Link to="/staff/leaves" className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1 font-semibold">
+              Review All <ArrowRightIcon className="w-3 h-3" />
+            </Link>
+          </div>
+          {leaveStats.recent.length === 0 ? (
+            <div className="py-10 text-center">
+              <CheckCircleIcon className={`w-9 h-9 mx-auto mb-2 ${isDark?'text-gray-600':'text-gray-300'}`} />
+              <p className={`text-sm ${isDark?'text-gray-400':'text-gray-500'}`}>No pending leave requests</p>
+            </div>
+          ) : (
+            <div className={`divide-y ${isDark?'divide-gray-700/50':'divide-gray-50'}`}>
+              {leaveStats.recent.map(l => (
+                <Link key={l.id} to={`/staff/leave-letter/${l.id}`}
+                  className={`flex items-center gap-3 px-5 py-3 transition-colors ${isDark?'hover:bg-gray-700/40':'hover:bg-gray-50'}`}
+                >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-black text-sm text-white bg-gradient-to-br from-violet-400 to-purple-500 shadow">
+                    {l.student_name?.charAt(0) || '?'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-semibold truncate text-sm ${isDark?'text-gray-100':'text-gray-900'}`}>{l.student_name}</p>
+                    <p className={`text-xs truncate ${isDark?'text-gray-500':'text-gray-400'}`}>
+                      {l.leave_type} leave · {l.days_count}d
+                    </p>
+                  </div>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 font-semibold">Pending</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      )}
     </div>
   )
 }
