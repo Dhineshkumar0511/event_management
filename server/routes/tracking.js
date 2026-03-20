@@ -644,4 +644,51 @@ router.get('/compliance-summary', isStaffOrHOD, async (req, res) => {
   }
 });
 
+// @route   GET /api/tracking/achievements
+// @desc    Get verified/approved event results (Achievement Wall) for all authenticated users
+// @access  All authenticated
+router.get('/achievements', async (req, res) => {
+  try {
+    const { result_type, search, page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+
+    let query = `
+      SELECT er.id, er.result_type, er.achievement_description, er.award_name,
+             er.prize_amount, er.submitted_at, er.is_verified, er.verified_by_staff,
+             od.event_name, od.event_type, od.venue, od.event_start_date, od.event_end_date,
+             u.name as student_name, u.department as student_department,
+             u.year_of_study, u.section
+      FROM event_results er
+      JOIN od_requests od ON er.od_request_id = od.id
+      JOIN users u ON er.student_id = u.id
+      WHERE (er.is_verified = TRUE OR er.verified_by_staff = TRUE)
+    `;
+    const params = [];
+
+    if (result_type) {
+      query += ' AND er.result_type = ?';
+      params.push(result_type);
+    }
+    if (search) {
+      query += ' AND (u.name LIKE ? OR od.event_name LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    // Count total
+    const countQuery = query.replace(
+      'SELECT er.id, er.result_type, er.achievement_description, er.award_name,\n             er.prize_amount, er.submitted_at, er.is_verified, er.verified_by_staff,\n             od.event_name, od.event_type, od.venue, od.event_start_date, od.event_end_date,\n             u.name as student_name, u.department as student_department,\n             u.year_of_study, u.section',
+      'SELECT COUNT(*) as total'
+    );
+
+    query += ' ORDER BY er.submitted_at DESC LIMIT ? OFFSET ?';
+    params.push(parseInt(limit), parseInt(offset));
+
+    const [results] = await pool.query(query, params);
+    res.json({ success: true, data: results });
+  } catch (error) {
+    console.error('Get achievements error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch achievements' });
+  }
+});
+
 export default router;

@@ -38,6 +38,7 @@ const getNavItems = (role) => {
       { name: 'Event Calendar', path: '/student/calendar', icon: CalendarDaysIcon },
       { name: 'Active Event', path: '/student/active-event', icon: MapPinIcon },
       { name: 'Submit Result', path: '/student/submit-result', icon: TrophyIcon },
+      { name: 'Achievement Wall', path: '/student/achievements', icon: ChartBarIcon },
       { name: 'My Profile', path: '/student/profile', icon: Cog6ToothIcon },
     ],
     staff: [
@@ -46,6 +47,7 @@ const getNavItems = (role) => {
       { name: 'Review History', path: '/staff/history', icon: CheckCircleIcon },
       { name: 'Event Calendar', path: '/staff/calendar', icon: CalendarDaysIcon },
       { name: 'Event Results', path: '/staff/results', icon: TrophyIcon },
+      { name: 'Achievement Wall', path: '/staff/achievements', icon: ChartBarIcon },
       { name: 'My Profile', path: '/staff/profile', icon: Cog6ToothIcon },
     ],
     hod: [
@@ -57,6 +59,7 @@ const getNavItems = (role) => {
       { name: 'Live Tracking', path: '/hod/tracking', icon: MapPinIcon },
       { name: 'Manage Users', path: '/hod/users', icon: UsersIcon },
       { name: 'Event Results', path: '/hod/results', icon: TrophyIcon },
+      { name: 'Achievement Wall', path: '/hod/achievements', icon: ChartBarIcon },
       { name: 'My Profile', path: '/hod/profile', icon: Cog6ToothIcon },
     ]
   }

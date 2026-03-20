@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { studentAPI } from '../../services/api'
+import toast from 'react-hot-toast'
 import { 
   CalendarIcon, 
   MapPinIcon, 
@@ -54,6 +55,46 @@ export default function RequestDetails() {
       a.click()
     } catch (error) {
       console.error('Failed to download letter:', error)
+    }
+  }
+
+  const handleDownloadIcal = () => {
+    try {
+      const fmt = (d) => {
+        const date = new Date(d)
+        return `${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}`
+      }
+      const startStr = fmt(request.event_start_date)
+      const endDate = new Date(request.event_end_date)
+      endDate.setDate(endDate.getDate() + 1)
+      const endStr = `${endDate.getFullYear()}${String(endDate.getMonth()+1).padStart(2,'0')}${String(endDate.getDate()).padStart(2,'0')}`
+      const uid = `eventpass-${request.id}-${Date.now()}@eventpass`
+      const ics = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//EventPass//EN',
+        'CALSCALE:GREGORIAN',
+        'BEGIN:VEVENT',
+        `UID:${uid}`,
+        `DTSTART;VALUE=DATE:${startStr}`,
+        `DTEND;VALUE=DATE:${endStr}`,
+        `SUMMARY:${request.event_name}`,
+        `DESCRIPTION:${request.event_type?.replace(/\b\w/g, c => c.toUpperCase())} at ${request.venue}`,
+        `LOCATION:${request.venue}`,
+        'STATUS:CONFIRMED',
+        'END:VEVENT',
+        'END:VCALENDAR'
+      ].join('\r\n')
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${request.event_name.replace(/[^a-z0-9]/gi, '_')}.ics`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('Calendar file downloaded!')
+    } catch {
+      toast.error('Failed to generate calendar file')
     }
   }
 
@@ -286,9 +327,12 @@ export default function RequestDetails() {
               <Link to={`/student/od-letter/${id}`} className="btn btn-outline w-full mb-2 flex items-center justify-center gap-2">
                 📄 View OD Letter
               </Link>
-              <button onClick={handleDownloadLetter} className="btn btn-primary w-full">
+              <button onClick={handleDownloadLetter} className="btn btn-primary w-full mb-2">
                 <ArrowDownTrayIcon className="w-5 h-5" />
                 Download Letter
+              </button>
+              <button onClick={handleDownloadIcal} className="btn btn-outline w-full flex items-center justify-center gap-2">
+                📅 Add to Calendar (.ics)
               </button>
               <p className="text-xs text-gray-500 mt-2 text-center">
                 PDF format with official seal

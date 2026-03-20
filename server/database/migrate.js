@@ -304,6 +304,16 @@ const migrate = async () => {
     }
     console.log('✅ Enhanced notification columns added');
 
+    // Add password reset columns to users
+    const passwordResetCols = [
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token VARCHAR(255) NULL",
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires DATETIME NULL",
+    ];
+    for (const sql of passwordResetCols) {
+      try { await pool.query(sql); } catch {}
+    }
+    console.log('✅ Password reset columns added to users');
+
     console.log('\n✨ All migrations completed successfully!');
   } catch (error) {
     console.error('❌ Migration failed:', error.message);

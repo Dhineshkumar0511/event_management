@@ -386,6 +386,30 @@ export default function NewODRequest() {
                   <input type="date" name="event_end_date" value={formData.event_end_date} onChange={handleChange}
                     className={inputCls} />
                 </div>
+
+                {/* Deadline warning */}
+                {formData.event_start_date && (() => {
+                  const start = new Date(formData.event_start_date + 'T00:00:00')
+                  const hoursUntil = (start - new Date()) / 3600000
+                  if (hoursUntil < 0 || hoursUntil >= 48) return null
+                  const urgent = hoursUntil < 24
+                  return (
+                    <div className={`sm:col-span-2 flex items-start gap-3 p-3.5 rounded-xl border ${
+                      urgent
+                        ? isDark ? 'bg-red-900/20 border-red-700 text-red-300' : 'bg-red-50 border-red-200 text-red-700'
+                        : isDark ? 'bg-amber-900/20 border-amber-700 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-700'
+                    }`}>
+                      <span className="text-lg flex-shrink-0">{urgent ? '🚨' : '⚠️'}</span>
+                      <div className="text-sm">
+                        <p className="font-bold">{urgent ? 'Less than 24 hours until event!' : 'Less than 48 hours until event!'}</p>
+                        <p className="text-xs mt-0.5 opacity-80">
+                          Submit immediately and notify your staff reviewer. Late submissions may not be processed in time.
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })()}
+
                 <div>
                   <label className={labelCls}>Start Time</label>
                   <input type="time" name="event_start_time" value={formData.event_start_time} onChange={handleChange}

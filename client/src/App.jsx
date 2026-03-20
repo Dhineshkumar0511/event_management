@@ -9,6 +9,8 @@ import DashboardLayout from './layouts/DashboardLayout'
 // Auth Pages
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 
 // Student Pages
 import StudentDashboard from './pages/student/Dashboard'
@@ -22,6 +24,7 @@ import EventCalendar from './pages/shared/EventCalendar'
 // Shared Result Page
 import EventResults from './pages/shared/EventResults'
 import ODLetterView from './pages/shared/ODLetterView'
+import AchievementWall from './pages/shared/AchievementWall'
 
 // Staff Pages
 import StaffDashboard from './pages/staff/Dashboard'
@@ -102,6 +105,15 @@ function App() {
               </PublicRoute>
             } 
           />
+          <Route 
+            path="/forgot-password" 
+            element={
+              <PublicRoute>
+                <ForgotPassword />
+              </PublicRoute>
+            } 
+          />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Route>
 
         {/* Student Routes */}
@@ -124,9 +136,10 @@ function App() {
           <Route path="od-letter/:id" element={<ODLetterView />} />
           <Route path="calendar" element={<EventCalendar />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="achievements" element={<AchievementWall />} />
         </Route>
 
-        {/* Staff Routes */}
+        {/* Staff Routes */}}
         <Route 
           path="/staff" 
           element={
@@ -143,10 +156,11 @@ function App() {
           <Route path="history" element={<StaffHistory />} />
           <Route path="calendar" element={<EventCalendar />} />
           <Route path="results" element={<EventResults />} />
+          <Route path="achievements" element={<AchievementWall />} />
           <Route path="profile" element={<Profile />} />
         </Route>
 
-        {/* HOD Routes */}
+        {/* HOD Routes */}}
         <Route 
           path="/hod" 
           element={
@@ -166,10 +180,11 @@ function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="calendar" element={<EventCalendar />} />
           <Route path="results" element={<EventResults />} />
+          <Route path="achievements" element={<AchievementWall />} />
           <Route path="profile" element={<Profile />} />
         </Route>
 
-        {/* 404 */}
+        {/* 404 */}}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </ThemeProvider>

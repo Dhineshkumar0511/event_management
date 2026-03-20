@@ -109,6 +109,12 @@ export default function Login() {
             </motion.div>
           )}
 
+          <div className="text-right -mt-1">
+            <Link to="/forgot-password" className={`text-xs font-semibold ${isDark ? 'text-violet-400 hover:text-violet-300' : 'text-violet-600 hover:text-violet-700'}`}>
+              Forgot password?
+            </Link>
+          </div>
+
           <button
             type="submit"
             disabled={isLoading}
