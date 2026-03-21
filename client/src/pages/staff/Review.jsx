@@ -270,25 +270,39 @@ export default function Review() {
             ) : (
               <div className="space-y-4">
                 <div className={`p-4 rounded-lg ${
-                  aiResult.is_legitimate 
+                  aiResult.aiUnavailable 
+                    ? 'bg-yellow-50 border border-yellow-200'
+                    : aiResult.isReal 
                     ? 'bg-green-50 border border-green-200' 
                     : 'bg-red-50 border border-red-200'
                 }`}>
                   <div className="flex items-center gap-2 mb-2">
-                    {aiResult.is_legitimate ? (
+                    {aiResult.aiUnavailable ? (
+                      <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600" />
+                    ) : aiResult.isReal ? (
                       <CheckCircleIcon className="w-5 h-5 text-green-600" />
                     ) : (
                       <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
                     )}
                     <span className={`font-semibold ${
-                      aiResult.is_legitimate ? 'text-green-800' : 'text-red-800'
+                      aiResult.aiUnavailable 
+                        ? 'text-yellow-800'
+                        : aiResult.isReal ? 'text-green-800' : 'text-red-800'
                     }`}>
-                      {aiResult.is_legitimate ? 'Event Verified' : 'Verification Failed'}
+                      {aiResult.aiUnavailable 
+                        ? 'AI Service Unavailable' 
+                        : aiResult.isReal ? 'Event Verified' : 'Review Needed'}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Confidence: <strong>{aiResult.confidence_score || 'N/A'}%</strong>
+                    {aiResult.aiUnavailable 
+                      ? 'AI verification service temporarily unavailable. Manual review required.'
+                      : `Confidence: ${aiResult.score || 'N/A'}%`
+                    }
                   </p>
+                  {aiResult.verdict && (
+                    <p className="text-xs text-gray-500 mt-2">Verdict: <strong>{aiResult.verdict}</strong></p>
+                  )}
                 </div>
                 {aiResult.summary && (
                   <div>
@@ -296,12 +310,32 @@ export default function Review() {
                     <p className="text-sm text-gray-700">{aiResult.summary}</p>
                   </div>
                 )}
-                {aiResult.concerns && aiResult.concerns.length > 0 && (
+                {aiResult.observations && aiResult.observations.length > 0 && (
                   <div>
-                    <p className="text-sm text-gray-500 mb-1">Concerns</p>
-                    <ul className="text-sm text-gray-700 list-disc list-inside">
-                      {aiResult.concerns.map((concern, i) => (
-                        <li key={i}>{concern}</li>
+                    <p className="text-sm text-gray-500 mb-1">Key Observations</p>
+                    <ul className="text-sm text-gray-700 list-disc list-inside space-y-1">
+                      {aiResult.observations.map((obs, i) => (
+                        <li key={i}>{obs}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiResult.redFlags && aiResult.redFlags.length > 0 && (
+                  <div>
+                    <p className="text-sm text-red-600 font-medium mb-1">⚠️ Red Flags</p>
+                    <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
+                      {aiResult.redFlags.map((flag, i) => (
+                        <li key={i}>{flag}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiResult.recommendations && aiResult.recommendations.length > 0 && (
+                  <div>
+                    <p className="text-sm text-blue-600 font-medium mb-1">📋 Recommendations</p>
+                    <ul className="text-sm text-blue-700 list-disc list-inside space-y-1">
+                      {aiResult.recommendations.map((rec, i) => (
+                        <li key={i}>{rec}</li>
                       ))}
                     </ul>
                   </div>
