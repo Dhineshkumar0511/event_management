@@ -1,0 +1,4 @@
+2026/03/21-11:08:00.247 cd94 Creating DB C:\Users\aravi\project_ervamp\event_manager\.wwebjs_auth\session\Default\Extension Rules since it was missing.
+2026/03/21-11:08:00.269 cd94 Reusing MANIFEST C:\Users\aravi\project_ervamp\event_manager\.wwebjs_auth\session\Default\Extension Rules/MANIFEST-000001
+2026/03/21-11:08:00.269 cd94 Recovering log #3
+2026/03/21-11:08:00.270 cd94 Reusing old log C:\Users\aravi\project_ervamp\event_manager\.wwebjs_auth\session\Default\Extension Rules/000003.log 

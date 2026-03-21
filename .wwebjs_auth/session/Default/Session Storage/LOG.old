@@ -1,0 +1,4 @@
+2026/03/21-11:08:01.873 d7fc Creating DB C:\Users\aravi\project_ervamp\event_manager\.wwebjs_auth\session\Default\Session Storage since it was missing.
+2026/03/21-11:08:01.891 d7fc Reusing MANIFEST C:\Users\aravi\project_ervamp\event_manager\.wwebjs_auth\session\Default\Session Storage/MANIFEST-000001
+2026/03/21-11:08:01.892 d7fc Recovering log #3
+2026/03/21-11:08:01.902 d7fc Reusing old log C:\Users\aravi\project_ervamp\event_manager\.wwebjs_auth\session\Default\Session Storage/000003.log 

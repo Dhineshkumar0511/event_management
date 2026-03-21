@@ -1,0 +1,4 @@
+2026/03/21-11:08:00.869 bdec Creating DB C:\Users\aravi\project_ervamp\event_manager\.wwebjs_auth\session\Default\shared_proto_db\metadata since it was missing.
+2026/03/21-11:08:00.879 bdec Reusing MANIFEST C:\Users\aravi\project_ervamp\event_manager\.wwebjs_auth\session\Default\shared_proto_db\metadata/MANIFEST-000001
+2026/03/21-11:08:00.880 bdec Recovering log #3
+2026/03/21-11:08:00.882 bdec Reusing old log C:\Users\aravi\project_ervamp\event_manager\.wwebjs_auth\session\Default\shared_proto_db\metadata/000003.log 

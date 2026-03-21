@@ -1,0 +1,4 @@
+2026/03/21-11:08:00.223 cb74 Creating DB C:\Users\aravi\project_ervamp\event_manager\.wwebjs_auth\session\Default\Site Characteristics Database since it was missing.
+2026/03/21-11:08:00.240 cb74 Reusing MANIFEST C:\Users\aravi\project_ervamp\event_manager\.wwebjs_auth\session\Default\Site Characteristics Database/MANIFEST-000001
+2026/03/21-11:08:00.241 cb74 Recovering log #3
+2026/03/21-11:08:00.241 cb74 Reusing old log C:\Users\aravi\project_ervamp\event_manager\.wwebjs_auth\session\Default\Site Characteristics Database/000003.log 
