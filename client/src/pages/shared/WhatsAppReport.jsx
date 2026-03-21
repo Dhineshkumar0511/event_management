@@ -5,44 +5,21 @@ import { useAuthStore } from '../../store/authStore'
 import { whatsappAPI } from '../../services/api'
 import {
   ChatBubbleLeftRightIcon, PaperAirplaneIcon, UserGroupIcon, UserIcon,
-  ArrowPathIcon, CheckCircleIcon, SignalIcon, QrCodeIcon, Cog6ToothIcon,
+  ArrowPathIcon, CheckCircleIcon, QrCodeIcon, Cog6ToothIcon,
   BellIcon, WifiIcon, XCircleIcon, LinkIcon, ChevronRightIcon,
-  CalendarDaysIcon, DocumentTextIcon, PhoneIcon,
+  CalendarDaysIcon, DocumentTextIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid, SignalIcon as SignalSolid } from '@heroicons/react/24/solid'
 
 /* ── helpers ──────────────────────────────────────────────────────────────── */
-const fmtDate = d => {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-}
-const fmtDateFull = d => {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-}
+const fmtDate = d => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'
+const fmtDateFull = d => d ? new Date(d).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ''
 
-const DEPT_COLORS = [
-  'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-  'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
-  'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
-  'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300',
-]
-const deptColor = (dept = '') => DEPT_COLORS[dept.charCodeAt(0) % DEPT_COLORS.length]
-
-const Avatar = ({ name, color, size = 'sm' }) => {
-  const sz = size === 'sm' ? 'w-9 h-9 text-[11px]' : 'w-11 h-11 text-xs'
-  return (
-    <div className={`${sz} rounded-xl flex items-center justify-center font-black flex-shrink-0 ${color}`}>
-      {name?.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
-    </div>
-  )
-}
-
-/* ── animations ───────────────────────────────────────────────────────────── */
-const fadeUp = { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.5, ease: [.22, 1, .36, 1] } }
-const stagger = { animate: { transition: { staggerChildren: 0.08 } } }
-const scaleIn = { initial: { opacity: 0, scale: 0.95 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.95 }, transition: { duration: 0.3 } }
+const Initials = ({ name, cls }) => (
+  <div className={`rounded-xl flex items-center justify-center font-black flex-shrink-0 ${cls}`}>
+    {name?.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
+  </div>
+)
 
 /* ── component ────────────────────────────────────────────────────────────── */
 export default function WhatsAppReport() {
@@ -50,8 +27,7 @@ export default function WhatsAppReport() {
   const { user } = useAuthStore()
   const isHOD = user?.role === 'hod'
 
-  // Section nav
-  const [activeSection, setActiveSection] = useState('connect')
+  const [tab, setTab] = useState('connect')
 
   // WA status
   const [waStatus, setWaStatus] = useState(null)
@@ -64,6 +40,7 @@ export default function WhatsAppReport() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [reportData, setReportData] = useState(null)
   const [loadingReport, setLoadingReport] = useState(false)
+  const [fetchError, setFetchError] = useState(null)
 
   // Groups & contacts
   const [groups, setGroups] = useState([])
@@ -103,33 +80,25 @@ export default function WhatsAppReport() {
 
   const fetchGroups = async () => {
     setLoadingGroups(true)
-    try {
-      const r = await whatsappAPI.getGroups()
-      setGroups(r.data.data || [])
-    } catch {}
-    finally { setLoadingGroups(false) }
+    try { setGroups((await whatsappAPI.getGroups()).data.data || []) }
+    catch {} finally { setLoadingGroups(false) }
   }
 
   const fetchStaffContacts = async () => {
-    try {
-      const r = await whatsappAPI.getStaffContacts()
-      setStaffList(r.data.data || [])
-    } catch {}
+    try { setStaffList((await whatsappAPI.getStaffContacts()).data.data || []) } catch {}
   }
 
   const fetchConfig = async () => {
     try {
-      const r = await whatsappAPI.getConfig()
-      const cfg = r.data.data
+      const cfg = (await whatsappAPI.getConfig()).data.data
       setAutoEnabled(!!cfg.auto_enabled)
       setNotifyGroupId(cfg.notify_group_id || '')
     } catch {}
   }
 
-  /* ── connect WA ─────────────────────────────────────────────────────────── */
+  /* ── connect ────────────────────────────────────────────────────────────── */
   const handleConnect = async (force = false) => {
-    setConnecting(true)
-    setElapsed(0)
+    setConnecting(true); setElapsed(0)
     try {
       await whatsappAPI.connect(force)
       setWaStatus(prev => ({ ...prev, status: 'connecting', error: null }))
@@ -143,46 +112,35 @@ export default function WhatsAppReport() {
     pollRef.current = setInterval(async () => {
       count++
       try {
-        const r = await whatsappAPI.getStatus()
-        const s = r.data.data
+        const s = (await whatsappAPI.getStatus()).data.data
         setWaStatus(s)
         if (s.status === 'ready') {
-          clearInterval(pollRef.current)
-          clearInterval(timerRef.current)
-          setConnecting(false)
-          fetchGroups()
+          clearInterval(pollRef.current); clearInterval(timerRef.current)
+          setConnecting(false); fetchGroups()
         } else if (s.status === 'qr') {
-          setConnecting(false)
-          clearInterval(timerRef.current)
+          setConnecting(false); clearInterval(timerRef.current)
         } else if (s.status === 'error') {
-          clearInterval(pollRef.current)
-          clearInterval(timerRef.current)
-          setConnecting(false)
+          clearInterval(pollRef.current); clearInterval(timerRef.current); setConnecting(false)
         }
       } catch {}
-      if (count > 50) {
-        clearInterval(pollRef.current)
-        clearInterval(timerRef.current)
-        setConnecting(false)
-      }
+      if (count > 50) { clearInterval(pollRef.current); clearInterval(timerRef.current); setConnecting(false) }
     }, 3000)
   }
 
   /* ── report ─────────────────────────────────────────────────────────────── */
   const fetchReport = async () => {
-    setLoadingReport(true)
-    setSendResult(null)
+    setLoadingReport(true); setSendResult(null); setFetchError(null)
     try {
-      const r = await whatsappAPI.getDailyReport(date)
-      setReportData(r.data.data)
-    } catch {}
-    finally { setLoadingReport(false) }
+      const res = await whatsappAPI.getDailyReport(date)
+      setReportData(res.data.data)
+    } catch (e) {
+      setFetchError(e.response?.data?.message || e.message || 'Failed to fetch report')
+    } finally { setLoadingReport(false) }
   }
 
   const buildMessage = () => {
     if (!reportData) return ''
-    const ods = reportData.odStudents || []
-    const lvs = reportData.leaveStudents || []
+    const ods = reportData.odStudents || [], lvs = reportData.leaveStudents || []
     let msg = `📅 *EventPass Report — ${fmtDateFull(date)}*\n`
     msg += `\n📚 *OD Students (${ods.length}):*\n`
     if (!ods.length) msg += '  None\n'
@@ -194,35 +152,25 @@ export default function WhatsAppReport() {
     if (!lvs.length) msg += '  None\n'
     else lvs.forEach((s, i) => {
       const loc = [s.year_of_study ? `Yr${s.year_of_study}` : '', s.section].filter(Boolean).join('-')
-      const type = s.leave_type?.replace(/_/g, ' ') || 'Leave'
-      msg += `  ${i + 1}. ${s.name}${loc ? ` (${loc})` : ''} → ${type} [${fmtDate(s.from_date)}–${fmtDate(s.to_date)}, ${s.days_count}d]\n`
+      msg += `  ${i + 1}. ${s.name}${loc ? ` (${loc})` : ''} → ${(s.leave_type || 'Leave').replace(/_/g, ' ')} [${fmtDate(s.from_date)}–${fmtDate(s.to_date)}, ${s.days_count}d]\n`
     })
     msg += `\n_Sent via EventPass portal_`
     return msg
   }
 
-  /* ── recipient ──────────────────────────────────────────────────────────── */
   const getRecipient = () => {
-    if (sendMode === 'group') {
-      if (selectedGroup) return selectedGroup.id
-      return customTo.trim()
-    }
+    if (sendMode === 'group') return selectedGroup ? selectedGroup.id : customTo.trim()
     if (selectedStaff) {
       const d = (selectedStaff.phone || '').replace(/\D/g, '')
-      if (d.length === 10) return `91${d}`
-      if (d.length === 12 && d.startsWith('91')) return d
-      return d
+      return d.length === 10 ? `91${d}` : d
     }
     const d = customTo.replace(/\D/g, '')
-    if (d.length === 10) return `91${d}`
-    if (d.length === 12) return d
-    return customTo.trim()
+    return d.length === 10 ? `91${d}` : customTo.trim()
   }
 
-  /* ── send ───────────────────────────────────────────────────────────────── */
   const handleSend = async () => {
     const to = getRecipient()
-    if (!to) { setSendResult({ ok: false, msg: 'Please select a recipient' }); return }
+    if (!to) { setSendResult({ ok: false, msg: 'Select a recipient first' }); return }
     setSending(true); setSendResult(null)
     try {
       await whatsappAPI.send(to, buildMessage())
@@ -241,115 +189,95 @@ export default function WhatsAppReport() {
     finally { setSavingConfig(false) }
   }
 
-  /* ── derived state ──────────────────────────────────────────────────────── */
-  const waWebConnected = waStatus?.status === 'ready'
-  const hasUltraMsg = !!waStatus?.ultramsgAvailable
-  const canSend = waWebConnected || hasUltraMsg
+  /* ── derived ────────────────────────────────────────────────────────────── */
+  const waOK = waStatus?.status === 'ready'
+  const hasUM = !!waStatus?.ultramsgAvailable
+  const canSend = waOK || hasUM
+  const hasErr = waStatus?.status === 'error'
+  const isQR = waStatus?.status === 'qr'
+  const isBusy = connecting || waStatus?.status === 'connecting'
   const message = buildMessage()
   const recipient = getRecipient()
-  const hasError = waStatus?.status === 'error'
-  const isQR = waStatus?.status === 'qr'
-  const isConnecting = connecting || waStatus?.status === 'connecting'
 
   /* ── style tokens ───────────────────────────────────────────────────────── */
-  const glass = isDark
-    ? 'bg-gray-800/70 backdrop-blur-xl border border-gray-700/50'
-    : 'bg-white/80 backdrop-blur-xl border border-gray-200/60'
-  const cardClass = `rounded-3xl shadow-xl ${glass}`
-  const inputClass = `w-full rounded-xl border-2 px-4 py-3 text-sm font-medium focus:outline-none transition-all duration-200 ${
+  const card = isDark
+    ? 'bg-gray-800/60 border border-gray-700/40 rounded-2xl'
+    : 'bg-white border border-gray-200/80 rounded-2xl shadow-sm'
+  const input = `w-full rounded-xl px-4 py-3 text-sm font-medium outline-none transition-all duration-200 border ${
     isDark
-      ? 'bg-gray-900/50 border-gray-700 text-white placeholder-gray-500 focus:border-emerald-500 focus:bg-gray-900/80'
-      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:bg-white'
+      ? 'bg-gray-900/60 border-gray-700 text-white placeholder-gray-500 focus:border-green-500 focus:ring-1 focus:ring-green-500/30'
+      : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-1 focus:ring-green-500/30'
   }`
-  const labelClass = `block text-xs font-bold uppercase tracking-widest mb-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`
-  const sectionTitle = `text-lg font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`
-  const sectionDesc = `text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`
+  const lbl = `block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`
+  const muted = isDark ? 'text-gray-400' : 'text-gray-500'
+  const heading = `text-[15px] font-bold ${isDark ? 'text-white' : 'text-gray-900'}`
+  const subtext = `text-xs ${muted}`
 
-  /* ── section nav items ──────────────────────────────────────────────────── */
-  const sections = [
-    { key: 'connect', label: 'Connect', icon: LinkIcon, color: 'emerald' },
-    { key: 'send', label: 'Send Report', icon: PaperAirplaneIcon, color: 'blue' },
-    ...(isHOD ? [{ key: 'settings', label: 'Settings', icon: Cog6ToothIcon, color: 'purple' }] : []),
+  const tabs = [
+    { key: 'connect', label: 'Connect', Icon: LinkIcon },
+    { key: 'send', label: 'Send Report', Icon: PaperAirplaneIcon },
+    ...(isHOD ? [{ key: 'settings', label: 'Settings', Icon: Cog6ToothIcon }] : []),
   ]
 
-  const colorMap = {
-    emerald: { active: 'from-emerald-500 to-teal-500', badge: 'bg-emerald-500', light: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400', ring: 'ring-emerald-500/20' },
-    blue: { active: 'from-blue-500 to-indigo-500', badge: 'bg-blue-500', light: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400', ring: 'ring-blue-500/20' },
-    purple: { active: 'from-purple-500 to-pink-500', badge: 'bg-purple-500', light: 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400', ring: 'ring-purple-500/20' },
-  }
+  /* ── status label ───────────────────────────────────────────────────────── */
+  const statusLabel = !waStatus ? 'Checking…'
+    : waOK ? 'Connected' : isQR ? 'Scan QR'
+    : isBusy ? 'Connecting…' : hasErr ? 'Error' : hasUM ? 'UltraMsg' : 'Offline'
+  const statusDot = waOK ? 'bg-green-400' : isQR || isBusy ? 'bg-amber-400 animate-pulse' : hasErr ? 'bg-red-400' : hasUM ? 'bg-amber-400' : 'bg-gray-400'
 
   return (
-    <div className="max-w-4xl mx-auto pb-10 space-y-8">
+    <div className="max-w-5xl mx-auto space-y-5 pb-10">
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          HEADER
-         ═══════════════════════════════════════════════════════════════════════ */}
-      <motion.div {...fadeUp} className="relative overflow-hidden rounded-3xl shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600" />
-        <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/[0.07]" />
-        <div className="absolute right-24 bottom-0 w-40 h-40 rounded-full bg-white/[0.04]" />
-        <div className="absolute left-1/3 -bottom-8 w-24 h-24 rounded-full bg-teal-400/20" />
+      {/* ═══════════════ HEADER ═══════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [.22, 1, .36, 1] }}
+        className="relative overflow-hidden rounded-2xl"
+      >
+        {/* gradient bg */}
+        <div className="absolute inset-0 bg-gradient-to-br from-green-600 via-emerald-600 to-teal-700" />
+        <div className="absolute -right-12 -top-12 w-56 h-56 rounded-full bg-white/[.06]" />
+        <div className="absolute left-1/2 -bottom-10 w-36 h-36 rounded-full bg-teal-400/10" />
 
-        <div className="relative z-10 px-8 pt-8 pb-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/20">
-                <ChatBubbleLeftRightIcon className="w-8 h-8 text-white" />
+        <div className="relative z-10 px-6 py-5 sm:px-8">
+          {/* Title row */}
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center">
+                <ChatBubbleLeftRightIcon className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-black text-white tracking-tight">WhatsApp Center</h1>
-                <p className="text-white/50 text-sm font-medium mt-0.5">Manage connections, send reports & configure</p>
+                <h1 className="text-xl font-extrabold text-white leading-tight">WhatsApp Center</h1>
+                <p className="text-white/40 text-xs font-medium mt-0.5">Connect &middot; Send &middot; Configure</p>
               </div>
             </div>
 
-            {/* Status badge */}
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl backdrop-blur-md ring-1 ${
-                waWebConnected ? 'bg-emerald-400/15 ring-emerald-300/30 text-white'
-                  : hasUltraMsg ? 'bg-amber-400/15 ring-amber-300/30 text-white'
-                    : hasError ? 'bg-red-400/15 ring-red-300/30 text-white'
-                      : 'bg-white/10 ring-white/10 text-white/60'
-              }`}>
-              <div className={`w-2.5 h-2.5 rounded-full ${
-                waWebConnected ? 'bg-emerald-400 shadow-lg shadow-emerald-400/50'
-                  : isQR || isConnecting ? 'bg-amber-400 animate-pulse'
-                    : hasError ? 'bg-red-400'
-                      : hasUltraMsg ? 'bg-amber-400'
-                        : 'bg-gray-400'
-              }`} />
-              <span className="text-xs font-bold">
-                {!waStatus ? 'Checking...'
-                  : waWebConnected ? 'WA Web Connected'
-                    : isQR ? 'Scan QR Code'
-                      : isConnecting ? 'Connecting...'
-                        : hasError ? 'Error'
-                          : hasUltraMsg ? 'UltraMsg Ready'
-                            : 'Disconnected'}
-              </span>
-            </motion.div>
+            {/* live status pill */}
+            <div className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-[11px] font-bold backdrop-blur-md ${
+              waOK ? 'bg-green-400/15 text-green-200 ring-1 ring-green-400/20'
+                : hasUM ? 'bg-amber-400/15 text-amber-200 ring-1 ring-amber-400/20'
+                  : 'bg-white/10 text-white/60 ring-1 ring-white/10'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${statusDot}`} />
+              {statusLabel}
+            </div>
           </div>
 
-          {/* Section Navigation */}
-          <div className="flex gap-2">
-            {sections.map(({ key, label, icon: Icon, color }) => {
-              const isActive = activeSection === key
+          {/* tab bar */}
+          <div className="flex gap-1.5">
+            {tabs.map(({ key, label, Icon }) => {
+              const active = tab === key
               return (
-                <button key={key} onClick={() => setActiveSection(key)}
-                  className={`relative flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold transition-all duration-300 ${
-                    isActive
-                      ? 'text-white shadow-lg'
-                      : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                <button key={key} onClick={() => setTab(key)}
+                  className={`relative flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${
+                    active ? 'text-white' : 'text-white/40 hover:text-white/70 hover:bg-white/5'
                   }`}>
-                  {isActive && (
-                    <motion.div layoutId="activeSection"
-                      className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${colorMap[color].active} shadow-lg`}
-                      transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }} />
+                  {active && (
+                    <motion.div layoutId="tab-pill"
+                      className="absolute inset-0 rounded-xl bg-white/15 ring-1 ring-white/10"
+                      transition={{ type: 'spring', bounce: 0.18, duration: 0.5 }} />
                   )}
-                  <span className="relative flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </span>
+                  <span className="relative flex items-center gap-1.5"><Icon className="w-3.5 h-3.5" />{label}</span>
                 </button>
               )
             })}
@@ -357,661 +285,621 @@ export default function WhatsAppReport() {
         </div>
       </motion.div>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          SECTION 1: CONNECT
-         ═══════════════════════════════════════════════════════════════════════ */}
+      {/* ═══════════════ TAB CONTENT ═══════════════ */}
       <AnimatePresence mode="wait">
-        {activeSection === 'connect' && (
-          <motion.div key="connect" {...fadeUp} className="space-y-6">
 
-            {/* Connected state */}
-            {waWebConnected && (
-              <motion.div {...scaleIn} className={cardClass}>
-                <div className="p-8 text-center space-y-5">
-                  <motion.div
-                    initial={{ scale: 0 }} animate={{ scale: 1 }}
-                    transition={{ type: 'spring', bounce: 0.4, delay: 0.2 }}
-                    className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center ${isDark ? 'bg-emerald-900/30' : 'bg-emerald-50'}`}>
-                    <CheckSolid className="w-10 h-10 text-emerald-500" />
-                  </motion.div>
-                  <div>
-                    <h2 className={sectionTitle}>WhatsApp Web Connected!</h2>
-                    <p className={sectionDesc}>Your WhatsApp is linked and ready to send messages.</p>
+        {/* ─────────────── CONNECT TAB ─────────────── */}
+        {tab === 'connect' && (
+          <motion.div key="t-connect"
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-4"
+          >
+            {/* CONNECTED */}
+            {waOK && (
+              <div className={card}>
+                <div className="p-7 text-center space-y-4">
+                  <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center ${isDark ? 'bg-green-900/25' : 'bg-green-50'}`}>
+                    <CheckSolid className="w-9 h-9 text-green-500" />
                   </div>
-                  <div className="flex items-center justify-center gap-3 flex-wrap">
-                    <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${isDark ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
-                      <SignalSolid className="w-3.5 h-3.5" /> WA Web Active
+                  <div>
+                    <p className={heading}>WhatsApp Web Connected</p>
+                    <p className={`text-xs mt-1 ${muted}`}>Ready to send messages via WhatsApp Web</p>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold ${isDark ? 'bg-green-900/25 text-green-400' : 'bg-green-50 text-green-600'}`}>
+                      <SignalSolid className="w-3 h-3" /> WhatsApp Web
                     </span>
-                    {hasUltraMsg && (
-                      <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${isDark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
-                        <WifiIcon className="w-3.5 h-3.5" /> UltraMsg Backup
+                    {hasUM && (
+                      <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold ${isDark ? 'bg-amber-900/25 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
+                        <WifiIcon className="w-3 h-3" /> UltraMsg Backup
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={() => setActiveSection('send')}
-                    className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                    Go to Send Report <ChevronRightIcon className="w-4 h-4" />
+                  <button onClick={() => setTab('send')}
+                    className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-xs font-bold bg-green-600 text-white hover:bg-green-500 transition-colors">
+                    Send Report <ChevronRightIcon className="w-3.5 h-3.5" />
                   </button>
                 </div>
-              </motion.div>
+              </div>
             )}
 
-            {/* QR Code state */}
+            {/* QR */}
             {isQR && (
-              <motion.div {...scaleIn} className={cardClass}>
-                <div className="p-8">
-                  <div className="flex items-center justify-between mb-6">
+              <div className={card}>
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-5">
                     <div>
-                      <h2 className={sectionTitle}>Scan QR Code</h2>
-                      <p className={sectionDesc}>Link your WhatsApp to send messages</p>
+                      <p className={heading}>Scan QR Code</p>
+                      <p className={subtext}>Open WhatsApp on your phone to link</p>
                     </div>
                     <button onClick={fetchStatus}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${isDark ? 'bg-gray-700 text-emerald-400 hover:bg-gray-600' : 'bg-gray-100 text-emerald-600 hover:bg-gray-200'}`}>
-                      <ArrowPathIcon className="w-3.5 h-3.5" /> Refresh QR
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold transition ${isDark ? 'bg-gray-700 text-green-400 hover:bg-gray-600' : 'bg-gray-100 text-green-600 hover:bg-gray-200'}`}>
+                      <ArrowPathIcon className="w-3 h-3" /> Refresh
                     </button>
                   </div>
-
-                  <div className="flex flex-col md:flex-row items-center gap-8">
-                    {/* QR image */}
-                    <motion.div
-                      initial={{ rotate: -5, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }}
-                      transition={{ duration: 0.5 }}
-                      className="flex-shrink-0 p-4 bg-white rounded-3xl shadow-2xl shadow-emerald-500/10 ring-1 ring-gray-100">
-                      <img src={waStatus.qr} alt="WhatsApp QR" className="w-60 h-60 object-contain" />
-                    </motion.div>
-
-                    {/* Steps */}
-                    <div className="space-y-4 flex-1">
-                      {[
-                        { n: 1, text: 'Open WhatsApp on your phone' },
-                        { n: 2, text: 'Tap Menu > Linked Devices' },
-                        { n: 3, text: 'Tap Link a Device & scan this QR' },
-                      ].map(({ n, text }, i) => (
-                        <motion.div key={n}
-                          initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
-                          transition={{ delay: 0.1 * (i + 1) }}
-                          className={`flex items-center gap-4 p-4 rounded-2xl ${isDark ? 'bg-gray-700/40' : 'bg-gray-50'}`}>
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0 ${isDark ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-100 text-emerald-700'}`}>
-                            {n}
-                          </div>
-                          <span className={`text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{text}</span>
-                        </motion.div>
+                  <div className="flex flex-col md:flex-row items-center gap-6">
+                    <div className="p-3 bg-white rounded-2xl shadow-lg flex-shrink-0">
+                      <img src={waStatus.qr} alt="QR" className="w-52 h-52" />
+                    </div>
+                    <div className="space-y-3 flex-1">
+                      {['Open WhatsApp on your phone', 'Tap Menu → Linked Devices', 'Tap "Link a Device" and scan'].map((txt, i) => (
+                        <div key={i} className={`flex items-center gap-3 px-4 py-3 rounded-xl ${isDark ? 'bg-gray-700/40' : 'bg-gray-50'}`}>
+                          <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0 ${isDark ? 'bg-green-900/40 text-green-400' : 'bg-green-100 text-green-700'}`}>{i + 1}</span>
+                          <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{txt}</span>
+                        </div>
                       ))}
-                      <p className={`text-xs pl-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                        QR expires in ~60s. Click "Refresh QR" if it disappears.
-                      </p>
+                      <p className={`text-[11px] pl-1 ${muted}`}>QR refreshes automatically. Click Refresh if expired.</p>
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             )}
 
-            {/* Connecting state */}
-            {isConnecting && !isQR && (
-              <motion.div {...scaleIn} className={cardClass}>
-                <div className="p-8 space-y-6">
-                  <div className="text-center">
-                    <h2 className={sectionTitle}>Connecting WhatsApp...</h2>
-                    <p className={sectionDesc}>
-                      {elapsed < 15 ? 'Starting WhatsApp client...'
-                        : elapsed < 45 ? 'Launching browser (first run takes longer)...'
-                          : elapsed < 90 ? 'Almost ready — waiting for QR code...'
-                            : 'Still working... please wait'}
-                    </p>
-                  </div>
-
-                  {/* Animated loader */}
+            {/* CONNECTING */}
+            {isBusy && !isQR && (
+              <div className={card}>
+                <div className="p-7 space-y-5 text-center">
+                  <p className={heading}>Connecting WhatsApp…</p>
+                  <p className={subtext}>
+                    {elapsed < 15 ? 'Starting client…' : elapsed < 45 ? 'Launching browser…' : elapsed < 90 ? 'Waiting for QR…' : 'Still working…'}
+                  </p>
                   <div className="flex justify-center">
-                    <div className="relative w-24 h-24">
-                      <motion.div
-                        className="absolute inset-0 rounded-full border-4 border-emerald-500/20"
-                        animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.2, 0.5] }}
-                        transition={{ repeat: Infinity, duration: 2 }}
-                      />
-                      <div className="absolute inset-2 rounded-full border-4 border-t-emerald-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{elapsed}s</span>
-                      </div>
+                    <div className="relative w-20 h-20">
+                      <div className="absolute inset-0 rounded-full border-4 border-green-500/20 animate-ping" style={{ animationDuration: '2s' }} />
+                      <div className="absolute inset-2 rounded-full border-[3px] border-t-green-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+                      <span className={`absolute inset-0 flex items-center justify-center text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{elapsed}s</span>
                     </div>
                   </div>
-
-                  {/* Progress bar */}
-                  <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 rounded-full"
-                      initial={{ width: '2%' }}
-                      animate={{ width: elapsed < 30 ? `${Math.min(elapsed * 2, 50)}%` : elapsed < 90 ? '75%' : '92%' }}
-                      transition={{ duration: 1.5, ease: 'easeOut' }}
+                  <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                    <motion.div className="h-full rounded-full bg-gradient-to-r from-green-500 to-teal-500"
+                      animate={{ width: `${Math.min(2 + elapsed * 1.2, 95)}%` }}
+                      transition={{ duration: 1 }}
                     />
                   </div>
-                  <p className={`text-xs text-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                    QR code will appear automatically. Do not close this page.
-                  </p>
                 </div>
-              </motion.div>
+              </div>
             )}
 
-            {/* Error state */}
-            {hasError && (
-              <motion.div {...scaleIn} className={cardClass}>
-                <div className="p-8 text-center space-y-5">
-                  <motion.div
-                    initial={{ scale: 0 }} animate={{ scale: 1 }}
-                    transition={{ type: 'spring', bounce: 0.4 }}
-                    className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center ${isDark ? 'bg-red-900/20' : 'bg-red-50'}`}>
-                    <XCircleIcon className="w-10 h-10 text-red-500" />
-                  </motion.div>
-                  <div>
-                    <h2 className={sectionTitle}>Connection Failed</h2>
-                    <p className={`text-sm mt-1.5 max-w-md mx-auto ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {waStatus?.error || 'Could not start WhatsApp client. Try reconnecting.'}
-                    </p>
+            {/* ERROR */}
+            {hasErr && (
+              <div className={card}>
+                <div className="p-7 text-center space-y-4">
+                  <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center ${isDark ? 'bg-red-900/20' : 'bg-red-50'}`}>
+                    <XCircleIcon className="w-9 h-9 text-red-500" />
                   </div>
-                  <button onClick={() => handleConnect(true)}
-                    className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                    <ArrowPathIcon className="w-4 h-4" /> Reconnect
-                  </button>
-                  {hasUltraMsg && (
-                    <p className={`text-xs ${isDark ? 'text-amber-400/70' : 'text-amber-600'}`}>
-                      You can still send via UltraMsg while WA Web is unavailable.
-                    </p>
+                  <p className={heading}>Connection Failed</p>
+                  {/* Detect hosted environment (Chrome/Puppeteer not available) */}
+                  {/chrome|puppeteer/i.test(waStatus?.error || '') ? (
+                    <div className="space-y-3 max-w-md mx-auto">
+                      <div className={`flex items-start gap-3 p-4 rounded-xl text-left ${isDark ? 'bg-amber-500/10 ring-1 ring-amber-500/20' : 'bg-amber-50 ring-1 ring-amber-200'}`}>
+                        <WifiIcon className={`w-5 h-5 mt-0.5 flex-shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                        <div>
+                          <p className={`text-xs font-bold ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>Cloud Hosting Detected</p>
+                          <p className={`text-[11px] mt-1 leading-relaxed ${isDark ? 'text-amber-400/70' : 'text-amber-600/80'}`}>
+                            WhatsApp Web requires a Chrome browser which isn't available on cloud platforms like Render.
+                            Use <strong>UltraMsg API</strong> to send messages from hosted environments, or connect locally.
+                          </p>
+                        </div>
+                      </div>
+                      {hasUM && (
+                        <button onClick={() => setTab('send')}
+                          className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-400 transition-colors">
+                          <PaperAirplaneIcon className="w-3.5 h-3.5" /> Send via UltraMsg <ChevronRightIcon className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <p className={`text-xs max-w-sm mx-auto ${muted}`}>{waStatus?.error || 'Could not connect. Try again.'}</p>
+                      <button onClick={() => handleConnect(true)}
+                        className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-xs font-bold bg-green-600 text-white hover:bg-green-500 transition-colors">
+                        <ArrowPathIcon className="w-3.5 h-3.5" /> Reconnect
+                      </button>
+                    </>
                   )}
+                  {hasUM && !/chrome|puppeteer/i.test(waStatus?.error || '') && <p className={`text-[11px] ${isDark ? 'text-amber-400/70' : 'text-amber-600'}`}>UltraMsg is still available for sending.</p>}
                 </div>
-              </motion.div>
+              </div>
             )}
 
-            {/* Not started state */}
-            {!waWebConnected && !isQR && !isConnecting && !hasError && (
-              <motion.div {...scaleIn} className={cardClass}>
-                <div className="p-8 text-center space-y-6">
-                  <motion.div
-                    animate={{ y: [0, -6, 0] }}
-                    transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                    className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center ${isDark ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
-                    <QrCodeIcon className={`w-10 h-10 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
+            {/* NOT STARTED */}
+            {!waOK && !isQR && !isBusy && !hasErr && (
+              <div className={card}>
+                <div className="p-7 text-center space-y-5">
+                  <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 3 }}
+                    className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center ${isDark ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
+                    <QrCodeIcon className={`w-9 h-9 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
                   </motion.div>
                   <div>
-                    <h2 className={sectionTitle}>Connect WhatsApp Web</h2>
-                    <p className={sectionDesc}>
-                      Link your WhatsApp to send messages and see your groups.
-                    </p>
+                    <p className={heading}>Connect WhatsApp Web</p>
+                    <p className={`text-xs mt-1 ${muted}`}>Link your WhatsApp to send messages and see groups</p>
                   </div>
                   <button onClick={() => handleConnect(false)} disabled={connecting}
-                    className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-sm font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.03] active:scale-[0.97] transition-all disabled:opacity-50">
-                    <QrCodeIcon className="w-5 h-5" /> Connect WhatsApp Web
+                    className="inline-flex items-center gap-2 px-7 py-3 rounded-xl text-sm font-bold bg-green-600 text-white hover:bg-green-500 active:scale-[.97] transition-all disabled:opacity-50">
+                    <QrCodeIcon className="w-4 h-4" /> Connect WhatsApp
                   </button>
-
-                  {hasUltraMsg && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                      className={`flex items-start gap-3 p-5 rounded-2xl text-left max-w-lg mx-auto ${isDark ? 'bg-amber-500/10 ring-1 ring-amber-500/20' : 'bg-amber-50 ring-1 ring-amber-100'}`}>
-                      <WifiIcon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                  {hasUM && (
+                    <div className={`flex items-start gap-2.5 p-4 rounded-xl text-left max-w-md mx-auto ${isDark ? 'bg-amber-500/10 ring-1 ring-amber-500/20' : 'bg-amber-50 ring-1 ring-amber-100'}`}>
+                      <WifiIcon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                       <div>
-                        <p className={`text-sm font-bold ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>UltraMsg API Available</p>
-                        <p className={`text-xs mt-1 ${isDark ? 'text-amber-400/60' : 'text-amber-600/80'}`}>
-                          You can send messages via UltraMsg even without WA Web. Groups list requires WA Web.
+                        <p className={`text-xs font-bold ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>UltraMsg Available</p>
+                        <p className={`text-[11px] mt-0.5 ${isDark ? 'text-amber-400/60' : 'text-amber-600/70'}`}>
+                          Send messages via UltraMsg API even without WA Web. Group list requires WA Web.
                         </p>
                       </div>
-                    </motion.div>
+                    </div>
                   )}
                 </div>
-              </motion.div>
+              </div>
             )}
           </motion.div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════════════
-            SECTION 2: SEND REPORT
-           ═══════════════════════════════════════════════════════════════════════ */}
-        {activeSection === 'send' && (
-          <motion.div key="send" {...fadeUp} {...stagger} className="space-y-6">
-
-            {/* Channel indicator */}
-            {canSend && (
-              <motion.div {...fadeUp}
-                className={`flex items-center gap-3 p-4 rounded-2xl ${
-                  waWebConnected
-                    ? isDark ? 'bg-emerald-900/20 ring-1 ring-emerald-800/30' : 'bg-emerald-50 ring-1 ring-emerald-100'
-                    : isDark ? 'bg-amber-900/20 ring-1 ring-amber-800/30' : 'bg-amber-50 ring-1 ring-amber-100'
-                }`}>
-                {waWebConnected
-                  ? <SignalSolid className="w-5 h-5 text-emerald-500" />
-                  : <WifiIcon className="w-5 h-5 text-amber-500" />}
-                <span className={`text-sm font-bold ${
-                  waWebConnected
-                    ? isDark ? 'text-emerald-400' : 'text-emerald-700'
-                    : isDark ? 'text-amber-400' : 'text-amber-700'
-                }`}>
-                  Sending via {waWebConnected ? 'WhatsApp Web' : 'UltraMsg API'}
-                </span>
-                {waWebConnected && hasUltraMsg && (
-                  <span className={`ml-auto text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>+ UltraMsg backup</span>
-                )}
-              </motion.div>
-            )}
-
-            {!canSend && (
-              <motion.div {...fadeUp}
-                className={`flex items-center gap-3 p-4 rounded-2xl ${isDark ? 'bg-red-900/15 ring-1 ring-red-800/30' : 'bg-red-50 ring-1 ring-red-100'}`}>
-                <XCircleIcon className="w-5 h-5 text-red-500" />
-                <span className={`text-sm font-bold ${isDark ? 'text-red-400' : 'text-red-700'}`}>
-                  No WhatsApp channel available.
-                </span>
-                <button onClick={() => setActiveSection('connect')}
-                  className={`ml-auto text-xs font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                  Go to Connect →
-                </button>
-              </motion.div>
-            )}
-
-            {/* ── Date Picker Card ── */}
-            <motion.div {...fadeUp} className={cardClass}>
-              <div className="p-6 space-y-5">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
-                    <CalendarDaysIcon className={`w-5 h-5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
-                  </div>
-                  <div>
-                    <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Select Report Date</h3>
-                    <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Choose the date to generate attendance report</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className={labelClass}>Date</label>
-                    <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputClass} />
-                  </div>
-                  <button onClick={fetchReport} disabled={loadingReport}
-                    className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:hover:scale-100">
-                    {loadingReport
-                      ? <><div className="w-4 h-4 rounded-full border-2 border-white/50 border-t-white animate-spin" /> Fetching...</>
-                      : <><DocumentTextIcon className="w-5 h-5" /> Fetch Report</>}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* ── Report Results ── */}
-            <AnimatePresence>
-              {reportData && (
-                <motion.div key="results" {...scaleIn} className={`${cardClass} overflow-hidden`}>
-                  {/* Summary bar */}
-                  <div className={`px-6 py-4 flex items-center gap-3 flex-wrap border-b ${isDark ? 'border-gray-700/50 bg-gray-800/50' : 'border-gray-100 bg-gray-50/60'}`}>
-                    <CalendarDaysIcon className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-                    <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{fmtDateFull(date)}</span>
-                    <div className="flex gap-2 ml-auto">
-                      <span className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
-                        📚 {reportData.odStudents.length} OD
-                      </span>
-                      <span className="px-3 py-1 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-xs font-bold">
-                        🏥 {reportData.leaveStudents.length} Leave
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* OD list */}
-                  {reportData.odStudents.length > 0 && (
-                    <>
-                      <div className={`px-6 py-2.5 ${isDark ? 'bg-emerald-900/10' : 'bg-emerald-50/50'}`}>
-                        <span className={`text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400`}>On OD — {reportData.odStudents.length}</span>
-                      </div>
-                      <div className={`divide-y ${isDark ? 'divide-gray-700/30' : 'divide-gray-100'}`}>
-                        {reportData.odStudents.map((s, i) => (
-                          <motion.div key={i}
-                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.05 }}
-                            className={`px-6 py-3.5 flex items-center gap-3 ${isDark ? 'hover:bg-gray-700/20' : 'hover:bg-gray-50'} transition-colors`}>
-                            <Avatar name={s.name} color="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className={`font-semibold text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{s.name}</p>
-                                {s.department && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${deptColor(s.department)}`}>{s.department}</span>}
-                              </div>
-                              <p className={`text-xs mt-0.5 truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{s.event_name}</p>
-                            </div>
-                            <span className={`text-[11px] font-semibold flex-shrink-0 px-3 py-1.5 rounded-lg ${isDark ? 'bg-gray-700/50 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
-                              {fmtDate(s.event_start_date)} – {fmtDate(s.event_end_date)}
-                            </span>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  {/* Leave list */}
-                  {reportData.leaveStudents.length > 0 && (
-                    <>
-                      <div className={`px-6 py-2.5 border-t ${isDark ? 'border-gray-700/50 bg-violet-900/10' : 'border-gray-100 bg-violet-50/50'}`}>
-                        <span className={`text-[11px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400`}>On Leave — {reportData.leaveStudents.length}</span>
-                      </div>
-                      <div className={`divide-y ${isDark ? 'divide-gray-700/30' : 'divide-gray-100'}`}>
-                        {reportData.leaveStudents.map((s, i) => (
-                          <motion.div key={i}
-                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.05 }}
-                            className={`px-6 py-3.5 flex items-center gap-3 ${isDark ? 'hover:bg-gray-700/20' : 'hover:bg-gray-50'} transition-colors`}>
-                            <Avatar name={s.name} color="bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400" />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className={`font-semibold text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{s.name}</p>
-                                {s.department && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${deptColor(s.department)}`}>{s.department}</span>}
-                              </div>
-                              <p className={`text-xs mt-0.5 capitalize ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                {s.leave_type?.replace(/_/g, ' ')} — {s.days_count} days
-                              </p>
-                            </div>
-                            <span className={`text-[11px] font-semibold flex-shrink-0 px-3 py-1.5 rounded-lg ${isDark ? 'bg-gray-700/50 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
-                              {fmtDate(s.from_date)} – {fmtDate(s.to_date)}
-                            </span>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  {/* Empty state */}
-                  {reportData.odStudents.length === 0 && reportData.leaveStudents.length === 0 && (
-                    <div className={`py-16 px-6 text-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                      <p className="text-4xl mb-3">🎉</p>
-                      <p className="text-sm font-bold">No students on OD or leave for this date!</p>
-                    </div>
-                  )}
-                </motion.div>
+        {/* ─────────────── SEND REPORT TAB ─────────────── */}
+        {tab === 'send' && (
+          <motion.div key="t-send"
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-4"
+          >
+            {/* channel banner */}
+            <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-bold ${
+              canSend
+                ? waOK
+                  ? isDark ? 'bg-green-900/20 text-green-400 ring-1 ring-green-800/30' : 'bg-green-50 text-green-700 ring-1 ring-green-100'
+                  : isDark ? 'bg-amber-900/20 text-amber-400 ring-1 ring-amber-800/30' : 'bg-amber-50 text-amber-700 ring-1 ring-amber-100'
+                : isDark ? 'bg-red-900/15 text-red-400 ring-1 ring-red-800/30' : 'bg-red-50 text-red-600 ring-1 ring-red-100'
+            }`}>
+              {canSend
+                ? <>{waOK ? <SignalSolid className="w-4 h-4" /> : <WifiIcon className="w-4 h-4" />} Sending via {waOK ? 'WhatsApp Web' : 'UltraMsg'}</>
+                : <><XCircleIcon className="w-4 h-4" /> No channel available</>}
+              {!canSend && (
+                <button onClick={() => setTab('connect')} className="ml-auto underline underline-offset-2">Connect →</button>
               )}
-            </AnimatePresence>
+              {waOK && hasUM && <span className={`ml-auto font-medium opacity-60`}>+ UltraMsg backup</span>}
+            </div>
 
-            {/* ── Recipient + Send Card ── */}
-            <motion.div {...fadeUp} className={cardClass}>
-              <div className="p-6 space-y-6">
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-emerald-900/30' : 'bg-emerald-50'}`}>
-                    <PaperAirplaneIcon className={`w-5 h-5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Choose Recipient & Send</h3>
-                    <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Select who should receive the report</p>
-                  </div>
-                </div>
+            {/* Two-column layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-                {/* Mode toggle */}
-                <div className={`flex gap-1.5 p-1.5 rounded-2xl ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
-                  {[{ key: 'group', Icon: UserGroupIcon, label: 'Group' }, { key: 'individual', Icon: UserIcon, label: 'Individual' }].map(({ key, Icon, label }) => (
-                    <button key={key}
-                      onClick={() => { setSendMode(key); setSelectedGroup(null); setSelectedStaff(null); setCustomTo('') }}
-                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
-                        sendMode === key
-                          ? isDark ? 'bg-gray-700 text-white shadow-lg' : 'bg-white text-gray-900 shadow-lg shadow-gray-200/50'
-                          : isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
-                      }`}>
-                      <Icon className="w-4.5 h-4.5" /> {label}
+              {/* LEFT: Date + Report */}
+              <div className="space-y-4">
+
+                {/* Date card */}
+                <div className={card}>
+                  <div className="p-5 space-y-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isDark ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
+                        <CalendarDaysIcon className={`w-4.5 h-4.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+                      </div>
+                      <p className={heading}>Report Date</p>
+                    </div>
+
+                    <input type="date" value={date} onChange={e => { setDate(e.target.value); setFetchError(null); setReportData(null) }} className={input} />
+                    <button onClick={fetchReport} disabled={loadingReport}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-500 active:scale-[.97] transition-all disabled:opacity-50">
+                      {loadingReport
+                        ? <div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                        : <DocumentTextIcon className="w-4 h-4" />}
+                      {loadingReport ? 'Loading…' : 'Fetch Report'}
                     </button>
-                  ))}
+                  </div>
                 </div>
 
-                {/* GROUP mode */}
-                {sendMode === 'group' && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                    {waWebConnected && groups.length > 0 && (
+                {/* Report results */}
+                {reportData ? (
+                  <div className={`${card} overflow-hidden`}>
+                    {/* summary header */}
+                    <div className={`px-5 py-3 flex items-center gap-2 flex-wrap border-b ${isDark ? 'border-gray-700/50 bg-gray-800/40' : 'border-gray-100 bg-gray-50/60'}`}>
+                      <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{fmtDateFull(date)}</span>
+                      <div className="flex gap-1.5 ml-auto">
+                        <span className={`px-2 py-1 rounded-md text-[11px] font-bold ${isDark ? 'bg-green-900/20 text-green-400' : 'bg-green-50 text-green-700'}`}>
+                          📚 {reportData.odStudents?.length || 0} OD
+                        </span>
+                        <span className={`px-2 py-1 rounded-md text-[11px] font-bold ${isDark ? 'bg-violet-900/20 text-violet-400' : 'bg-violet-50 text-violet-700'}`}>
+                          🏥 {reportData.leaveStudents?.length || 0} Leave
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* OD students */}
+                    {(reportData.odStudents?.length || 0) > 0 && (
                       <>
-                        <div className="flex items-center justify-between">
-                          <label className={labelClass}>Your WhatsApp Groups</label>
-                          <button onClick={fetchGroups} disabled={loadingGroups}
-                            className={`flex items-center gap-1 text-xs font-bold transition-colors disabled:opacity-40 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                            <ArrowPathIcon className={`w-3.5 h-3.5 ${loadingGroups ? 'animate-spin' : ''}`} /> Refresh
-                          </button>
+                        <div className={`px-5 py-2 ${isDark ? 'bg-green-900/10' : 'bg-green-50/60'}`}>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-green-600 dark:text-green-400">
+                            On Duty — {reportData.odStudents.length}
+                          </span>
                         </div>
-                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                          {groups.map(g => (
-                            <button key={g.id} onClick={() => { setSelectedGroup(g); setCustomTo('') }}
-                              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm text-left transition-all duration-200 ${
-                                selectedGroup?.id === g.id
-                                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
-                                  : isDark ? 'bg-gray-900/40 text-gray-300 hover:bg-gray-700/40 ring-1 ring-gray-700/50' : 'bg-gray-50 text-gray-800 hover:bg-gray-100 ring-1 ring-gray-100'
-                              }`}>
-                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                selectedGroup?.id === g.id ? 'bg-white/20' : isDark ? 'bg-gray-700' : 'bg-gray-200'
-                              }`}>
-                                {selectedGroup?.id === g.id ? <CheckCircleIcon className="w-5 h-5" /> : <UserGroupIcon className="w-4 h-4 opacity-60" />}
+                        <div className={`divide-y ${isDark ? 'divide-gray-700/30' : 'divide-gray-50'}`}>
+                          {reportData.odStudents.map((s, i) => (
+                            <div key={i} className={`px-5 py-3 flex items-center gap-3 ${isDark ? 'hover:bg-gray-700/20' : 'hover:bg-gray-50'} transition-colors`}>
+                              <Initials name={s.name} cls={`w-8 h-8 text-[10px] ${isDark ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700'}`} />
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-semibold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{s.name}</p>
+                                <p className={`text-[11px] truncate ${muted}`}>{s.event_name}</p>
                               </div>
-                              <span className="font-bold truncate">{g.name}</span>
-                            </button>
+                              <span className={`text-[10px] font-semibold px-2 py-1 rounded-md flex-shrink-0 ${isDark ? 'bg-gray-700/40 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+                                {fmtDate(s.event_start_date)} – {fmtDate(s.event_end_date)}
+                              </span>
+                            </div>
                           ))}
                         </div>
                       </>
                     )}
-                    {!waWebConnected && (
-                      <div className={`flex items-start gap-3 p-4 rounded-2xl text-xs ${isDark ? 'bg-gray-900/30 text-gray-400 ring-1 ring-gray-700/50' : 'bg-gray-50 text-gray-500 ring-1 ring-gray-100'}`}>
-                        <QrCodeIcon className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-500" />
-                        <span>{hasUltraMsg
-                          ? 'Group list requires WA Web. Enter group ID manually below, or connect WA Web first.'
-                          : 'Connect WhatsApp Web first to see your groups.'}</span>
+
+                    {/* Leave students */}
+                    {(reportData.leaveStudents?.length || 0) > 0 && (
+                      <>
+                        <div className={`px-5 py-2 border-t ${isDark ? 'border-gray-700/50 bg-violet-900/10' : 'border-gray-100 bg-violet-50/60'}`}>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400">
+                            On Leave — {reportData.leaveStudents.length}
+                          </span>
+                        </div>
+                        <div className={`divide-y ${isDark ? 'divide-gray-700/30' : 'divide-gray-50'}`}>
+                          {reportData.leaveStudents.map((s, i) => (
+                            <div key={i} className={`px-5 py-3 flex items-center gap-3 ${isDark ? 'hover:bg-gray-700/20' : 'hover:bg-gray-50'} transition-colors`}>
+                              <Initials name={s.name} cls={`w-8 h-8 text-[10px] ${isDark ? 'bg-violet-900/30 text-violet-400' : 'bg-violet-100 text-violet-700'}`} />
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-semibold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{s.name}</p>
+                                <p className={`text-[11px] capitalize ${muted}`}>{(s.leave_type || '').replace(/_/g, ' ')} — {s.days_count}d</p>
+                              </div>
+                              <span className={`text-[10px] font-semibold px-2 py-1 rounded-md flex-shrink-0 ${isDark ? 'bg-gray-700/40 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+                                {fmtDate(s.from_date)} – {fmtDate(s.to_date)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* empty */}
+                    {(!reportData.odStudents?.length && !reportData.leaveStudents?.length) && (
+                      <div className={`py-12 text-center ${muted}`}>
+                        <p className="text-3xl mb-2">🎉</p>
+                        <p className="text-sm font-semibold">No one is on OD or leave today!</p>
                       </div>
                     )}
-                    <div>
-                      <label className={labelClass}>{groups.length > 0 ? 'Or enter Group ID manually' : 'Group ID'}</label>
-                      <input type="text" value={selectedGroup ? '' : customTo}
-                        onChange={e => { setCustomTo(e.target.value); setSelectedGroup(null) }}
-                        placeholder="120363xxxxxxxx@g.us" className={inputClass} />
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* INDIVIDUAL mode */}
-                {sendMode === 'individual' && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                    {staffList.length > 0 && (
-                      <>
-                        <label className={labelClass}>Staff & HOD</label>
-                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                          {staffList.map(s => (
-                            <button key={s.id} onClick={() => { setSelectedStaff(s); setCustomTo('') }}
-                              disabled={!s.phone}
-                              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm text-left transition-all duration-200 disabled:opacity-25 ${
-                                selectedStaff?.id === s.id
-                                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
-                                  : isDark ? 'bg-gray-900/40 text-gray-300 hover:bg-gray-700/40 ring-1 ring-gray-700/50' : 'bg-gray-50 text-gray-800 hover:bg-gray-100 ring-1 ring-gray-100'
-                              }`}>
-                              <Avatar name={s.name}
-                                color={selectedStaff?.id === s.id ? 'bg-white/20 text-white' : (s.role === 'hod' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300')} />
-                              <div className="flex-1 min-w-0">
-                                <p className="font-bold leading-tight truncate">
-                                  {s.name}
-                                  <span className={`ml-2 text-[10px] font-bold ${selectedStaff?.id === s.id ? 'text-white/60' : isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                                    {s.role === 'hod' ? 'HOD' : 'Staff'}
-                                  </span>
-                                </p>
-                                <p className={`text-xs mt-0.5 ${selectedStaff?.id === s.id ? 'text-white/50' : isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                                  {s.phone ? `📱 ${s.phone}` : '⚠ No phone on file'}
-                                </p>
-                              </div>
-                              {selectedStaff?.id === s.id && <CheckSolid className="w-5 h-5 flex-shrink-0" />}
-                            </button>
-                          ))}
+                  </div>
+                ) : (
+                  /* Error or empty state */
+                  fetchError ? (
+                    <div className={`${card} flex-1`}>
+                      <div className="py-16 px-6 text-center space-y-3">
+                        <div className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center ${isDark ? 'bg-red-900/20' : 'bg-red-50'}`}>
+                          <XCircleIcon className="w-7 h-7 text-red-500" />
                         </div>
-                      </>
-                    )}
-                    <div>
-                      <label className={labelClass}>{staffList.length > 0 ? 'Or enter phone manually' : 'Phone Number'}</label>
-                      <input type="text" value={selectedStaff ? '' : customTo}
-                        onChange={e => { setCustomTo(e.target.value); setSelectedStaff(null) }}
-                        placeholder="91XXXXXXXXXX" className={inputClass} />
+                        <p className={`text-sm font-semibold ${isDark ? 'text-red-400' : 'text-red-600'}`}>Failed to load report</p>
+                        <p className={`text-[11px] max-w-xs mx-auto ${muted}`}>{fetchError}</p>
+                        <button onClick={fetchReport}
+                          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                          <ArrowPathIcon className="w-3.5 h-3.5" /> Retry
+                        </button>
+                      </div>
                     </div>
-                  </motion.div>
+                  ) : (
+                    <div className={`${card} flex-1`}>
+                      <div className={`py-20 text-center ${muted}`}>
+                        <div className={`w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center ${isDark ? 'bg-gray-700/40' : 'bg-gray-100'}`}>
+                          <DocumentTextIcon className="w-7 h-7 opacity-40" />
+                        </div>
+                        <p className="text-sm font-semibold">No report loaded</p>
+                        <p className="text-[11px] mt-1.5 opacity-60">Pick a date above and click Fetch Report</p>
+                      </div>
+                    </div>
+                  )
                 )}
+              </div>
+
+              {/* RIGHT: Recipient + Send */}
+              <div className="space-y-4">
+
+                {/* Recipient card */}
+                <div className={card}>
+                  <div className="p-5 space-y-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isDark ? 'bg-green-900/30' : 'bg-green-50'}`}>
+                        <PaperAirplaneIcon className={`w-4.5 h-4.5 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
+                      </div>
+                      <div>
+                        <p className={heading}>Recipient</p>
+                        <p className={`text-[11px] ${muted}`}>Who gets the report?</p>
+                      </div>
+                    </div>
+
+                    {/* mode toggle */}
+                    <div className={`flex gap-1 p-1 rounded-xl ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
+                      {[{ k: 'group', I: UserGroupIcon, l: 'Group' }, { k: 'individual', I: UserIcon, l: 'Person' }].map(({ k, I, l }) => (
+                        <button key={k}
+                          onClick={() => { setSendMode(k); setSelectedGroup(null); setSelectedStaff(null); setCustomTo('') }}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                            sendMode === k
+                              ? isDark ? 'bg-gray-700 text-white shadow' : 'bg-white text-gray-900 shadow-sm'
+                              : isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                          }`}>
+                          <I className="w-3.5 h-3.5" /> {l}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* GROUP CHOICES */}
+                    {sendMode === 'group' && (
+                      <div className="space-y-3">
+                        {waOK && groups.length > 0 && (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <span className={lbl}>Groups</span>
+                              <button onClick={fetchGroups} disabled={loadingGroups}
+                                className={`text-[11px] font-bold ${isDark ? 'text-green-400' : 'text-green-600'} disabled:opacity-40`}>
+                                <ArrowPathIcon className={`inline w-3 h-3 mr-0.5 ${loadingGroups ? 'animate-spin' : ''}`} />Refresh
+                              </button>
+                            </div>
+                            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                              {groups.map(g => {
+                                const sel = selectedGroup?.id === g.id
+                                return (
+                                  <button key={g.id} onClick={() => { setSelectedGroup(g); setCustomTo('') }}
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs text-left transition-all ${
+                                      sel
+                                        ? 'bg-green-600 text-white shadow'
+                                        : isDark ? 'bg-gray-900/40 text-gray-300 hover:bg-gray-700/40 ring-1 ring-gray-700/40' : 'bg-gray-50 text-gray-800 hover:bg-gray-100 ring-1 ring-gray-100'
+                                    }`}>
+                                    <UserGroupIcon className={`w-4 h-4 flex-shrink-0 ${sel ? 'text-white/70' : 'opacity-40'}`} />
+                                    <span className="font-bold truncate">{g.name}</span>
+                                    {sel && <CheckSolid className="w-4 h-4 ml-auto flex-shrink-0" />}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </>
+                        )}
+                        {!waOK && (
+                          <p className={`text-[11px] p-3 rounded-lg ${isDark ? 'bg-gray-900/30 text-gray-400 ring-1 ring-gray-700/40' : 'bg-gray-50 text-gray-500 ring-1 ring-gray-100'}`}>
+                            {hasUM ? 'Group list needs WA Web. Enter ID manually.' : 'Connect WA Web to see groups.'}
+                          </p>
+                        )}
+                        <div>
+                          <label className={lbl}>{groups.length ? 'Or enter ID' : 'Group ID'}</label>
+                          <input type="text" value={selectedGroup ? '' : customTo}
+                            onChange={e => { setCustomTo(e.target.value); setSelectedGroup(null) }}
+                            placeholder="120363xxxx@g.us" className={input} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* INDIVIDUAL CHOICES */}
+                    {sendMode === 'individual' && (
+                      <div className="space-y-3">
+                        {staffList.length > 0 && (
+                          <>
+                            <span className={lbl}>Staff & HOD</span>
+                            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                              {staffList.map(s => {
+                                const sel = selectedStaff?.id === s.id
+                                return (
+                                  <button key={s.id} onClick={() => { setSelectedStaff(s); setCustomTo('') }}
+                                    disabled={!s.phone}
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs text-left transition-all disabled:opacity-25 ${
+                                      sel
+                                        ? 'bg-green-600 text-white shadow'
+                                        : isDark ? 'bg-gray-900/40 text-gray-300 hover:bg-gray-700/40 ring-1 ring-gray-700/40' : 'bg-gray-50 text-gray-800 hover:bg-gray-100 ring-1 ring-gray-100'
+                                    }`}>
+                                    <Initials name={s.name} cls={`w-7 h-7 text-[9px] ${sel ? 'bg-white/20 text-white' : isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600'}`} />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-bold truncate">{s.name} <span className={`font-medium ${sel ? 'text-white/50' : 'opacity-40'}`}>{s.role === 'hod' ? 'HOD' : 'Staff'}</span></p>
+                                      <p className={`text-[10px] ${sel ? 'text-white/50' : 'opacity-50'}`}>{s.phone || 'No phone'}</p>
+                                    </div>
+                                    {sel && <CheckSolid className="w-4 h-4 ml-auto flex-shrink-0" />}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </>
+                        )}
+                        <div>
+                          <label className={lbl}>{staffList.length ? 'Or enter phone' : 'Phone'}</label>
+                          <input type="text" value={selectedStaff ? '' : customTo}
+                            onChange={e => { setCustomTo(e.target.value); setSelectedStaff(null) }}
+                            placeholder="91XXXXXXXXXX" className={input} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Message preview */}
-                <AnimatePresence>
-                  {message && (
-                    <motion.div {...scaleIn}>
-                      <label className={labelClass}>Message Preview</label>
-                      <div className={`mt-2 rounded-2xl rounded-tl-md p-5 text-xs leading-relaxed font-mono whitespace-pre-wrap max-h-52 overflow-y-auto ${
-                        isDark ? 'bg-emerald-950/30 ring-1 ring-emerald-800/30 text-emerald-100' : 'bg-emerald-50 ring-1 ring-emerald-100 text-emerald-900'
+                {message && (
+                  <div className={card}>
+                    <div className="p-5 space-y-2">
+                      <span className={lbl}>Message Preview</span>
+                      <div className={`rounded-xl rounded-tl-sm p-4 text-[11px] leading-relaxed font-mono whitespace-pre-wrap max-h-44 overflow-y-auto ${
+                        isDark ? 'bg-green-950/25 ring-1 ring-green-800/20 text-green-200' : 'bg-green-50 ring-1 ring-green-100 text-green-900'
                       }`}>
                         {message}
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    </div>
+                  </div>
+                )}
 
                 {/* Send button */}
-                <div className="space-y-3 pt-2">
+                <div className="space-y-2.5">
                   <button onClick={handleSend}
                     disabled={sending || !recipient || !canSend || !reportData}
-                    className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-sm font-bold bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none">
+                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold bg-green-600 text-white hover:bg-green-500 active:scale-[.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-green-600">
                     {sending
-                      ? <><div className="w-4 h-4 rounded-full border-2 border-white/50 border-t-white animate-spin" /> Sending...</>
-                      : <><PaperAirplaneIcon className="w-5 h-5" /> Send WhatsApp Message</>}
+                      ? <><div className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Sending…</>
+                      : <><PaperAirplaneIcon className="w-4 h-4" /> Send WhatsApp Message</>}
                   </button>
-                  {!canSend && (
-                    <p className={`text-xs text-center font-medium ${isDark ? 'text-red-400/80' : 'text-red-500'}`}>
-                      No WhatsApp channel available — go to Connect section first
-                    </p>
-                  )}
-                  {canSend && !reportData && (
-                    <p className={`text-xs text-center font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                      ↑ Fetch a report first before sending
-                    </p>
-                  )}
-                  {canSend && reportData && !recipient && (
-                    <p className={`text-xs text-center font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                      ↑ Select a group or enter a number above
-                    </p>
-                  )}
+                  {!canSend && <p className={`text-[11px] text-center font-medium ${isDark ? 'text-red-400/80' : 'text-red-500'}`}>Connect WhatsApp first</p>}
+                  {canSend && !reportData && <p className={`text-[11px] text-center ${muted}`}>Fetch a report first</p>}
+                  {canSend && reportData && !recipient && <p className={`text-[11px] text-center ${muted}`}>Select a recipient above</p>}
                 </div>
 
-                {/* Send result toast */}
+                {/* send result */}
                 <AnimatePresence>
                   {sendResult && (
-                    <motion.div key="res" initial={{ opacity: 0, y: -8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                      className={`rounded-2xl px-5 py-4 text-sm font-bold text-center ${
+                    <motion.div key="sr"
+                      initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                      className={`rounded-xl px-4 py-3 text-xs font-bold text-center ${
                         sendResult.ok
-                          ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800'
-                          : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800'
+                          ? isDark ? 'bg-green-900/20 text-green-400 ring-1 ring-green-800/30' : 'bg-green-50 text-green-700 ring-1 ring-green-100'
+                          : isDark ? 'bg-red-900/20 text-red-400 ring-1 ring-red-800/30' : 'bg-red-50 text-red-700 ring-1 ring-red-100'
                       }`}>
                       {sendResult.ok ? '✅ ' : '❌ '}{sendResult.msg}
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
-            </motion.div>
+            </div>
           </motion.div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════════════
-            SECTION 3: SETTINGS (HOD only)
-           ═══════════════════════════════════════════════════════════════════════ */}
-        {activeSection === 'settings' && isHOD && (
-          <motion.div key="settings" {...fadeUp} className="space-y-6">
+        {/* ─────────────── SETTINGS TAB ─────────────── */}
+        {tab === 'settings' && isHOD && (
+          <motion.div key="t-settings"
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-5"
+          >
+            {/* Settings grid - side by side on large screens */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-            {/* Auto Notifications Card */}
-            <motion.div {...fadeUp} className={cardClass}>
-              <div className="p-6 space-y-5">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-purple-900/30' : 'bg-purple-50'}`}>
-                    <BellIcon className={`w-5 h-5 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+              {/* Auto-notifications card */}
+              <div className={card}>
+                <div className="p-6 space-y-5">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-purple-900/30' : 'bg-purple-50'}`}>
+                      <BellIcon className={`w-5 h-5 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+                    </div>
+                    <div>
+                      <p className={heading}>Auto Notifications</p>
+                      <p className={`text-[11px] ${muted}`}>Alerts for OD & leave actions</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Auto Notifications</h3>
-                    <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Configure automatic WhatsApp alerts</p>
-                  </div>
-                </div>
 
-                <div className={`flex items-center justify-between gap-4 p-5 rounded-2xl ${isDark ? 'bg-gray-900/40 ring-1 ring-gray-700/50' : 'bg-gray-50 ring-1 ring-gray-100'}`}>
-                  <div>
-                    <p className={`text-sm font-bold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Automatic WhatsApp Alerts</p>
-                    <p className={`text-xs mt-1 leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Auto-notify staff & HOD when OD / leave is approved or rejected.
-                    </p>
+                  <div className={`flex items-center justify-between gap-4 p-4 rounded-xl ${isDark ? 'bg-gray-900/40 ring-1 ring-gray-700/40' : 'bg-gray-50 ring-1 ring-gray-100'}`}>
+                    <div>
+                      <p className={`text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Auto WhatsApp Alerts</p>
+                      <p className={`text-[11px] mt-0.5 ${muted}`}>Notify when OD / leave is approved or rejected</p>
+                    </div>
+                    <button onClick={() => setAutoEnabled(v => !v)}
+                      className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${autoEnabled ? 'bg-purple-500' : isDark ? 'bg-gray-600' : 'bg-gray-300'}`}>
+                      <motion.div
+                        animate={{ x: autoEnabled ? 20 : 0 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                        className="absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow"
+                      />
+                    </button>
                   </div>
-                  <button onClick={() => setAutoEnabled(v => !v)}
-                    className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-300 ${autoEnabled ? 'bg-gradient-to-r from-purple-500 to-pink-500' : isDark ? 'bg-gray-600' : 'bg-gray-300'}`}>
-                    <motion.span
-                      animate={{ x: autoEnabled ? 24 : 0 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      className="inline-block h-7 w-7 mt-0.5 ml-0.5 rounded-full bg-white shadow-lg"
-                    />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
 
-            {/* Daily Summary Group Card */}
-            <motion.div {...fadeUp} className={cardClass}>
-              <div className="p-6 space-y-5">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-purple-900/30' : 'bg-purple-50'}`}>
-                    <UserGroupIcon className={`w-5 h-5 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+                  {/* WA & UltraMsg status summary */}
+                  <div className={`p-4 rounded-xl space-y-2 ${isDark ? 'bg-gray-900/40 ring-1 ring-gray-700/40' : 'bg-gray-50 ring-1 ring-gray-100'}`}>
+                    <p className={lbl}>Channel Status</p>
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${waOK ? 'bg-green-400' : 'bg-gray-400'}`} />
+                      <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>WhatsApp Web — {waOK ? 'Connected' : 'Not connected'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${hasUM ? 'bg-amber-400' : 'bg-gray-400'}`} />
+                      <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>UltraMsg API — {hasUM ? 'Available' : 'Not configured'}</span>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Daily Summary Group</h3>
-                    <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Auto-send attendance report to a group</p>
-                  </div>
-                  <span className={`text-[10px] font-bold px-3 py-1.5 rounded-xl ${isDark ? 'bg-purple-900/30 text-purple-400 ring-1 ring-purple-800/30' : 'bg-purple-50 text-purple-600 ring-1 ring-purple-100'}`}>
-                    ⏰ 8:30 AM
-                  </span>
-                </div>
-
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  A daily attendance report is sent to this group at 8:30 AM when auto-notifications are enabled.
-                </p>
-
-                {groups.length > 0 && (
-                  <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                    {groups.map(g => (
-                      <button key={g.id} onClick={() => setNotifyGroupId(g.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm text-left transition-all duration-200 ${
-                          notifyGroupId === g.id
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25'
-                            : isDark ? 'bg-gray-900/40 text-gray-300 hover:bg-gray-700/40 ring-1 ring-gray-700/50' : 'bg-gray-50 text-gray-800 hover:bg-gray-100 ring-1 ring-gray-100'
-                        }`}>
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                          notifyGroupId === g.id ? 'bg-white/20' : isDark ? 'bg-gray-700' : 'bg-gray-200'
-                        }`}>
-                          {notifyGroupId === g.id ? <CheckCircleIcon className="w-5 h-5" /> : <UserGroupIcon className="w-4 h-4 opacity-60" />}
-                        </div>
-                        <span className="font-bold truncate">{g.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div>
-                  <label className={labelClass}>{groups.length > 0 ? 'Or enter Group ID manually' : 'Group ID'}</label>
-                  <input type="text" value={groups.find(g => g.id === notifyGroupId) ? '' : notifyGroupId}
-                    onChange={e => setNotifyGroupId(e.target.value)}
-                    placeholder="120363xxxxxxxx@g.us"
-                    className={inputClass} />
                 </div>
               </div>
-            </motion.div>
 
-            {/* Save Settings Card */}
-            <motion.div {...fadeUp} className={cardClass}>
-              <div className="p-6 space-y-4">
-                <button onClick={handleSaveConfig} disabled={savingConfig}
-                  className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-sm font-bold bg-gradient-to-r from-purple-500 via-purple-600 to-indigo-600 text-white shadow-xl shadow-purple-500/20 hover:shadow-purple-500/40 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:hover:scale-100">
-                  {savingConfig
-                    ? <><div className="w-4 h-4 rounded-full border-2 border-white/50 border-t-white animate-spin" /> Saving...</>
-                    : <><CheckCircleIcon className="w-5 h-5" /> Save Settings</>}
-                </button>
-                <AnimatePresence>
-                  {configMsg && (
-                    <motion.div key="cfg" initial={{ opacity: 0, y: -8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                      className={`rounded-2xl px-5 py-4 text-sm font-bold text-center ${
-                        configMsg.ok
-                          ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800'
-                          : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800'
-                      }`}>
-                      {configMsg.ok ? '✅ ' : '❌ '}{configMsg.msg}
-                    </motion.div>
+              {/* Daily summary group card */}
+              <div className={card}>
+                <div className="p-6 space-y-5">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-purple-900/30' : 'bg-purple-50'}`}>
+                      <UserGroupIcon className={`w-5 h-5 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+                    </div>
+                    <div className="flex-1">
+                      <p className={heading}>Daily Summary Group</p>
+                      <p className={`text-[11px] ${muted}`}>Auto-send attendance report</p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${isDark ? 'bg-purple-900/25 text-purple-400' : 'bg-purple-50 text-purple-600'}`}>⏰ 8:30 AM</span>
+                  </div>
+
+                  {groups.length > 0 && (
+                    <div className="space-y-1.5 max-h-44 overflow-y-auto">
+                      {groups.map(g => {
+                        const sel = notifyGroupId === g.id
+                        return (
+                          <button key={g.id} onClick={() => setNotifyGroupId(g.id)}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs text-left transition-all ${
+                              sel
+                                ? 'bg-purple-600 text-white shadow'
+                                : isDark ? 'bg-gray-900/40 text-gray-300 hover:bg-gray-700/40 ring-1 ring-gray-700/40' : 'bg-gray-50 text-gray-800 hover:bg-gray-100 ring-1 ring-gray-100'
+                            }`}>
+                            <UserGroupIcon className={`w-4 h-4 flex-shrink-0 ${sel ? 'text-white/70' : 'opacity-40'}`} />
+                            <span className="font-bold truncate">{g.name}</span>
+                            {sel && <CheckSolid className="w-4 h-4 ml-auto flex-shrink-0" />}
+                          </button>
+                        )
+                      })}
+                    </div>
                   )}
-                </AnimatePresence>
+
+                  {!groups.length && (
+                    <p className={`text-[11px] p-3 rounded-lg ${isDark ? 'bg-gray-900/30 text-gray-400 ring-1 ring-gray-700/40' : 'bg-gray-50 text-gray-500 ring-1 ring-gray-100'}`}>
+                      {waOK ? 'No groups found.' : 'Connect WhatsApp Web in the Connect tab to see your groups.'}
+                    </p>
+                  )}
+
+                  <div>
+                    <label className={lbl}>{groups.length ? 'Or enter Group ID' : 'Group ID'}</label>
+                    <input type="text"
+                      value={groups.find(g => g.id === notifyGroupId) ? '' : notifyGroupId}
+                      onChange={e => setNotifyGroupId(e.target.value)}
+                      placeholder="120363xxxx@g.us" className={input} />
+                  </div>
+                </div>
               </div>
-            </motion.div>
+            </div>
+
+            {/* Save button - full width */}
+            <div className="space-y-2.5">
+              <button onClick={handleSaveConfig} disabled={savingConfig}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold bg-purple-600 text-white hover:bg-purple-500 active:scale-[.98] transition-all disabled:opacity-50">
+                {savingConfig
+                  ? <><div className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Saving…</>
+                  : <><CheckCircleIcon className="w-4 h-4" /> Save Settings</>}
+              </button>
+              <AnimatePresence>
+                {configMsg && (
+                  <motion.div key="cm"
+                    initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                    className={`rounded-xl px-4 py-3 text-xs font-bold text-center ${
+                      configMsg.ok
+                        ? isDark ? 'bg-green-900/20 text-green-400 ring-1 ring-green-800/30' : 'bg-green-50 text-green-700 ring-1 ring-green-100'
+                        : isDark ? 'bg-red-900/20 text-red-400 ring-1 ring-red-800/30' : 'bg-red-50 text-red-700 ring-1 ring-red-100'
+                    }`}>
+                    {configMsg.ok ? '✅ ' : '❌ '}{configMsg.msg}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
