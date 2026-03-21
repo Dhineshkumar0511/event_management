@@ -134,7 +134,11 @@ export default function WhatsAppReport() {
       const res = await whatsappAPI.getDailyReport(date)
       setReportData(res.data.data)
     } catch (e) {
-      setFetchError(e.response?.data?.message || e.message || 'Failed to fetch report')
+      const msg = e.response?.data?.message
+        || (e.code === 'ERR_NETWORK' || !e.response ? 'Cannot reach server — make sure the backend is running' : null)
+        || e.message
+        || 'Failed to fetch report'
+      setFetchError(msg)
     } finally { setLoadingReport(false) }
   }
 
