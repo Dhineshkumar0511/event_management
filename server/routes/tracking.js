@@ -703,4 +703,103 @@ router.get('/achievements', async (req, res) => {
   }
 });
 
+// @route   GET /api/tracking/leaderboard
+// @desc    Get leaderboard — all results sorted by type priority + prize amount
+// @access  All authenticated users
+router.get('/leaderboard', async (req, res) => {
+  try {
+    const { department, result_type, search, page = 1, limit = 100 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    let baseWhere = 'WHERE 1=1';
+    const params = [];
+    const countParams = [];
+
+    if (department) {
+      baseWhere += ' AND u.department = ?';
+      params.push(department);
+      countParams.push(department);
+    }
+    if (result_type) {
+      baseWhere += ' AND er.result_type = ?';
+      params.push(result_type);
+      countParams.push(result_type);
+    }
+    if (search) {
+      baseWhere += ' AND (u.name LIKE ? OR od.event_name LIKE ? OR u.employee_id LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    const selectQuery = `
+      SELECT er.id, er.result_type, er.prize_amount, er.achievement_title, er.description,
+             er.is_verified, er.submitted_at,
+             od.event_name, od.event_type, od.venue, od.event_start_date,
+             u.name as student_name, u.department as student_department,
+             u.employee_id as register_number, u.year_of_study, u.section
+      FROM event_results er
+      JOIN od_requests od ON er.od_request_id = od.id
+      JOIN users u ON er.student_id = u.id
+      ${baseWhere}
+      ORDER BY
+        FIELD(er.result_type, 'winner', 'runner_up', 'special_mention', 'finalist', 'participated', 'other'),
+        COALESCE(er.prize_amount, 0) DESC,
+        er.submitted_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    params.push(parseInt(limit), offset);
+
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM event_results er
+      JOIN od_requests od ON er.od_request_id = od.id
+      JOIN users u ON er.student_id = u.id
+      ${baseWhere}
+    `;
+
+    const [[{ total }], [results]] = await Promise.all([
+      pool.query(countQuery, countParams),
+      pool.query(selectQuery, params)
+    ]);
+
+    res.json({ success: true, data: results, total });
+  } catch (error) {
+    console.error('Get leaderboard error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch leaderboard' });
+  }
+});
+
+// @route   DELETE /api/tracking/results/:id
+// @desc    Delete a single event result
+// @access  Staff/HOD
+router.delete('/results/:id', isStaffOrHOD, async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id FROM event_results WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ success: false, message: 'Result not found' });
+    await pool.query('DELETE FROM event_results WHERE id = ?', [req.params.id]);
+    res.json({ success: true, message: 'Result deleted successfully' });
+  } catch (error) {
+    console.error('Delete result error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete result' });
+  }
+});
+
+// @route   DELETE /api/tracking/results
+// @desc    Bulk delete event results
+// @access  Staff/HOD
+router.delete('/results', isStaffOrHOD, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: 'No IDs provided' });
+    }
+    await pool.query('DELETE FROM event_results WHERE id IN (?)', [ids]);
+    res.json({ success: true, message: `${ids.length} result(s) deleted successfully` });
+  } catch (error) {
+    console.error('Bulk delete results error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete results' });
+  }
+});
+
 export default router;
+

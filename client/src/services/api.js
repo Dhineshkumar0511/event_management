@@ -139,6 +139,9 @@ export const trackingAPI = {
   getStudentCheckins: (studentId, params) => api.get(`/tracking/student/${studentId}/checkins`, { params }),
   getAllResults: (params) => api.get('/tracking/results', { params }),
   verifyResult: (id, data) => api.put(`/tracking/results/${id}/verify`, data),
+  getLeaderboard: (params) => api.get('/tracking/leaderboard', { params }),
+  deleteResult: (id) => api.delete(`/tracking/results/${id}`),
+  deleteResults: (ids) => api.delete('/tracking/results', { data: { ids } }),
 }
 
 // AI APIs

@@ -23,6 +23,7 @@ import EventCalendar from './pages/shared/EventCalendar'
 
 // Shared Result Page
 import EventResults from './pages/shared/EventResults'
+import Leaderboard from './pages/shared/Leaderboard'
 import ODLetterView from './pages/shared/ODLetterView'
 import LeaveLetterView from './pages/shared/LeaveLetterView'
 import AchievementWall from './pages/shared/AchievementWall'
@@ -145,6 +146,7 @@ function App() {
           <Route path="calendar" element={<EventCalendar />} />
           <Route path="profile" element={<Profile />} />
           <Route path="achievements" element={<AchievementWall />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="leaves" element={<MyLeaves />} />
           <Route path="leaves/new" element={<NewLeaveRequest />} />
           <Route path="leave-letter/:id" element={<LeaveLetterView />} />
@@ -168,6 +170,7 @@ function App() {
           <Route path="calendar" element={<EventCalendar />} />
           <Route path="results" element={<EventResults />} />
           <Route path="achievements" element={<AchievementWall />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="profile" element={<Profile />} />
           <Route path="leaves" element={<StaffLeaveRequests />} />
           <Route path="leave-letter/:id" element={<LeaveLetterView />} />
@@ -195,6 +198,7 @@ function App() {
           <Route path="calendar" element={<EventCalendar />} />
           <Route path="results" element={<EventResults />} />
           <Route path="achievements" element={<AchievementWall />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="profile" element={<Profile />} />
           <Route path="leaves" element={<LeaveManagement />} />
           <Route path="leave-letter/:id" element={<LeaveLetterView />} />

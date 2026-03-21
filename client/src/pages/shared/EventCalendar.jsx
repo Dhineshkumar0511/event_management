@@ -20,6 +20,35 @@ import {
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
+// Helpers for availability form defaults
+const getTodayStr = () => {
+  const n = new Date()
+  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`
+}
+const getNowTime = () => {
+  const n = new Date()
+  const mm = n.getMinutes() < 30 ? '00' : '30'
+  return `${String(n.getHours()).padStart(2,'0')}:${mm}`
+}
+const addHours = (timeStr, hours) => {
+  if (!timeStr) return ''
+  const [h, m] = timeStr.split(':').map(Number)
+  const mins = h * 60 + m + Math.round(hours * 60)
+  const rH = Math.floor(mins / 60) % 24
+  const rM = mins % 60
+  return `${String(rH).padStart(2,'0')}:${String(rM).padStart(2,'0')}`
+}
+const DURATION_OPTIONS = [
+  { label: '30 min', value: 0.5 },
+  { label: '1 hour', value: 1 },
+  { label: '1.5 hours', value: 1.5 },
+  { label: '2 hours', value: 2 },
+  { label: '3 hours', value: 3 },
+  { label: '4 hours', value: 4 },
+  { label: '6 hours', value: 6 },
+  { label: '8 hours', value: 8 },
+]
+
 const statusStyles = {
   pending: { dot: 'bg-yellow-400', badge: 'bg-yellow-100 text-yellow-700' },
   staff_review: { dot: 'bg-blue-400', badge: 'bg-blue-100 text-blue-700' },
@@ -41,7 +70,10 @@ export default function EventCalendar() {
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [availabilities, setAvailabilities] = useState([])
   const [showAvailForm, setShowAvailForm] = useState(false)
-  const [availForm, setAvailForm] = useState({ date: '', start_time: '09:00', end_time: '17:00', title: '', note: '' })
+  const [availForm, setAvailForm] = useState(() => {
+    const now = getNowTime()
+    return { date: getTodayStr(), start_time: now, duration: 1, end_time: addHours(now, 1), title: '', note: '' }
+  })
   const [savingAvail, setSavingAvail] = useState(false)
   const [activeTab, setActiveTab] = useState('events')
 
@@ -114,7 +146,8 @@ export default function EventCalendar() {
       await api.post(`/${role}/availability`, availForm)
       toast.success('Availability saved')
       setShowAvailForm(false)
-      setAvailForm({ date: '', start_time: '09:00', end_time: '17:00', title: '', note: '' })
+      const now = getNowTime()
+      setAvailForm({ date: getTodayStr(), start_time: now, duration: 1, end_time: addHours(now, 1), title: '', note: '' })
       fetchData()
     } catch {
       toast.error('Failed to save availability')
@@ -160,7 +193,11 @@ export default function EventCalendar() {
               }`}
             >My Availability</button>
             <button
-              onClick={() => { setShowAvailForm(true); setAvailForm(f => ({ ...f, date: selectedDate ? getDateStr(selectedDate) : '' })) }}
+              onClick={() => {
+              const now = getNowTime()
+              setAvailForm({ date: selectedDate ? getDateStr(selectedDate) : getTodayStr(), start_time: now, duration: 1, end_time: addHours(now, 1), title: '', note: '' })
+              setShowAvailForm(true)
+            }}
               className="btn btn-primary text-sm flex items-center gap-1"
             >
               <PlusIcon className="w-4 h-4" /> Set Availability
@@ -456,17 +493,31 @@ export default function EventCalendar() {
                   <div>
                     <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Start Time *</label>
                     <input type="time" required value={availForm.start_time}
-                      onChange={e => setAvailForm(f => ({ ...f, start_time: e.target.value }))}
+                      onChange={e => {
+                        const t = e.target.value
+                        setAvailForm(f => ({ ...f, start_time: t, end_time: addHours(t, f.duration) }))
+                      }}
                       className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     />
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>End Time *</label>
-                    <input type="time" required value={availForm.end_time}
-                      onChange={e => setAvailForm(f => ({ ...f, end_time: e.target.value }))}
+                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Duration *</label>
+                    <select value={availForm.duration}
+                      onChange={e => {
+                        const dur = Number(e.target.value)
+                        setAvailForm(f => ({ ...f, duration: dur, end_time: addHours(f.start_time, dur) }))
+                      }}
                       className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                    />
+                    >
+                      {DURATION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
                   </div>
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>End Time (auto-calculated)</label>
+                  <input type="time" readOnly value={availForm.end_time}
+                    className={`w-full px-3 py-2 rounded-lg border cursor-not-allowed opacity-70 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300'}`}
+                  />
                 </div>
                 <div>
                   <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Title (e.g. "Available for meeting")</label>

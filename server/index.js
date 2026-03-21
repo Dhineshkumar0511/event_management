@@ -33,6 +33,10 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
+
+// Trust the first proxy (Render, Heroku, Nginx, etc.) so that
+// express-rate-limit can correctly read the client IP from X-Forwarded-For
+app.set('trust proxy', 1);
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
