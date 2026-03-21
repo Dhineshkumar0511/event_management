@@ -26,7 +26,6 @@ import EventResults from './pages/shared/EventResults'
 import Leaderboard from './pages/shared/Leaderboard'
 import ODLetterView from './pages/shared/ODLetterView'
 import LeaveLetterView from './pages/shared/LeaveLetterView'
-import AchievementWall from './pages/shared/AchievementWall'
 
 // Staff Pages
 import StaffDashboard from './pages/staff/Dashboard'
@@ -56,7 +55,6 @@ import Profile from './pages/shared/Profile'
 import WhatsAppReport from './pages/shared/WhatsAppReport'
 
 // New Feature Pages
-import Grievances from './pages/shared/Grievances'
 import HallOfFame from './pages/shared/HallOfFame'
 import CertificateRepository from './pages/shared/CertificateRepository'
 import AnnouncementManager from './pages/hod/AnnouncementManager'
@@ -155,12 +153,10 @@ function App() {
           <Route path="od-letter/:id" element={<ODLetterView />} />
           <Route path="calendar" element={<EventCalendar />} />
           <Route path="profile" element={<Profile />} />
-          <Route path="achievements" element={<AchievementWall />} />
           <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="leaves" element={<MyLeaves />} />
           <Route path="leaves/new" element={<NewLeaveRequest />} />
           <Route path="leave-letter/:id" element={<LeaveLetterView />} />
-          <Route path="grievances" element={<Grievances />} />
           <Route path="hall-of-fame" element={<HallOfFame />} />
           <Route path="certificates" element={<CertificateRepository />} />
         </Route>
@@ -182,13 +178,11 @@ function App() {
           <Route path="history" element={<StaffHistory />} />
           <Route path="calendar" element={<EventCalendar />} />
           <Route path="results" element={<EventResults />} />
-          <Route path="achievements" element={<AchievementWall />} />
           <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="profile" element={<Profile />} />
           <Route path="leaves" element={<StaffLeaveRequests />} />
           <Route path="leave-letter/:id" element={<LeaveLetterView />} />
           <Route path="whatsapp-report" element={<WhatsAppReport />} />
-          <Route path="grievances" element={<Grievances />} />
           <Route path="hall-of-fame" element={<HallOfFame />} />
           <Route path="certificates" element={<CertificateRepository />} />
         </Route>
@@ -214,14 +208,12 @@ function App() {
           <Route path="audit-trail" element={<AuditTrail />} />
           <Route path="calendar" element={<EventCalendar />} />
           <Route path="results" element={<EventResults />} />
-          <Route path="achievements" element={<AchievementWall />} />
           <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="profile" element={<Profile />} />
           <Route path="leaves" element={<LeaveManagement />} />
           <Route path="leave-letter/:id" element={<LeaveLetterView />} />
           <Route path="whatsapp-report" element={<WhatsAppReport />} />
           <Route path="whatsapp-settings" element={<WhatsAppSettings />} />
-          <Route path="grievances" element={<Grievances />} />
           <Route path="hall-of-fame" element={<HallOfFame />} />
           <Route path="certificates" element={<CertificateRepository />} />
           <Route path="announcements" element={<AnnouncementManager />} />

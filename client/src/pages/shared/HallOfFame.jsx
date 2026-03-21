@@ -4,10 +4,11 @@ import { toPng } from 'html-to-image'
 import { useTheme } from '../../context/ThemeContext'
 import { featuresAPI } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
+import toast from 'react-hot-toast'
 import {
   TrophyIcon, StarIcon, BuildingOfficeIcon, ArrowDownTrayIcon,
   SparklesIcon, UserGroupIcon, CalendarIcon, AcademicCapIcon,
-  TrashIcon, ArrowPathIcon
+  TrashIcon, ArrowPathIcon, PencilIcon, ArrowUpTrayIcon, DocumentTextIcon
 } from '@heroicons/react/24/outline'
 
 const COLLEGE_NAME = 'Sri Manakula Vinayagar Engineering College'
@@ -46,155 +47,323 @@ function Sparkles() {
   )
 }
 
-/* ═══════ Student of the Month Banner (downloadable) ═══════ */
+/* ═══════ Student of the Month Banner (downloadable — compact) ═══════ */
 function MonthBanner({ student, month, year, onDownload, bannerRef }) {
   const displayMonth = monthNames[(month || 1) - 1]
 
   return (
-    <div ref={bannerRef} className="relative w-full max-w-2xl mx-auto rounded-3xl overflow-hidden shadow-2xl"
+    <div ref={bannerRef} className="relative w-full max-w-2xl mx-auto rounded-2xl overflow-hidden shadow-2xl"
       style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #533483 100%)' }}>
       <Sparkles />
-      {/* Top ribbon */}
-      <div className="relative z-10 text-center pt-6 pb-2">
-        <div className="inline-block px-6 py-1.5 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 text-xs font-bold tracking-widest uppercase text-gray-900 shadow-lg">
+      {/* Header row: ribbon + college on same line */}
+      <div className="relative z-10 flex flex-col items-center pt-4 pb-1">
+        <div className="inline-block px-5 py-1 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 text-[10px] font-bold tracking-widest uppercase text-gray-900 shadow-lg">
           ⭐ Student of the Month ⭐
         </div>
-      </div>
-      {/* College name */}
-      <div className="relative z-10 text-center mt-3">
-        <h2 className="text-lg md:text-xl font-extrabold text-yellow-300 tracking-wide drop-shadow-lg" style={{ textShadow: '0 2px 8px rgba(251,191,36,0.4)' }}>
+        <h2 className="text-sm md:text-base font-extrabold text-yellow-300 tracking-wide mt-1.5 drop-shadow-lg" style={{ textShadow: '0 2px 8px rgba(251,191,36,0.4)' }}>
           {COLLEGE_NAME}
         </h2>
-        <p className="text-yellow-100/70 text-xs mt-0.5 tracking-wider">{displayMonth} {year}</p>
+        <p className="text-yellow-100/60 text-[10px] tracking-wider">{displayMonth} {year}</p>
       </div>
-      {/* Trophy + Photo + Info */}
-      <div className="relative z-10 flex flex-col items-center mt-5 pb-7 px-6">
-        {/* Trophy cup above photo */}
-        <div className="relative mb-3">
+      {/* Main content: Trophy + Photo + Info in a horizontal layout */}
+      <div className="relative z-10 flex items-center gap-5 px-6 py-4">
+        {/* Left: Trophy */}
+        <div className="flex-shrink-0">
           <motion.div
-            animate={{ rotate: [0, -5, 5, -5, 0], y: [0, -4, 0] }}
+            animate={{ rotate: [0, -5, 5, -5, 0], y: [0, -3, 0] }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            className="text-6xl drop-shadow-xl"
+            className="text-5xl drop-shadow-xl"
           >
             🏆
           </motion.div>
         </div>
-        {/* Photo with glowing ring */}
-        <div className="relative">
-          <div className="absolute -inset-1.5 rounded-full bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 animate-spin" style={{ animationDuration: '6s' }} />
-          <div className="relative w-28 h-28 rounded-full overflow-hidden border-4 border-white/20 shadow-xl">
+        {/* Center: Photo with glowing ring */}
+        <div className="relative flex-shrink-0">
+          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 animate-spin" style={{ animationDuration: '6s' }} />
+          <div className="relative w-24 h-24 rounded-full overflow-hidden border-3 border-white/20 shadow-xl">
             {student.profile_image ? (
               <img src={student.profile_image} alt={student.name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-4xl font-bold">
+              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold">
                 {student.name?.charAt(0)}
               </div>
             )}
           </div>
         </div>
-        {/* Student Name */}
-        <motion.h3
-          className="mt-4 text-2xl md:text-3xl font-extrabold text-white tracking-wide text-center"
-          style={{ textShadow: '0 2px 12px rgba(255,255,255,0.3)' }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          {student.name}
-        </motion.h3>
-        {/* Details */}
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
-          <span className="text-yellow-200/90 font-medium">{student.department}</span>
-          {student.year_of_study && <span className="text-yellow-100/70">Year {student.year_of_study}</span>}
-          {student.section && <span className="text-yellow-100/70">Section {student.section}</span>}
-        </div>
-        <p className="text-yellow-100/70 text-xs mt-1">{student.employee_id}</p>
-        {/* Achievement badge */}
-        {student.achievement && (
-          <div className="mt-4 mx-auto max-w-md">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-              <SparklesIcon className="h-4 w-4 text-yellow-400 flex-shrink-0" />
-              <span className="text-yellow-100 text-sm text-center">{student.achievement}</span>
-            </div>
+        {/* Right: Name + Details */}
+        <div className="flex-1 min-w-0">
+          <motion.h3
+            className="text-xl md:text-2xl font-extrabold text-white tracking-wide truncate"
+            style={{ textShadow: '0 2px 12px rgba(255,255,255,0.3)' }}
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            {student.name}
+          </motion.h3>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-sm">
+            <span className="text-yellow-200/90 font-medium">{student.department}</span>
+            {student.year_of_study && <span className="text-yellow-100/60 text-xs">Year {student.year_of_study}</span>}
+            {student.section && <span className="text-yellow-100/60 text-xs">Sec {student.section}</span>}
           </div>
-        )}
-        {/* Decorative laurels */}
-        <div className="flex items-center mt-4 gap-3 text-yellow-400/50 text-2xl">
-          <span>🏅</span>
-          <div className="w-20 h-px bg-gradient-to-r from-transparent via-yellow-400/40 to-transparent" />
-          <StarIcon className="h-5 w-5 text-yellow-400" />
-          <div className="w-20 h-px bg-gradient-to-r from-transparent via-yellow-400/40 to-transparent" />
-          <span>🏅</span>
+          <p className="text-yellow-100/50 text-xs mt-0.5">{student.employee_id}</p>
+          {student.achievement && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10">
+              <SparklesIcon className="h-3.5 w-3.5 text-yellow-400 flex-shrink-0" />
+              <span className="text-yellow-100 text-xs">{student.achievement}</span>
+            </div>
+          )}
         </div>
+      </div>
+      {/* Bottom decorative line */}
+      <div className="relative z-10 flex items-center justify-center gap-3 pb-3 text-yellow-400/40 text-lg">
+        <span>🏅</span>
+        <div className="w-16 h-px bg-gradient-to-r from-transparent via-yellow-400/40 to-transparent" />
+        <StarIcon className="h-4 w-4 text-yellow-400" />
+        <div className="w-16 h-px bg-gradient-to-r from-transparent via-yellow-400/40 to-transparent" />
+        <span>🏅</span>
       </div>
     </div>
   )
 }
 
-/* ═══════ Certificate (downloadable) ═══════ */
-function Certificate({ student, month, year, certRef }) {
-  const displayMonth = monthNames[(month || 1) - 1]
+/* ═══════ Signature Pad Component (reusable for each signer) ═══════ */
+function SignaturePad({ label, signatureData, onSave, dark }) {
+  const [mode, setMode] = useState('draw') // draw | type | upload
+  const [signText, setSignText] = useState('')
+  const [signFont, setSignFont] = useState('Dancing Script')
+  const [uploadedSig, setUploadedSig] = useState(null)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [showPad, setShowPad] = useState(false)
+  const canvasRef = useRef(null)
+
+  const fonts = ['Dancing Script', 'Great Vibes', 'Sacramento', 'Pacifico', 'Satisfy']
+
+  const startDraw = (e) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    const rect = canvas.getBoundingClientRect()
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+    setIsDrawing(true)
+  }
+  const draw = (e) => {
+    if (!isDrawing) return
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    const rect = canvas.getBoundingClientRect()
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
+    ctx.lineTo(x, y)
+    ctx.strokeStyle = '#1e293b'
+    ctx.lineWidth = 2
+    ctx.lineCap = 'round'
+    ctx.stroke()
+  }
+  const endDraw = () => setIsDrawing(false)
+  const clearCanvas = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
+  }
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { toast.error('Please upload an image'); return }
+    if (file.size > 2 * 1024 * 1024) { toast.error('Max 2MB'); return }
+    const reader = new FileReader()
+    reader.onload = (ev) => setUploadedSig(ev.target.result)
+    reader.readAsDataURL(file)
+  }
+  const getSignature = () => {
+    if (mode === 'draw') {
+      const canvas = canvasRef.current
+      if (!canvas) return null
+      const blank = document.createElement('canvas')
+      blank.width = canvas.width; blank.height = canvas.height
+      if (canvas.toDataURL() === blank.toDataURL()) return null
+      return canvas.toDataURL('image/png')
+    }
+    if (mode === 'type') {
+      if (!signText.trim()) return null
+      const c = document.createElement('canvas')
+      c.width = 300; c.height = 80
+      const ctx = c.getContext('2d')
+      ctx.clearRect(0, 0, c.width, c.height)
+      ctx.font = `40px "${signFont}", cursive`
+      ctx.fillStyle = '#1e293b'
+      ctx.textBaseline = 'middle'
+      ctx.textAlign = 'center'
+      ctx.fillText(signText.trim(), 150, 40)
+      return c.toDataURL('image/png')
+    }
+    if (mode === 'upload') return uploadedSig || null
+    return null
+  }
+  const handleSave = () => {
+    const sig = getSignature()
+    if (!sig) { toast.error(mode === 'draw' ? 'Draw your signature' : mode === 'type' ? 'Type your name' : 'Upload a signature'); return }
+    onSave(sig)
+    setShowPad(false)
+  }
+
+  if (signatureData) {
+    return (
+      <div className="text-center">
+        <img src={signatureData} alt={label} className="h-10 mx-auto mb-1 object-contain" />
+        <div className="w-28 border-b border-gray-400 mx-auto mb-1" />
+        <span className="text-xs text-gray-500">{label}</span>
+      </div>
+    )
+  }
 
   return (
-    <div ref={certRef} className="relative w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden" style={{ aspectRatio: '1.414/1' }}>
-      {/* Ornate gold border */}
-      <div className="absolute inset-3 border-4 border-yellow-500 rounded-xl pointer-events-none" />
-      <div className="absolute inset-5 border border-yellow-300 rounded-lg pointer-events-none" />
-      {/* Corner ornaments */}
-      {['top-4 left-4','top-4 right-4','bottom-4 left-4','bottom-4 right-4'].map((pos, i) => (
-        <div key={i} className={`absolute ${pos} w-10 h-10 border-yellow-600 ${i < 2 ? 'border-t-2' : 'border-b-2'} ${i % 2 === 0 ? 'border-l-2' : 'border-r-2'} rounded-sm`} />
-      ))}
-      {/* Content */}
-      <div className="relative flex flex-col items-center justify-center h-full px-10 py-8 text-center">
-        {/* College Logo Text */}
-        <div className="mb-1">
-          <span className="text-xs tracking-[0.3em] uppercase text-yellow-700 font-semibold">{COLLEGE_NAME}</span>
-        </div>
-        {/* Title */}
-        <h2 className="text-3xl md:text-4xl font-serif font-bold text-yellow-700 mt-2" style={{ fontFamily: 'Georgia, serif' }}>
-          Certificate of Recognition
-        </h2>
-        <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-yellow-500 to-transparent mt-3 mb-4" />
-        {/* Sub-heading */}
-        <p className="text-gray-500 text-sm italic">This is proudly presented to</p>
-        {/* Student name */}
-        <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mt-3 underline decoration-yellow-400 decoration-2 underline-offset-4" style={{ fontFamily: 'Georgia, serif' }}>
-          {student.name}
-        </h3>
-        {/* Department and details */}
-        <p className="text-gray-500 text-sm mt-2">
-          {student.department}{student.year_of_study ? ` • Year ${student.year_of_study}` : ''}{student.section ? ` • Section ${student.section}` : ''}
-        </p>
-        {/* Recognition text */}
-        <p className="text-gray-600 text-sm mt-4 max-w-md leading-relaxed">
-          In recognition of outstanding performance and being awarded the title of
-        </p>
-        <div className="mt-2 inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 rounded-lg">
-          <span className="text-2xl">🏆</span>
-          <span className="text-lg font-bold text-yellow-700">Student of the Month</span>
-        </div>
-        <p className="text-gray-600 text-sm mt-2">
-          for the month of <strong className="text-gray-800">{displayMonth} {year}</strong>
-        </p>
-        {/* Achievement */}
-        {student.achievement && (
-          <p className="text-gray-500 text-xs mt-3 italic max-w-sm">"{student.achievement}"</p>
-        )}
-        {/* Signature line */}
-        <div className="flex items-center justify-center gap-16 mt-auto pt-6">
-          <div className="text-center">
-            <div className="w-28 border-b border-gray-400 mb-1" />
-            <span className="text-xs text-gray-500">Head of Department</span>
+    <div className="text-center">
+      {!showPad ? (
+        <>
+          <button onClick={() => setShowPad(true)}
+            className={`w-28 h-10 border-2 border-dashed rounded-lg flex items-center justify-center mx-auto mb-1 text-xs transition-colors ${dark ? 'border-gray-600 text-gray-400 hover:border-yellow-500 hover:text-yellow-400' : 'border-gray-300 text-gray-400 hover:border-yellow-500 hover:text-yellow-600'}`}>
+            <PencilIcon className="h-3.5 w-3.5 mr-1" /> Sign
+          </button>
+          <span className="text-xs text-gray-500">{label}</span>
+        </>
+      ) : (
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+          className={`p-3 rounded-xl border shadow-lg ${dark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <p className={`text-xs font-semibold mb-2 ${dark ? 'text-white' : 'text-gray-800'}`}>{label}</p>
+          {/* Mode tabs */}
+          <div className="flex gap-1 mb-2 justify-center">
+            {[
+              { id: 'draw', icon: PencilIcon, l: 'Draw' },
+              { id: 'type', icon: DocumentTextIcon, l: 'Type' },
+              { id: 'upload', icon: ArrowUpTrayIcon, l: 'Upload' },
+            ].map(m => (
+              <button key={m.id} onClick={() => setMode(m.id)}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors ${mode === m.id ? 'bg-yellow-500 text-white' : dark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
+                <m.icon className="h-3 w-3" /> {m.l}
+              </button>
+            ))}
           </div>
-          <div className="text-center">
-            <div className="text-3xl mb-0.5">🎓</div>
-            <span className="text-[10px] text-gray-400">SMVEC</span>
+          {/* Draw mode */}
+          {mode === 'draw' && (
+            <div>
+              <canvas ref={canvasRef} width={260} height={70}
+                className={`border rounded-lg cursor-crosshair w-full ${dark ? 'border-gray-600 bg-gray-900' : 'border-gray-300 bg-gray-50'}`}
+                onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
+                onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw} />
+              <button onClick={clearCanvas} className="text-[10px] text-red-500 mt-1 hover:underline">Clear</button>
+            </div>
+          )}
+          {/* Type mode */}
+          {mode === 'type' && (
+            <div className="space-y-1.5">
+              <input value={signText} onChange={e => setSignText(e.target.value)} placeholder="Your name"
+                className={`w-full px-2 py-1.5 border rounded-lg text-sm ${dark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300'}`} />
+              <select value={signFont} onChange={e => setSignFont(e.target.value)}
+                className={`w-full px-2 py-1 border rounded-lg text-xs ${dark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300'}`}>
+                {fonts.map(f => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
+              </select>
+              {signText && <p className="text-xl text-center py-1" style={{ fontFamily: `'${signFont}', cursive` }}>{signText}</p>}
+            </div>
+          )}
+          {/* Upload mode */}
+          {mode === 'upload' && (
+            <div>
+              <input type="file" accept="image/*" onChange={handleFileUpload}
+                className="w-full text-xs file:mr-2 file:px-2 file:py-1 file:rounded-md file:border-0 file:text-xs file:bg-yellow-50 file:text-yellow-700" />
+              {uploadedSig && <img src={uploadedSig} alt="Preview" className="h-12 mx-auto mt-2 object-contain" />}
+            </div>
+          )}
+          {/* Actions */}
+          <div className="flex gap-2 mt-2 justify-center">
+            <button onClick={handleSave} className="px-3 py-1 bg-yellow-500 text-white rounded-md text-[10px] font-medium hover:bg-yellow-600">Save</button>
+            <button onClick={() => setShowPad(false)} className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md text-[10px] font-medium hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300">Cancel</button>
           </div>
-          <div className="text-center">
-            <div className="w-28 border-b border-gray-400 mb-1" />
-            <span className="text-xs text-gray-500">Principal</span>
+        </motion.div>
+      )}
+    </div>
+  )
+}
+
+/* ═══════ Certificate (downloadable — 2 signatures: Staff Advisor + HOD) ═══════ */
+function Certificate({ student, month, year, certRef, dark }) {
+  const displayMonth = monthNames[(month || 1) - 1]
+  const [staffSig, setStaffSig] = useState(null)
+  const [hodSig, setHodSig] = useState(null)
+
+  return (
+    <div className="space-y-4">
+      <div ref={certRef} className="relative w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden" style={{ aspectRatio: '1.414/1' }}>
+        {/* Ornate gold border */}
+        <div className="absolute inset-3 border-4 border-yellow-500 rounded-xl pointer-events-none" />
+        <div className="absolute inset-5 border border-yellow-300 rounded-lg pointer-events-none" />
+        {/* Corner ornaments */}
+        {['top-4 left-4','top-4 right-4','bottom-4 left-4','bottom-4 right-4'].map((pos, i) => (
+          <div key={i} className={`absolute ${pos} w-10 h-10 border-yellow-600 ${i < 2 ? 'border-t-2' : 'border-b-2'} ${i % 2 === 0 ? 'border-l-2' : 'border-r-2'} rounded-sm`} />
+        ))}
+        {/* Content */}
+        <div className="relative flex flex-col items-center justify-center h-full px-10 py-8 text-center">
+          <div className="mb-1">
+            <span className="text-xs tracking-[0.3em] uppercase text-yellow-700 font-semibold">{COLLEGE_NAME}</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-yellow-700 mt-2" style={{ fontFamily: 'Georgia, serif' }}>
+            Certificate of Recognition
+          </h2>
+          <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-yellow-500 to-transparent mt-3 mb-4" />
+          <p className="text-gray-500 text-sm italic">This is proudly presented to</p>
+          <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mt-3 underline decoration-yellow-400 decoration-2 underline-offset-4" style={{ fontFamily: 'Georgia, serif' }}>
+            {student.name}
+          </h3>
+          <p className="text-gray-500 text-sm mt-2">
+            {student.department}{student.year_of_study ? ` • Year ${student.year_of_study}` : ''}{student.section ? ` • Section ${student.section}` : ''}
+          </p>
+          <p className="text-gray-600 text-sm mt-4 max-w-md leading-relaxed">
+            In recognition of outstanding performance and being awarded the title of
+          </p>
+          <div className="mt-2 inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 rounded-lg">
+            <span className="text-2xl">🏆</span>
+            <span className="text-lg font-bold text-yellow-700">Student of the Month</span>
+          </div>
+          <p className="text-gray-600 text-sm mt-2">
+            for the month of <strong className="text-gray-800">{displayMonth} {year}</strong>
+          </p>
+          {student.achievement && (
+            <p className="text-gray-500 text-xs mt-3 italic max-w-sm">"{student.achievement}"</p>
+          )}
+          {/* Two signature lines: Staff Advisor + HOD */}
+          <div className="flex items-end justify-center gap-20 mt-auto pt-6">
+            <div className="text-center">
+              {staffSig ? (
+                <img src={staffSig} alt="Staff Advisor" className="h-10 mx-auto mb-1 object-contain" />
+              ) : (
+                <div className="h-10 mb-1" />
+              )}
+              <div className="w-32 border-b border-gray-400 mb-1" />
+              <span className="text-xs text-gray-500">Staff Advisor</span>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl mb-0.5">🎓</div>
+              <span className="text-[10px] text-gray-400">SMVEC</span>
+            </div>
+            <div className="text-center">
+              {hodSig ? (
+                <img src={hodSig} alt="Head of Department" className="h-10 mx-auto mb-1 object-contain" />
+              ) : (
+                <div className="h-10 mb-1" />
+              )}
+              <div className="w-32 border-b border-gray-400 mb-1" />
+              <span className="text-xs text-gray-500">Head of Department</span>
+            </div>
           </div>
         </div>
+      </div>
+      {/* Signature pads below the certificate (not inside it for clean download) */}
+      <div className="flex justify-center gap-6 max-w-2xl mx-auto">
+        <SignaturePad label="Staff Advisor Signature" signatureData={staffSig} onSave={setStaffSig} dark={dark} />
+        <SignaturePad label="HOD Signature" signatureData={hodSig} onSave={setHodSig} dark={dark} />
       </div>
     </div>
   )
@@ -561,6 +730,7 @@ export default function HallOfFame() {
                         month={currentSOTM.month || currentMonth}
                         year={currentSOTM.year || currentYear}
                         certRef={certRef}
+                        dark={dark}
                       />
                       <div className="flex justify-center mt-4">
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}

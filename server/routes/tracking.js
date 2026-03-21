@@ -732,8 +732,8 @@ router.get('/leaderboard', async (req, res) => {
     }
 
     const selectQuery = `
-      SELECT er.id, er.result_type, er.prize_amount, er.achievement_title, er.description,
-             er.is_verified, er.submitted_at,
+      SELECT er.id, er.result_type, er.prize_amount, er.achievement_description,
+             er.award_name, er.is_verified, er.submitted_at,
              od.event_name, od.event_type, od.venue, od.event_start_date,
              u.name as student_name, u.department as student_department,
              u.employee_id as register_number, u.year_of_study, u.section

@@ -34,7 +34,6 @@ import {
   StarIcon,
   FolderIcon,
   BoltIcon,
-  ScaleIcon,
 } from '@heroicons/react/24/outline'
 
 // Navigation items based on role
@@ -51,8 +50,6 @@ const getNavItems = (role) => {
       { name: 'Certificates', path: '/student/certificates', icon: FolderIcon },
       { name: 'Leaderboard', path: '/student/leaderboard', icon: TrophyIcon },
       { name: 'Hall of Fame', path: '/student/hall-of-fame', icon: StarIcon },
-      { name: 'Achievement Wall', path: '/student/achievements', icon: ChartBarIcon },
-      { name: 'Grievances', path: '/student/grievances', icon: ScaleIcon },
       { name: 'My Profile', path: '/student/profile', icon: Cog6ToothIcon },
     ],
     staff: [
@@ -66,8 +63,6 @@ const getNavItems = (role) => {
       { name: 'Certificates', path: '/staff/certificates', icon: FolderIcon },
       { name: 'Leaderboard', path: '/staff/leaderboard', icon: TrophyIcon },
       { name: 'Hall of Fame', path: '/staff/hall-of-fame', icon: StarIcon },
-      { name: 'Achievement Wall', path: '/staff/achievements', icon: ChartBarIcon },
-      { name: 'Grievances', path: '/staff/grievances', icon: ScaleIcon },
       { name: 'My Profile', path: '/staff/profile', icon: Cog6ToothIcon },
     ],
     hod: [
@@ -88,8 +83,6 @@ const getNavItems = (role) => {
       { name: 'Event Results', path: '/hod/results', icon: TrophyIcon },
       { name: 'Leaderboard', path: '/hod/leaderboard', icon: TrophyIcon },
       { name: 'Hall of Fame', path: '/hod/hall-of-fame', icon: StarIcon },
-      { name: 'Achievement Wall', path: '/hod/achievements', icon: ChartBarIcon },
-      { name: 'Grievances', path: '/hod/grievances', icon: ScaleIcon },
       { name: 'My Profile', path: '/hod/profile', icon: Cog6ToothIcon },
     ]
   }

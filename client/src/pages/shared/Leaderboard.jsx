@@ -17,6 +17,7 @@ import {
   ChevronUpIcon,
   ChevronDownIcon,
   XMarkIcon,
+  GiftIcon,
 } from '@heroicons/react/24/outline'
 import { TrophyIcon as TrophySolid } from '@heroicons/react/24/solid'
 
@@ -29,6 +30,8 @@ const RESULT_TYPES = [
   { value: 'participated', label: 'Participated' },
   { value: 'other', label: 'Other' },
 ]
+
+const FEATURED_TYPES = ['winner', 'runner_up', 'special_mention'] // For Achievement Wall
 
 const TYPE_CONFIG = {
   winner:          { label: 'Winner',        bg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300', icon: '🥇', rankBg: 'bg-gradient-to-br from-yellow-400 to-amber-500' },
@@ -45,11 +48,44 @@ const DEPARTMENTS = [
   '', 'CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'IT', 'AIDS', 'AIML', 'CSD', 'MCE'
 ]
 
+/* ═══════ Confetti / Flower particles ═══════ */
+function Confetti() {
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden">
+      {Array.from({ length: 30 }).map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `-10px`,
+            fontSize: ['🎉', '🎊', '🌸', '✨', '🎁'][i % 5],
+          }}
+          animate={{
+            y: window.innerHeight + 20,
+            x: Math.sin(i) * 100,
+            opacity: [1, 0],
+            rotate: 360,
+          }}
+          transition={{
+            duration: 2 + Math.random() * 1.5,
+            delay: Math.random() * 0.3,
+            ease: 'easeIn',
+          }}
+        >
+          {['🎉', '🎊', '🌸', '✨', '🎁'][i % 5]}
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
 export default function Leaderboard() {
   const { isDark } = useTheme()
   const { user } = useAuthStore()
   const canDelete = user?.role === 'staff' || user?.role === 'hod'
 
+  const [tab, setTab] = useState('leaderboard') // 'leaderboard' | 'achievement-wall'
   const [entries, setEntries] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -64,13 +100,24 @@ export default function Leaderboard() {
   const fetchLeaderboard = useCallback(async () => {
     setLoading(true)
     try {
+      // If in Achievement Wall tab, only fetch featured types; otherwise fetch all
+      const typeFilter = tab === 'achievement-wall' 
+        ? (filterType || FEATURED_TYPES[0]) 
+        : (filterType || undefined)
+      
       const res = await trackingAPI.getLeaderboard({
-        result_type: filterType || undefined,
+        result_type: typeFilter,
         department: filterDept || undefined,
         search: search || undefined,
         limit: 200,
       })
       let data = res.data.data || []
+      
+      // If in Achievement Wall, filter to only featured types if no specific filter
+      if (tab === 'achievement-wall' && !filterType) {
+        data = data.filter(e => FEATURED_TYPES.includes(e.result_type))
+      }
+      
       if (sortDir === 'asc') data = [...data].reverse()
       setEntries(data)
       setTotal(res.data.total || data.length)
@@ -79,7 +126,7 @@ export default function Leaderboard() {
     } finally {
       setLoading(false)
     }
-  }, [filterType, filterDept, search, sortDir])
+  }, [tab, filterType, filterDept, search, sortDir])
 
   useEffect(() => {
     const timer = setTimeout(fetchLeaderboard, 300)
@@ -161,15 +208,49 @@ export default function Leaderboard() {
 
   return (
     <div className="space-y-6">
+      {/* Confetti for Achievement Wall */}
+      {tab === 'achievement-wall' && <Confetti />}
+
+      {/* Tab selector */}
+      <div className="flex justify-center">
+        <div className={`inline-flex rounded-xl p-1 ${isDark ? 'bg-gray-800' : 'bg-gray-200/70'}`}>
+          {[
+            { id: 'leaderboard', label: 'Leaderboard', icon: TrophySolid },
+            { id: 'achievement-wall', label: 'Achievement Wall', icon: GiftIcon },
+          ].map(t => (
+            <button key={t.id} onClick={() => { setTab(t.id); setFilterType(''); }}
+              className={`relative flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                tab === t.id
+                  ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-lg shadow-yellow-500/20'
+                  : isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+              }`}>
+              <t.icon className="h-4 w-4" />
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            <TrophySolid className="w-7 h-7 text-yellow-500" />
-            Leaderboard
+            {tab === 'achievement-wall' ? (
+              <>
+                <GiftIcon className="w-7 h-7 text-purple-500" />
+                Achievement Wall
+              </>
+            ) : (
+              <>
+                <TrophySolid className="w-7 h-7 text-yellow-500" />
+                Leaderboard
+              </>
+            )}
           </h1>
           <p className={`text-sm mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            {total} result{total !== 1 ? 's' : ''} · sorted by achievement &amp; prize
+            {tab === 'achievement-wall' 
+              ? (total > 0 ? `${total} featured achievement${total !== 1 ? 's' : ''} · 🌸 celebration mode` : 'No achievements yet')
+              : (`${total} result${total !== 1 ? 's' : ''} · sorted by achievement & prize`)}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -233,7 +314,10 @@ export default function Leaderboard() {
         </div>
         {/* Type tabs */}
         <div className="flex flex-wrap gap-2">
-          {RESULT_TYPES.map(t => (
+          {(tab === 'achievement-wall' 
+            ? RESULT_TYPES.filter(t => t.value === '' || FEATURED_TYPES.includes(t.value))
+            : RESULT_TYPES
+          ).map(t => (
             <button
               key={t.value}
               onClick={() => setFilterType(t.value)}
@@ -371,8 +455,8 @@ export default function Leaderboard() {
                           <span>{cfg.icon}</span>
                           {cfg.label}
                         </span>
-                        {entry.achievement_title && (
-                          <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{entry.achievement_title}</div>
+                        {entry.achievement_description && (
+                          <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{entry.achievement_description}</div>
                         )}
                         {entry.is_verified && (
                           <div className="flex items-center gap-0.5 mt-1">

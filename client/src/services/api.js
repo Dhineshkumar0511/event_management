@@ -201,10 +201,7 @@ export const featuresAPI = {
   useRejectionTemplate: (id) => api.put(`/features/rejection-templates/${id}/use`),
   deleteRejectionTemplate: (id) => api.delete(`/features/rejection-templates/${id}`),
 
-  // Grievances / Appeals
-  fileGrievance: (data) => api.post('/features/grievances', data),
-  getGrievances: (params) => api.get('/features/grievances', { params }),
-  resolveGrievance: (id, data) => api.put(`/features/grievances/${id}/resolve`, data),
+
 
   // Leave Balance
   getLeaveBalance: (params) => api.get('/features/leave-balance', { params }),
