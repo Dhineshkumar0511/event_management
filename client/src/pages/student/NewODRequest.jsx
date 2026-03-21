@@ -29,6 +29,7 @@ import { CheckCircleIcon } from '@heroicons/react/24/solid'
 
 const COLLEGE_NAME = 'Sri Manakula Vinayagar Engineering College'
 const COLLEGE_PLACE = 'Madagadipet'
+const EVENT_NAME_MAX_LENGTH = 255
 
 const steps = [
   { id: 1, name: 'Event Details', shortName: 'Event', icon: CalendarIcon, color: 'from-violet-500 to-purple-600' },
@@ -55,6 +56,18 @@ const fmtDate = (d) => {
   return dt.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+const normalizeTeamMember = (member = {}) => ({
+  name: (member.name || '').trim(),
+  email: (member.email || '').trim(),
+  register_number: (member.register_number || '').trim(),
+  department: (member.department || '').trim(),
+  year_of_study: member.year_of_study ? String(member.year_of_study).trim() : '',
+  section: (member.section || '').trim(),
+  phone: (member.phone || '').trim(),
+})
+
+const hasAnyTeamMemberValue = (member = {}) => Object.values(normalizeTeamMember(member)).some(Boolean)
+
 export default function NewODRequest() {
   const { id: editId } = useParams()
   const isEditMode = Boolean(editId)
@@ -77,6 +90,7 @@ export default function NewODRequest() {
   const [teamMembers, setTeamMembers] = useState([])
   const [documents, setDocuments] = useState([])
   const [duplicateWarning, setDuplicateWarning] = useState(null)
+  const [eventNameLimitNotice, setEventNameLimitNotice] = useState(false)
 
   // Draft auto-save (localStorage)
   const DRAFT_KEY = 'od_request_draft'
@@ -160,7 +174,25 @@ export default function NewODRequest() {
       .finally(() => setLoadingEdit(false))
   }, [editId])
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
+  const handleChange = (e) => {
+    const { name, value } = e.target
+
+    if (name === 'event_name') {
+      const normalizedValue = value.replace(/\s+/g, ' ').trimStart()
+      const truncatedValue = normalizedValue.slice(0, EVENT_NAME_MAX_LENGTH)
+      const wasTrimmed = normalizedValue.length > EVENT_NAME_MAX_LENGTH
+
+      setEventNameLimitNotice(wasTrimmed)
+      setFormData({ ...formData, event_name: truncatedValue })
+
+      if (wasTrimmed) {
+        toast.error(`Event name cannot exceed ${EVENT_NAME_MAX_LENGTH} characters`)
+      }
+      return
+    }
+
+    setFormData({ ...formData, [name]: value })
+  }
 
   const addTeamMember = () => {
     setTeamMembers([...teamMembers, { name: '', email: '', register_number: '', department: '', year_of_study: '', section: '', phone: '' }])
@@ -177,6 +209,12 @@ export default function NewODRequest() {
       case 1:
         if (!formData.event_name || !formData.venue || !formData.event_start_date || !formData.event_end_date) {
           toast.error('Please fill all required fields'); return false
+        }
+        if (formData.event_name.length > EVENT_NAME_MAX_LENGTH) {
+          toast.error(`Event name must be ${EVENT_NAME_MAX_LENGTH} characters or less`); return false
+        }
+        if (formData.event_end_date < formData.event_start_date) {
+          toast.error('End date cannot be before start date'); return false
         }
         return true
       case 2: return true
@@ -195,9 +233,19 @@ export default function NewODRequest() {
   const handleSubmit = async () => {
     setIsSubmitting(true)
     try {
+      const normalizedTeamMembers = teamMembers.map(normalizeTeamMember)
+      const filledTeamMembers = normalizedTeamMembers.filter(hasAnyTeamMemberValue)
+      const invalidMemberIndex = filledTeamMembers.findIndex(member => !member.name)
+
+      if (invalidMemberIndex !== -1) {
+        toast.error(`Team member ${invalidMemberIndex + 1} must have a name`)
+        setCurrentStep(2)
+        return
+      }
+
       const fd = new FormData()
       Object.keys(formData).forEach(key => { if (formData[key]) fd.append(key, formData[key]) })
-      if (teamMembers.length > 0) fd.append('team_members', JSON.stringify(teamMembers))
+      if (filledTeamMembers.length > 0) fd.append('team_members', JSON.stringify(filledTeamMembers))
       documents.forEach(doc => fd.append('documents', doc))
 
       if (isEditMode) {
@@ -210,7 +258,18 @@ export default function NewODRequest() {
       }
       navigate('/student/my-requests')
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to submit request')
+      console.error('[OD Request Submit] Submission failed', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        requestPayload: {
+          ...formData,
+          teamMembers: teamMembers.map(normalizeTeamMember),
+          documentCount: documents.length,
+        }
+      })
+      const validationMessage = error.response?.data?.errors?.[0]?.msg
+      toast.error(error.response?.data?.message || validationMessage || 'Failed to submit request')
     } finally {
       setIsSubmitting(false)
     }
@@ -368,7 +427,16 @@ export default function NewODRequest() {
                 <div className="sm:col-span-2">
                   <label className={labelCls}>Event Name <span className="text-red-400">*</span></label>
                   <input type="text" name="event_name" value={formData.event_name} onChange={handleChange}
+                    maxLength={EVENT_NAME_MAX_LENGTH}
                     className={inputCls} placeholder="e.g., Smart India Hackathon 2026" />
+                  <div className="mt-1 flex items-center justify-between gap-3">
+                    <p className={'text-xs ' + (eventNameLimitNotice ? 'text-amber-500' : textMuted)}>
+                      Keep only the real event title here. Put long copied details in description or upload the brochure.
+                    </p>
+                    <span className={'text-xs whitespace-nowrap ' + (formData.event_name.length >= EVENT_NAME_MAX_LENGTH ? 'text-amber-500 font-semibold' : textMuted)}>
+                      {formData.event_name.length}/{EVENT_NAME_MAX_LENGTH}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="sm:col-span-2">
