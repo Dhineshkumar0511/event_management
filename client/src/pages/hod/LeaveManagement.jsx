@@ -13,6 +13,8 @@ import {
   FunnelIcon,
   UserGroupIcon,
   ExclamationTriangleIcon,
+  TrashIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { leaveAPI } from '../../services/api';
 
@@ -106,10 +108,11 @@ function HodReviewModal({ leave, onClose, onDone }) {
           <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
           <button
             onClick={submit}
-            disabled={loading}
+            disabled={loading || (action === 'approve' && !leave.hod_signature)}
+            title={action === 'approve' && !leave.hod_signature ? 'Sign the leave letter first to enable approval' : ''}
             className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${
               action === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-            } disabled:opacity-60`}
+            } disabled:opacity-60 disabled:cursor-not-allowed`}
           >
             {loading ? 'Saving...' : `Confirm ${action === 'approve' ? 'Approval' : 'Rejection'}`}
           </button>
@@ -127,6 +130,9 @@ export default function HodLeaveManagement() {
   const [expanded, setExpanded] = useState(null);
   const [reviewLeave, setReviewLeave] = useState(null);
   const [filters, setFilters] = useState({ status: '', leave_type: '', department: '' });
+  const [deletingId, setDeletingId] = useState(null);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   const loadLeaves = async () => {
     setLoading(true);
@@ -157,6 +163,53 @@ export default function HodLeaveManagement() {
 
   useEffect(() => { loadLeaves(); }, [tab, filters]);
 
+  // Reload when user returns from signing the letter in another tab
+  useEffect(() => {
+    const onFocus = () => loadLeaves();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [tab, filters]);
+
+  // Auto-refresh every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadLeaves();
+      leaveAPI.getHodAll({}).then(r => setStats(r.data.data.stats)).catch(() => {});
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [tab, filters]);
+
+  const handleDeleteOne = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Delete this leave request? This cannot be undone.')) return;
+    setDeletingId(id);
+    try {
+      await leaveAPI.hodDeleteOne(id);
+      toast.success('Leave request deleted');
+      setLeaves(prev => prev.filter(l => l.id !== id));
+      leaveAPI.getHodAll({}).then(r => setStats(r.data.data.stats)).catch(() => {});
+    } catch {
+      toast.error('Failed to delete leave request');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    setDeletingAll(true);
+    try {
+      await leaveAPI.hodDeleteAll();
+      toast.success('All leave requests deleted');
+      setLeaves([]);
+      setStats({});
+      setShowDeleteAllModal(false);
+    } catch {
+      toast.error('Failed to delete all leave requests');
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   const statCards = [
     { label: 'Total', value: stats.total || 0, color: 'text-gray-900 dark:text-white', bg: 'bg-white dark:bg-gray-800' },
     { label: 'Pending', value: stats.pending || 0, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
@@ -169,9 +222,28 @@ export default function HodLeaveManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Leave Management</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Review and manage all student leave applications</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Leave Management</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Review and manage all student leave applications</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400 dark:text-gray-500">Auto-refresh: 1 min</span>
+          <button
+            onClick={() => { loadLeaves(); leaveAPI.getHodAll({}).then(r => setStats(r.data.data.stats)).catch(() => {}); }}
+            className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"
+            title="Refresh"
+          >
+            <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={() => setShowDeleteAllModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-700 text-white"
+          >
+            <TrashIcon className="w-4 h-4" />
+            Delete All
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -283,14 +355,15 @@ export default function HodLeaveManagement() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {leave.status === 'staff_approved' && (
-                      <button
-                        onClick={e => { e.stopPropagation(); setReviewLeave(leave); }}
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors"
-                      >
-                        Final Decision
-                      </button>
-                    )}
+                    {/* Status badge */}
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${
+                      leave.status === 'staff_approved' ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700' :
+                      leave.status === 'approved'      ? 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700' :
+                      leave.status === 'rejected' || leave.status === 'staff_rejected' ? 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700' :
+                      'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700'
+                    }`}>
+                      {leave.status.replace(/_/g, ' ')}
+                    </span>
                     {/* WhatsApp student */}
                     {leave.student_phone && (
                       <a
@@ -302,17 +375,40 @@ export default function HodLeaveManagement() {
                         💬 WA
                       </a>
                     )}
-                    {/* Letter link visible for all leaves */}
+                    {/* Letter — highlighted as primary action */}
                     <Link
                       to={`/hod/leave-letter/${leave.id}`}
                       onClick={e => e.stopPropagation()}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors border ${
+                        leave.hod_signature
+                          ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600'
+                      }`}
                     >
-                      <DocumentTextIcon className="h-3.5 w-3.5" /> Letter
+                      <DocumentTextIcon className="h-3.5 w-3.5" />
+                      {leave.hod_signature ? '✓ Letter' : 'Sign Letter'}
                     </Link>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_BADGE[leave.status] || STATUS_BADGE.pending}`}>
-                      {leave.status.replace(/_/g, ' ')}
-                    </span>
+                    {/* Final Decision — only for staff_approved, gated on signature */}
+                    {leave.status === 'staff_approved' && (
+                      <button
+                        onClick={e => { e.stopPropagation(); setReviewLeave(leave); }}
+                        disabled={!leave.hod_signature}
+                        title={!leave.hod_signature ? 'Sign the letter first to enable Final Decision' : ''}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        Final Decision
+                      </button>
+                    )}
+                    <button
+                      onClick={e => handleDeleteOne(leave.id, e)}
+                      disabled={deletingId === leave.id}
+                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+                      title="Delete"
+                    >
+                      {deletingId === leave.id
+                        ? <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        : <TrashIcon className="h-4 w-4" />}
+                    </button>
                     {isOpen ? <ChevronUpIcon className="h-4 w-4 text-gray-400" /> : <ChevronDownIcon className="h-4 w-4 text-gray-400" />}
                   </div>
                 </div>
@@ -388,6 +484,44 @@ export default function HodLeaveManagement() {
           onClose={() => setReviewLeave(null)}
           onDone={() => { setReviewLeave(null); loadLeaves(); leaveAPI.getHodAll({}).then(r => setStats(r.data.data.stats)).catch(() => {}); }}
         />
+      )}
+
+      {/* Delete All confirmation modal */}
+      {showDeleteAllModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowDeleteAllModal(false)}>
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Delete All Leave Requests</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">This will permanently delete all leave records. This cannot be undone.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setShowDeleteAllModal(false)}
+                className="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
+              >Cancel</button>
+              <button
+                onClick={handleDeleteAll}
+                disabled={deletingAll}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {deletingAll
+                  ? <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  : <TrashIcon className="w-4 h-4" />}
+                {deletingAll ? 'Deleting...' : 'Delete All'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   );

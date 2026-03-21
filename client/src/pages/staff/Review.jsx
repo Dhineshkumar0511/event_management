@@ -72,7 +72,7 @@ export default function Review() {
       if (actionType === 'approve') {
         await staffAPI.approveRequest(id, { comments })
         toast.success('Request approved! Sign the OD letter now.')
-        navigate(`/staff/od-letter/${id}`)
+        navigate('/staff/requests')
       } else if (actionType === 'reject') {
         await staffAPI.rejectRequest(id, { comments })
         toast.success('Request rejected')
@@ -110,11 +110,7 @@ export default function Review() {
           <h1 className="text-2xl font-bold text-gray-900">Review Request</h1>
           <p className="text-gray-500">{request.event_name}</p>
         </div>
-        <Link to={`/staff/od-letter/${id}`}
-          className="btn btn-outline btn-sm flex items-center gap-1.5 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-        >
-          📄 View OD Letter
-        </Link>
+
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -392,7 +388,8 @@ export default function Review() {
             <RequestComments entityType="od_request" entityId={id} />
           </motion.div>
 
-          {/* Review Actions */}
+          {/* Review Actions - only show when request is still actionable */}
+          {['pending', 'staff_review'].includes(request.status) ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -401,6 +398,22 @@ export default function Review() {
           >
             <h2 className="text-lg font-semibold mb-4">Your Review</h2>
             <div className="space-y-4">
+              {/* Sign OD Letter — must do before forwarding */}
+              <Link
+                to={`/staff/od-letter/${id}`}
+                className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border-2 text-sm font-semibold transition-colors ${
+                  request.staff_signature
+                    ? 'border-green-400 bg-green-50 text-green-700 hover:bg-green-100'
+                    : 'border-indigo-400 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                }`}
+              >
+                📄 {request.staff_signature ? '✅ OD Letter Signed — View Again' : 'View & Sign OD Letter'}
+              </Link>
+              {!request.staff_signature && (
+                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
+                  ⚠️ Sign the OD letter above before forwarding to HOD
+                </p>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Comments (optional)
@@ -443,8 +456,9 @@ export default function Review() {
                 </button>
                 <button
                   onClick={() => handleSubmit('approve')}
-                  disabled={submitting}
-                  className="btn btn-primary"
+                  disabled={submitting || !request.staff_signature}
+                  title={!request.staff_signature ? 'Sign the OD letter first to enable forwarding' : ''}
+                  className="btn btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {submitting && action === 'approve' ? (
                     <div className="spinner w-4 h-4" />
@@ -454,11 +468,32 @@ export default function Review() {
                   Forward to HOD
                 </button>
               </div>
-              <p className="text-xs text-gray-500 text-center">
-                Approved requests will be sent to HOD for final approval
+              <p className="text-xs text-center mt-1">
+                {request.staff_signature
+                  ? <span className="text-green-600">✓ Signed — ready to forward</span>
+                  : <span className="text-gray-400">Sign the OD letter above to enable forwarding</span>
+                }
               </p>
             </div>
           </motion.div>
+          ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="card p-6"
+          >
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-50 border border-green-200">
+              <CheckCircleIcon className="w-6 h-6 text-green-600 shrink-0" />
+              <div>
+                <p className="font-semibold text-green-800">Already Reviewed</p>
+                <p className="text-sm text-green-700 capitalize">
+                  Status: <strong>{request.status.replace(/_/g, ' ')}</strong>
+                </p>
+              </div>
+            </div>
+          </motion.div>
+          )}
         </div>
       </div>
     </div>

@@ -10,13 +10,15 @@ import { uploadDocuments, cloudinary } from '../middleware/upload.js';
 const router = express.Router();
 
 // Helper function to delete files from Cloudinary
+// Accepts URL strings OR doc objects {name, path, size} / {url} / {secure_url}
 const deleteCloudinaryFiles = async (fileUrls = []) => {
   if (!Array.isArray(fileUrls) || fileUrls.length === 0) return;
   
-  for (const url of fileUrls) {
+  for (const entry of fileUrls) {
     try {
-      // Extract public_id from Cloudinary URL
-      // URL format: https://res.cloudinary.com/[cloud_name]/image/upload/v[version]/[folder]/[public_id]
+      // Coerce doc objects to URL strings
+      const url = typeof entry === 'string' ? entry : (entry?.path || entry?.url || entry?.secure_url);
+      if (!url || typeof url !== 'string') continue;
       const matches = url.match(/\/upload\/(?:v\d+\/)?(?:eventpass\/)?(.*?)(?:\.[^.]+)?$/);
       if (matches && matches[1]) {
         const publicId = `eventpass/${matches[1]}`;
@@ -24,8 +26,7 @@ const deleteCloudinaryFiles = async (fileUrls = []) => {
         console.log(`✓ Deleted from Cloudinary: ${publicId}`);
       }
     } catch (error) {
-      console.error(`Error deleting file from Cloudinary: ${url}`, error);
-      // Continue even if deletion fails
+      console.error(`Error deleting file from Cloudinary:`, error);
     }
   }
 };
@@ -667,8 +668,7 @@ router.delete('/od-request/:id', isStudent, async (req, res) => {
     }
     
     if (Array.isArray(supportingDocs) && supportingDocs.length > 0) {
-      const fileUrls = supportingDocs.map(doc => doc.url || doc).filter(Boolean);
-      await deleteCloudinaryFiles(fileUrls);
+      await deleteCloudinaryFiles(supportingDocs);
     }
 
     // Delete related records
@@ -732,8 +732,7 @@ router.delete('/od-requests', isStudent, [
       }
       
       if (Array.isArray(supportingDocs) && supportingDocs.length > 0) {
-        const fileUrls = supportingDocs.map(doc => doc.url || doc).filter(Boolean);
-        await deleteCloudinaryFiles(fileUrls);
+        await deleteCloudinaryFiles(supportingDocs);
       }
     }
 
