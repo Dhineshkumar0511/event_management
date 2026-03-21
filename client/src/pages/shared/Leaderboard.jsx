@@ -100,10 +100,9 @@ export default function Leaderboard() {
   const fetchLeaderboard = useCallback(async () => {
     setLoading(true)
     try {
-      // If in Achievement Wall tab, only fetch featured types; otherwise fetch all
-      const typeFilter = tab === 'achievement-wall' 
-        ? (filterType || FEATURED_TYPES[0]) 
-        : (filterType || undefined)
+      // In Achievement Wall, don't set a default type filter - load all featured types
+      // Only apply type filter if user explicitly selected one
+      const typeFilter = filterType || undefined
       
       const res = await trackingAPI.getLeaderboard({
         result_type: typeFilter,
@@ -113,8 +112,8 @@ export default function Leaderboard() {
       })
       let data = res.data.data || []
       
-      // If in Achievement Wall, filter to only featured types if no specific filter
-      if (tab === 'achievement-wall' && !filterType) {
+      // If in Achievement Wall, filter to only featured types if backend returned more types
+      if (tab === 'achievement-wall') {
         data = data.filter(e => FEATURED_TYPES.includes(e.result_type))
       }
       
@@ -362,8 +361,73 @@ export default function Leaderboard() {
         )
       })()}
 
-      {/* Leaderboard table */}
-      {loading ? (
+      {/* Achievement Wall Gallery View */}
+      {tab === 'achievement-wall' ? (
+        loading ? (
+          <div className="flex justify-center py-16"><div className="animate-spin h-10 w-10 border-3 border-yellow-500 border-t-transparent rounded-full" /></div>
+        ) : entries.length === 0 ? (
+          <div className={`rounded-2xl border p-16 text-center ${cardBase}`}>
+            <GiftIcon className={`w-16 h-16 mx-auto mb-3 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
+            <p className={`text-lg font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No achievements yet</p>
+            <p className={`text-sm mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Check back when winners are announced!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {entries.map((entry, idx) => {
+              const cfg = TYPE_CONFIG[entry.result_type] || TYPE_CONFIG.other
+              return (
+                <motion.div
+                  key={entry.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className={`rounded-xl border p-5 ${cardBase} hover:shadow-lg transition-shadow`}
+                >
+                  {/* Rank badge */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold ${cfg.rankBg} text-white`}>
+                      {cfg.icon}
+                    </div>
+                    {entry.prize_amount && (
+                      <span className={`text-sm font-bold px-2 py-1 rounded-lg ${isDark ? 'bg-amber-900/30 text-amber-300' : 'bg-amber-100 text-amber-700'}`}>
+                        ₹{parseFloat(entry.prize_amount).toLocaleString('en-IN')}
+                      </span>
+                    )}
+                  </div>
+                  {/* Student info */}
+                  <h3 className={`font-semibold text-base ${isDark ? 'text-white' : 'text-gray-900'} mb-1`}>{entry.student_name}</h3>
+                  <p className={`text-xs mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{entry.student_department} • {entry.register_number}</p>
+                  {entry.year_of_study && (
+                    <p className={`text-xs mb-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Year {entry.year_of_study}</p>
+                  )}
+                  {/* Event name */}
+                  <div className={`rounded-lg p-2.5 mb-3 ${isDark ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
+                    <p className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Event</p>
+                    <p className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{entry.event_name}</p>
+                  </div>
+                  {/* Achievement description */}
+                  {entry.achievement_description && (
+                    <div className={`rounded-lg p-2.5 mb-3 ${isDark ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
+                      <p className={`text-xs italic ${isDark ? 'text-blue-300' : 'text-blue-600'}`}>{entry.achievement_description}</p>
+                    </div>
+                  )}
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}>
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.bg}`}>
+                      {cfg.label}
+                    </span>
+                    {entry.is_verified && (
+                      <span className="flex items-center gap-0.5 text-xs text-green-600">
+                        <CheckCircleIcon className="w-3 h-3" /> Verified
+                      </span>
+                    )}
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+        )
+      ) : loading ? (
         <div className="flex justify-center py-16"><div className="spinner" /></div>
       ) : entries.length === 0 ? (
         <div className={`rounded-2xl border p-16 text-center ${cardBase}`}>

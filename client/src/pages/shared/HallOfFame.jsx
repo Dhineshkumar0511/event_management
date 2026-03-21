@@ -289,10 +289,11 @@ function SignaturePad({ label, signatureData, onSave, dark }) {
 }
 
 /* ═══════ Certificate (downloadable — 2 signatures: Staff Advisor + HOD) ═══════ */
-function Certificate({ student, month, year, certRef, dark }) {
+function Certificate({ student, month, year, certRef, dark, userRole }) {
   const displayMonth = monthNames[(month || 1) - 1]
   const [staffSig, setStaffSig] = useState(null)
   const [hodSig, setHodSig] = useState(null)
+  const canSign = userRole === 'staff' || userRole === 'hod'
 
   return (
     <div className="space-y-4">
@@ -305,66 +306,73 @@ function Certificate({ student, month, year, certRef, dark }) {
           <div key={i} className={`absolute ${pos} w-10 h-10 border-yellow-600 ${i < 2 ? 'border-t-2' : 'border-b-2'} ${i % 2 === 0 ? 'border-l-2' : 'border-r-2'} rounded-sm`} />
         ))}
         {/* Content */}
-        <div className="relative flex flex-col items-center justify-center h-full px-10 py-8 text-center">
-          <div className="mb-1">
+        <div className="relative flex flex-col items-center justify-center h-full px-8 py-6 text-center">
+          <div className="mb-0.5">
             <span className="text-xs tracking-[0.3em] uppercase text-yellow-700 font-semibold">{COLLEGE_NAME}</span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-yellow-700 mt-2" style={{ fontFamily: 'Georgia, serif' }}>
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-yellow-700 mt-1.5" style={{ fontFamily: 'Georgia, serif' }}>
             Certificate of Recognition
           </h2>
-          <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-yellow-500 to-transparent mt-3 mb-4" />
+          <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-yellow-500 to-transparent mt-2.5 mb-3" />
           <p className="text-gray-500 text-sm italic">This is proudly presented to</p>
-          <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mt-3 underline decoration-yellow-400 decoration-2 underline-offset-4" style={{ fontFamily: 'Georgia, serif' }}>
+          <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mt-2.5 underline decoration-yellow-400 decoration-2 underline-offset-4" style={{ fontFamily: 'Georgia, serif' }}>
             {student.name}
           </h3>
-          <p className="text-gray-500 text-sm mt-2">
+          <p className="text-gray-500 text-sm mt-1.5">
             {student.department}{student.year_of_study ? ` • Year ${student.year_of_study}` : ''}{student.section ? ` • Section ${student.section}` : ''}
           </p>
-          <p className="text-gray-600 text-sm mt-4 max-w-md leading-relaxed">
+          <p className="text-gray-600 text-sm mt-3 max-w-md leading-relaxed">
             In recognition of outstanding performance and being awarded the title of
           </p>
-          <div className="mt-2 inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 rounded-lg">
-            <span className="text-2xl">🏆</span>
-            <span className="text-lg font-bold text-yellow-700">Student of the Month</span>
+          <div className="mt-1.5 inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 rounded-lg">
+            <span className="text-xl">🏆</span>
+            <span className="text-base font-bold text-yellow-700">Student of the Month</span>
           </div>
-          <p className="text-gray-600 text-sm mt-2">
+          <p className="text-gray-600 text-sm mt-1.5">
             for the month of <strong className="text-gray-800">{displayMonth} {year}</strong>
           </p>
           {student.achievement && (
-            <p className="text-gray-500 text-xs mt-3 italic max-w-sm">"{student.achievement}"</p>
+            <p className="text-gray-500 text-xs mt-2 italic max-w-sm">"{student.achievement}"</p>
           )}
-          {/* Two signature lines: Staff Advisor + HOD */}
-          <div className="flex items-end justify-center gap-20 mt-auto pt-6">
-            <div className="text-center">
+          {/* Two signature lines: Staff Advisor + HOD (properly aligned) */}
+          <div className="flex items-end justify-around w-full mt-auto pt-4 px-4">
+            <div className="text-center flex-1">
               {staffSig ? (
-                <img src={staffSig} alt="Staff Advisor" className="h-10 mx-auto mb-1 object-contain" />
+                <img src={staffSig} alt="Staff Advisor" className="h-8 mx-auto mb-0.5 object-contain" />
               ) : (
-                <div className="h-10 mb-1" />
+                <div className="h-8 mb-0.5" />
               )}
-              <div className="w-32 border-b border-gray-400 mb-1" />
-              <span className="text-xs text-gray-500">Staff Advisor</span>
+              <div className="w-24 border-b-2 border-gray-600 mx-auto mb-0.5" />
+              <span className="text-xs text-gray-600 font-medium">Staff Advisor</span>
             </div>
-            <div className="text-center">
-              <div className="text-3xl mb-0.5">🎓</div>
-              <span className="text-[10px] text-gray-400">SMVEC</span>
+            <div className="text-center flex-[0.8]">
+              <div className="text-2xl mb-1">🎓</div>
+              <span className="text-[9px] text-gray-400 uppercase tracking-wider">SMVEC</span>
             </div>
-            <div className="text-center">
+            <div className="text-center flex-1">
               {hodSig ? (
-                <img src={hodSig} alt="Head of Department" className="h-10 mx-auto mb-1 object-contain" />
+                <img src={hodSig} alt="HOD" className="h-8 mx-auto mb-0.5 object-contain" />
               ) : (
-                <div className="h-10 mb-1" />
+                <div className="h-8 mb-0.5" />
               )}
-              <div className="w-32 border-b border-gray-400 mb-1" />
-              <span className="text-xs text-gray-500">Head of Department</span>
+              <div className="w-24 border-b-2 border-gray-600 mx-auto mb-0.5" />
+              <span className="text-xs text-gray-600 font-medium">Head of Department</span>
             </div>
           </div>
         </div>
       </div>
-      {/* Signature pads below the certificate (not inside it for clean download) */}
-      <div className="flex justify-center gap-6 max-w-2xl mx-auto">
-        <SignaturePad label="Staff Advisor Signature" signatureData={staffSig} onSave={setStaffSig} dark={dark} />
-        <SignaturePad label="HOD Signature" signatureData={hodSig} onSave={setHodSig} dark={dark} />
-      </div>
+      {/* Signature pads - only for staff/hod */}
+      {canSign && (
+        <div className="flex justify-center gap-6 max-w-2xl mx-auto">
+          <SignaturePad label="Staff Advisor Signature" signatureData={staffSig} onSave={setStaffSig} dark={dark} />
+          <SignaturePad label="HOD Signature" signatureData={hodSig} onSave={setHodSig} dark={dark} />
+        </div>
+      )}
+      {!canSign && (
+        <div className={`text-center py-3 rounded-lg ${dark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-600'} text-sm`}>
+          Signatures will be added by authorized staff
+        </div>
+      )}
     </div>
   )
 }
@@ -731,6 +739,7 @@ export default function HallOfFame() {
                         year={currentSOTM.year || currentYear}
                         certRef={certRef}
                         dark={dark}
+                        userRole={user?.role}
                       />
                       <div className="flex justify-center mt-4">
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
