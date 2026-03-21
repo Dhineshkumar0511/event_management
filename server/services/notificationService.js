@@ -205,6 +205,24 @@ export async function getWAGroups() {
 }
 
 /**
+ * getUltraMsgGroups — returns list of WhatsApp groups via UltraMsg API
+ */
+export async function getUltraMsgGroups() {
+  if (!ULTRAMSG_INSTANCE || !ULTRAMSG_TOKEN) return [];
+  try {
+    const res = await fetch(
+      `https://api.ultramsg.com/${ULTRAMSG_INSTANCE}/groups?token=${ULTRAMSG_TOKEN}`
+    );
+    const json = await res.json();
+    const arr = Array.isArray(json) ? json : (json.groups || []);
+    return arr
+      .filter(g => g.id)
+      .map(g => ({ id: g.id, name: g.name || g.subject || g.id }))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  } catch { return []; }
+}
+
+/**
  * sendManualMessage — always sends regardless of CHANNEL setting (used by manual send UI)
  */
 export async function sendManualMessage(to, body) {

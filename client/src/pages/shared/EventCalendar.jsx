@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../../store/authStore'
 import { useTheme } from '../../context/ThemeContext'
-import api from '../../services/api'
+import api, { leaveAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 import {
   ChevronLeftIcon,
@@ -58,6 +58,14 @@ const statusStyles = {
   staff_rejected: { dot: 'bg-red-400', badge: 'bg-red-100 text-red-700' },
 }
 
+const leaveStatusStyles = {
+  pending: { dot: 'bg-yellow-400', badge: 'bg-yellow-100 text-yellow-700' },
+  staff_approved: { dot: 'bg-blue-400', badge: 'bg-blue-100 text-blue-700' },
+  approved: { dot: 'bg-green-400', badge: 'bg-green-100 text-green-700' },
+  rejected: { dot: 'bg-red-400', badge: 'bg-red-100 text-red-700' },
+  staff_rejected: { dot: 'bg-red-400', badge: 'bg-red-100 text-red-700' },
+}
+
 export default function EventCalendar() {
   const { isDark } = useTheme()
   const { user } = useAuthStore()
@@ -69,6 +77,7 @@ export default function EventCalendar() {
   const [loading, setLoading] = useState(true)
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [availabilities, setAvailabilities] = useState([])
+  const [leaves, setLeaves] = useState([])
   const [showAvailForm, setShowAvailForm] = useState(false)
   const [availForm, setAvailForm] = useState(() => {
     const now = getNowTime()
@@ -84,12 +93,15 @@ export default function EventCalendar() {
 
   const fetchData = async () => {
     try {
-      const [eventsRes, availRes] = await Promise.all([
+      const leavesCaller = role === 'student' ? leaveAPI.getMyLeaves() : leaveAPI.getStaffAll()
+      const [eventsRes, availRes, leavesRes] = await Promise.all([
         api.get(`/${role === 'student' ? 'student' : role === 'staff' ? 'staff' : 'hod'}/calendar-events`),
-        api.get(`/${role}/availability`)
+        api.get(`/${role}/availability`),
+        leavesCaller
       ])
       setEvents(eventsRes.data.data || [])
       setAvailabilities(availRes.data.data || [])
+      setLeaves(leavesRes.data.data || [])
     } catch (err) {
       console.error('Failed to fetch calendar data:', err)
     } finally {
@@ -131,8 +143,19 @@ export default function EventCalendar() {
     return availabilities.filter(a => toLocalDate(a.date) === ds)
   }
 
+  const getLeavesForDay = (day) => {
+    if (!day) return []
+    const ds = getDateStr(day)
+    return leaves.filter(l => {
+      const s = toLocalDate(l.from_date)
+      const e = toLocalDate(l.to_date)
+      return s && e && s <= ds && e >= ds
+    })
+  }
+
   const selectedEvents = selectedDate ? getEventsForDay(selectedDate) : []
   const selectedAvails = selectedDate ? getAvailForDay(selectedDate) : []
+  const selectedLeaves = selectedDate ? getLeavesForDay(selectedDate) : []
   const today = new Date()
   const isToday = (day) => day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
 
@@ -388,11 +411,56 @@ export default function EventCalendar() {
                 </div>
               )}
 
-              {/* Availability for the day */}
+              {/* Leaves for the day */}
+              {selectedLeaves.length > 0 && (
+                <div className="space-y-3 mb-4">
+                  <p className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Leaves ({selectedLeaves.length})
+                  </p>
+                  {selectedLeaves.map((leave) => (
+                    <div key={leave.id} className={`p-3 rounded-xl ${
+                      isDark ? 'bg-violet-900/20 border border-violet-800' : 'bg-violet-50 border border-violet-200'
+                    }`}>
+                      <div className="flex items-start gap-2">
+                        <div className={`w-1 min-h-[36px] rounded-full mt-0.5 ${
+                          leaveStatusStyles[leave.status]?.dot || 'bg-gray-400'
+                        }`} />
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-medium text-sm capitalize ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {(leave.leave_type || 'Leave').replace(/_/g, ' ')}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                              leaveStatusStyles[leave.status]?.badge || 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {(leave.status || '').replace(/_/g, ' ')}
+                            </span>
+                            {leave.days_count && (
+                              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{leave.days_count}d</span>
+                            )}
+                          </div>
+                          {role !== 'student' && leave.student_name && (
+                            <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                              <UserIcon className="w-3 h-3 inline mr-1" />
+                              {leave.student_name}{leave.section ? ` · ${leave.section}` : ''}
+                            </p>
+                          )}
+                          <p className={`text-xs mt-1 flex items-center gap-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                            <ClockIcon className="w-3 h-3" />
+                            {new Date(leave.from_date).toLocaleDateString()} – {new Date(leave.to_date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Meetings / Availability for the day */}
               {selectedAvails.length > 0 && (
                 <div className="space-y-2 mb-4">
                   <p className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {role === 'student' ? 'Staff / HOD Availability' : 'Availability'}
+                    {role === 'student' ? 'Meetings' : 'Meetings'}
                   </p>
                   {selectedAvails.map(a => (
                     <div key={a.id} className={`p-3 rounded-xl ${isDark ? 'bg-purple-900/20 border border-purple-800' : 'bg-purple-50 border border-purple-200'}`}>

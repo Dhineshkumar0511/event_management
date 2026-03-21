@@ -3,7 +3,7 @@ import { authenticate, authorize } from '../middleware/auth.js';
 import {
   getWAStatus, initWAClient,
   setAutoEnabled, isAutoEnabled,
-  setGroupId, sendManualMessage, getWAGroups,
+  setGroupId, sendManualMessage, getWAGroups, getUltraMsgGroups,
 } from '../services/notificationService.js';
 import pool from '../database/connection.js';
 
@@ -77,6 +77,16 @@ router.post('/send', authenticate, authorize('hod', 'staff'), async (req, res) =
 router.get('/groups', authenticate, authorize('hod', 'staff'), async (req, res) => {
   try {
     const groups = await getWAGroups();
+    res.json({ success: true, data: groups });
+  } catch (e) {
+    res.json({ success: true, data: [] });
+  }
+});
+
+// GET /api/whatsapp/ultramsg-groups — fetch groups directly from UltraMsg API
+router.get('/ultramsg-groups', authenticate, authorize('hod', 'staff'), async (req, res) => {
+  try {
+    const groups = await getUltraMsgGroups();
     res.json({ success: true, data: groups });
   } catch (e) {
     res.json({ success: true, data: [] });
