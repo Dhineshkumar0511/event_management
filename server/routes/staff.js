@@ -3,7 +3,7 @@ import { body, validationResult } from 'express-validator';
 import pool from '../database/connection.js';
 import { authenticate, isStaffOrHOD } from '../middleware/auth.js';
 import { verifyEventWithAI, generateEventSummary } from '../services/aiService.js';
-import { notifyStaffApproved, notifyStaffRejected } from '../services/notificationService.js';
+import { notifyStaffApproved, notifyStaffRejected, isAutoEnabled } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -348,8 +348,8 @@ router.put('/od-request/:id/approve', [
       eventName: requests[0].event_name
     });
 
-    // WhatsApp / SMS notify student
-    notifyStaffApproved(
+    // WhatsApp / SMS notify student (only if auto-notifications enabled)
+    if (isAutoEnabled()) notifyStaffApproved(
       { name: requests[0].student_name, phone: requests[0].student_phone },
       { event_name: requests[0].event_name, id: req.params.id, request_id: requests[0].request_id }
     ).catch(() => {});
@@ -433,8 +433,8 @@ router.put('/od-request/:id/reject', [
       message: `Rejected by staff: ${comments}`
     });
 
-    // WhatsApp / SMS notify student
-    notifyStaffRejected(
+    // WhatsApp / SMS notify student (only if auto-notifications enabled)
+    if (isAutoEnabled()) notifyStaffRejected(
       { name: requests[0].student_name, phone: requests[0].student_phone },
       { event_name: requests[0].event_name, id: req.params.id, request_id: requests[0].request_id },
       comments

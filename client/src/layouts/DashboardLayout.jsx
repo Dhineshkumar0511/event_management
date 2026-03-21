@@ -26,7 +26,8 @@ import {
   Cog6ToothIcon,
   ChartPieIcon,
   CalendarDaysIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline'
 
 // Navigation items based on role
@@ -48,6 +49,7 @@ const getNavItems = (role) => {
       { name: 'Dashboard', path: '/staff/dashboard', icon: HomeIcon },
       { name: 'Pending Requests', path: '/staff/requests', icon: ClockIcon },
       { name: 'Leave Requests', path: '/staff/leaves', icon: ClipboardDocumentListIcon },
+      { name: 'WA Report', path: '/staff/whatsapp-report', icon: ChatBubbleLeftRightIcon },
       { name: 'Review History', path: '/staff/history', icon: CheckCircleIcon },
       { name: 'Event Calendar', path: '/staff/calendar', icon: CalendarDaysIcon },
       { name: 'Event Results', path: '/staff/results', icon: TrophyIcon },
@@ -59,6 +61,7 @@ const getNavItems = (role) => {
       { name: 'Dashboard', path: '/hod/dashboard', icon: HomeIcon },
       { name: 'Pending Approvals', path: '/hod/requests', icon: ClockIcon },
       { name: 'Leave Management', path: '/hod/leaves', icon: ClipboardDocumentListIcon },
+      { name: 'WA Report', path: '/hod/whatsapp-report', icon: ChatBubbleLeftRightIcon },
       { name: 'All Requests', path: '/hod/all-requests', icon: DocumentTextIcon },
       { name: 'Event Calendar', path: '/hod/calendar', icon: CalendarDaysIcon },
       { name: 'Reports', path: '/hod/reports', icon: ChartPieIcon },

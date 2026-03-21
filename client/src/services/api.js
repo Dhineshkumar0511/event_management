@@ -171,6 +171,12 @@ export const leaveAPI = {
 };
 
 export const whatsappAPI = {
-  getStatus: () => api.get('/whatsapp/status'),
-  connect: () => api.post('/whatsapp/connect'),
+  getStatus:       ()            => api.get('/whatsapp/status'),
+  connect:         (force=false) => api.post('/whatsapp/connect', { force }),
+  getDailyReport:  (date)        => api.get(`/whatsapp/daily-report?date=${date}`),
+  send:            (to, message) => api.post('/whatsapp/send', { to, message }),
+  getConfig:       ()            => api.get('/whatsapp/config'),
+  saveConfig:      (data)        => api.post('/whatsapp/config', data),
+  getGroups:       ()            => api.get('/whatsapp/groups'),
+  getStaffContacts:()            => api.get('/whatsapp/staff-contacts'),
 };

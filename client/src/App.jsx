@@ -52,6 +52,7 @@ import StaffLeaveRequests from './pages/staff/LeaveRequests'
 
 // Shared Pages
 import Profile from './pages/shared/Profile'
+import WhatsAppReport from './pages/shared/WhatsAppReport'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -174,6 +175,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="leaves" element={<StaffLeaveRequests />} />
           <Route path="leave-letter/:id" element={<LeaveLetterView />} />
+          <Route path="whatsapp-report" element={<WhatsAppReport />} />
         </Route>
 
         {/* HOD Routes */}
@@ -202,9 +204,8 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="leaves" element={<LeaveManagement />} />
           <Route path="leave-letter/:id" element={<LeaveLetterView />} />
+          <Route path="whatsapp-report" element={<WhatsAppReport />} />
         </Route>
-
-        {/* 404 */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </ThemeProvider>

@@ -349,6 +349,19 @@ const migrate = async () => {
     `);
     console.log('✅ Leave Requests table created');
 
+    // WhatsApp config table (stores HOD settings: auto_enabled, saved_contacts, notify_group_id)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS whatsapp_config (
+        id INT PRIMARY KEY DEFAULT 1,
+        auto_enabled BOOLEAN DEFAULT FALSE,
+        notify_group_id VARCHAR(100) DEFAULT '',
+        saved_contacts JSON DEFAULT '[]',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+    await pool.query(`INSERT IGNORE INTO whatsapp_config (id) VALUES (1)`);
+    console.log('✅ WhatsApp config table created');
+
     console.log('\n✨ All migrations completed successfully!');
   } catch (error) {
     console.error('❌ Migration failed:', error.message);

@@ -1,10 +1,10 @@
 /**
- * Notification Service — WhatsApp (UltraMsg → whatsapp-web.js fallback) + SMS (Fast2SMS)
+ * Notification Service — WhatsApp (WA Web preferred → UltraMsg fallback) + SMS (Fast2SMS)
  *
  * Env vars required (add to .env):
  *   NOTIFY_CHANNEL=whatsapp        # 'whatsapp' | 'sms' | 'both' | 'none'
- *   ULTRAMSG_INSTANCE_ID=xxxx      # from app.ultramsg.com  (primary, optional)
- *   ULTRAMSG_TOKEN=xxxx            # if blank → falls back to whatsapp-web.js automatically
+ *   ULTRAMSG_INSTANCE_ID=xxxx      # from app.ultramsg.com  (fallback, optional)
+ *   ULTRAMSG_TOKEN=xxxx            # UltraMsg token for API fallback
  *   FAST2SMS_API_KEY=xxxx          # from fast2sms.com
  *   NOTIFY_GROUP_ID=120363xxxxxxxx@g.us   # WhatsApp group chat ID for daily summary
  */
@@ -18,81 +18,131 @@ const CHANNEL = process.env.NOTIFY_CHANNEL || 'none';
 const ULTRAMSG_INSTANCE = process.env.ULTRAMSG_INSTANCE_ID || '';
 const ULTRAMSG_TOKEN = process.env.ULTRAMSG_TOKEN || '';
 const FAST2SMS_KEY = process.env.FAST2SMS_API_KEY || '';
-const GROUP_ID = process.env.NOTIFY_GROUP_ID || '';
+let GROUP_ID = process.env.NOTIFY_GROUP_ID || '';
 
-// ─── whatsapp-web.js client (lazy-init, only if UltraMsg is not configured) ──
+// ─── Runtime config (controlled by HOD via API) ───────────────────────────────
+let _autoEnabled = false;
+export function setAutoEnabled(v) { _autoEnabled = !!v; }
+export function isAutoEnabled() { return _autoEnabled; }
+export function setGroupId(id) { if (id) GROUP_ID = id; }
+
+// ─── whatsapp-web.js client ──────────────────────────────────────────────────
 
 let waClient = null;
 let waReady = false;
 let waInitialising = false;
 let waQRDataURL = null;   // base64 PNG for web UI
 let waQRString = null;    // raw QR string
+let waError = null;       // last error message
+let waInitTimer = null;   // timeout for init
 
 /** Returns current WhatsApp connection status for the admin dashboard */
 export function getWAStatus() {
-  if (CHANNEL === 'none' || CHANNEL === 'sms') return { status: 'disabled' };
-  if (ULTRAMSG_INSTANCE && ULTRAMSG_TOKEN) return { status: 'ultramsg' };
-  if (waReady) return { status: 'ready' };
-  if (waQRDataURL) return { status: 'qr', qr: waQRDataURL };
-  if (waInitialising) return { status: 'connecting' };
-  return { status: 'not_started' };
+  const hasUltraMsg = !!(ULTRAMSG_INSTANCE && ULTRAMSG_TOKEN);
+  if (waReady) return { status: 'ready', ultramsgAvailable: hasUltraMsg };
+  if (waQRDataURL) return { status: 'qr', qr: waQRDataURL, ultramsgAvailable: hasUltraMsg };
+  if (waInitialising) return { status: 'connecting', ultramsgAvailable: hasUltraMsg };
+  if (waError) return { status: 'error', error: waError, ultramsgAvailable: hasUltraMsg };
+  return { status: hasUltraMsg ? 'ultramsg_only' : 'not_started', ultramsgAvailable: hasUltraMsg };
 }
 
-export function initWAClient() {
+function resetWAClient() {
+  clearTimeout(waInitTimer);
+  if (waClient) {
+    try { waClient.destroy(); } catch {}
+  }
+  waClient = null;
+  waReady = false;
+  waInitialising = false;
+  waQRDataURL = null;
+  waQRString = null;
+  waError = null;
+}
+
+export function initWAClient(force = false) {
+  if (force) resetWAClient();
   if (waClient || waInitialising) return;
   waInitialising = true;
-  console.log('[Notify] UltraMsg not configured — initialising whatsapp-web.js fallback...');
+  waError = null;
+  console.log('[Notify] Initialising whatsapp-web.js client...');
 
   waClient = new Client({
     authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
     puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] },
   });
 
+  // Timeout: if no QR and not ready after 120s, reset
+  waInitTimer = setTimeout(() => {
+    if (!waReady && !waQRDataURL) {
+      console.warn('[Notify] WA client init timed out after 120s');
+      waError = 'Connection timed out. Chromium may not be installed. Click Connect again to retry.';
+      resetWAClient();
+      waError = 'Connection timed out. Click Reconnect to try again.';
+    }
+  }, 120_000);
+
   waClient.on('qr', async (qr) => {
+    clearTimeout(waInitTimer);
     waQRString = qr;
     try {
       waQRDataURL = await QRCode.toDataURL(qr, { width: 300, margin: 2 });
-      console.log('[Notify] QR code ready — open HOD dashboard to scan');
+      console.log('[Notify] QR code ready');
     } catch (e) {
       console.warn('[Notify] QR image gen failed:', e.message);
     }
   });
 
   waClient.on('ready', () => {
+    clearTimeout(waInitTimer);
     waReady = true;
     waQRDataURL = null;
     waQRString = null;
-    console.log('[Notify] whatsapp-web.js ready — notifications enabled ✅');
+    waError = null;
+    waInitialising = false;
+    console.log('[Notify] whatsapp-web.js ready ✅');
   });
 
-  waClient.on('disconnected', () => {
-    waReady = false;
-    waQRDataURL = null;
-    waQRString = null;
-    waClient = null;
-    waInitialising = false;
-    console.warn('[Notify] WhatsApp disconnected. Will reinitialise on next message.');
+  waClient.on('auth_failure', (msg) => {
+    console.warn('[Notify] Auth failure:', msg);
+    waError = 'Authentication failed. Delete .wwebjs_auth and try again.';
+    resetWAClient();
+    waError = 'Authentication failed. Click Reconnect to try again.';
+  });
+
+  waClient.on('disconnected', (reason) => {
+    console.warn('[Notify] WhatsApp disconnected:', reason);
+    resetWAClient();
   });
 
   waClient.initialize().catch((err) => {
     console.warn('[Notify] whatsapp-web.js init error:', err.message);
+    waError = `Init failed: ${err.message}. Click Reconnect to try again.`;
     waClient = null;
     waInitialising = false;
+    clearTimeout(waInitTimer);
   });
 }
 
-// Only spin up the WA client when WhatsApp channel is enabled but UltraMsg is not configured
-if ((CHANNEL === 'whatsapp' || CHANNEL === 'both') && !ULTRAMSG_TOKEN) {
-  initWAClient();
-}
+// Do NOT auto-init — user clicks Connect manually from the dashboard
 
 // ─── Low-level senders ────────────────────────────────────────────────────────
 
 /**
- * Try UltraMsg first; if credentials missing or API fails → fallback to whatsapp-web.js
+ * Try WA Web first (preferred); if not ready → fallback to UltraMsg
  */
 async function sendWhatsApp(to, body) {
-  // Primary: UltraMsg
+  // Primary: whatsapp-web.js
+  if (waReady && waClient) {
+    try {
+      const chatId = to.includes('@') ? to : `${to}@c.us`;
+      await waClient.sendMessage(chatId, body);
+      return; // success
+    } catch (err) {
+      console.warn('[Notify] whatsapp-web.js send error, trying UltraMsg fallback:', err.message);
+    }
+  }
+
+  // Fallback: UltraMsg
   if (ULTRAMSG_INSTANCE && ULTRAMSG_TOKEN) {
     try {
       const res = await fetch(`https://api.ultramsg.com/${ULTRAMSG_INSTANCE}/messages/chat`, {
@@ -102,24 +152,15 @@ async function sendWhatsApp(to, body) {
       });
       const data = await res.json();
       if (data.sent === 'true' || data.sent === true) return; // success
-      console.warn('[Notify] UltraMsg rejected, falling back to whatsapp-web.js:', data);
+      console.warn('[Notify] UltraMsg also failed:', data);
     } catch (err) {
-      console.warn('[Notify] UltraMsg error, falling back to whatsapp-web.js:', err.message);
+      console.warn('[Notify] UltraMsg error:', err.message);
     }
   }
 
-  // Fallback: whatsapp-web.js
-  if (!waClient) initWAClient();
+  // Neither worked
   if (!waReady) {
-    console.warn('[Notify] whatsapp-web.js not ready yet — message queued skip (scan QR to activate)');
-    return;
-  }
-  try {
-    // to is expected as "91XXXXXXXXXX" → convert to chatId "91XXXXXXXXXX@c.us"
-    const chatId = to.includes('@') ? to : `${to}@c.us`;
-    await waClient.sendMessage(chatId, body);
-  } catch (err) {
-    console.warn('[Notify] whatsapp-web.js send error:', err.message);
+    console.warn('[Notify] No WhatsApp channel available — scan QR or configure UltraMsg');
   }
 }
 
@@ -147,6 +188,27 @@ function normalizePhone(raw) {
   if (digits.length === 12 && digits.startsWith('91')) return digits;
   if (digits.length === 11 && digits.startsWith('0')) return `91${digits.slice(1)}`;
   return digits.length >= 10 ? digits : null;
+}
+
+/**
+ * getWAGroups — returns list of WhatsApp groups from whatsapp-web.js client
+ */
+export async function getWAGroups() {
+  if (!waClient || !waReady) return [];
+  try {
+    const chats = await waClient.getChats();
+    return chats
+      .filter(c => c.isGroup)
+      .map(c => ({ id: c.id._serialized, name: c.name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  } catch { return []; }
+}
+
+/**
+ * sendManualMessage — always sends regardless of CHANNEL setting (used by manual send UI)
+ */
+export async function sendManualMessage(to, body) {
+  await sendWhatsApp(to, body);
 }
 
 /**

@@ -3,7 +3,7 @@ import { body, validationResult } from 'express-validator';
 import pool from '../database/connection.js';
 import { authenticate, isHOD } from '../middleware/auth.js';
 import { generateODLetter } from '../services/letterService.js';
-import { notifyHODApproved, notifyHODRejected } from '../services/notificationService.js';
+import { notifyHODApproved, notifyHODRejected, isAutoEnabled } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -232,8 +232,8 @@ router.put('/od-request/:id/approve', [
       message: 'Your OD request has been approved!'
     });
 
-    // WhatsApp / SMS notify student
-    notifyHODApproved(
+    // WhatsApp / SMS notify student (only if auto-notifications enabled)
+    if (isAutoEnabled()) notifyHODApproved(
       { name: requests[0].student_name, phone: requests[0].student_phone },
       { event_name: requests[0].event_name, id: req.params.id, request_id: requests[0].request_id }
     ).catch(() => {});
@@ -317,8 +317,8 @@ router.put('/od-request/:id/reject', [
       message: `Rejected by HOD: ${comments}`
     });
 
-    // WhatsApp / SMS notify student
-    notifyHODRejected(
+    // WhatsApp / SMS notify student (only if auto-notifications enabled)
+    if (isAutoEnabled()) notifyHODRejected(
       { name: requests[0].student_name, phone: requests[0].student_phone },
       { event_name: requests[0].event_name, id: req.params.id, request_id: requests[0].request_id },
       comments

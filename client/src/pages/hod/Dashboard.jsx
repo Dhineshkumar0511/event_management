@@ -264,7 +264,7 @@ export default function HODDashboard() {
       )}
 
       {/* WhatsApp Notification Status */}
-      {waStatus && waStatus.status !== 'disabled' && waStatus.status !== 'ultramsg' && (
+      {waStatus && waStatus.status !== 'disabled' && (
         <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.6 }}
           className={`rounded-2xl shadow-sm border overflow-hidden ${isDark?'bg-gray-800 border-gray-700':'bg-white border-gray-100'}`}
         >
@@ -272,7 +272,7 @@ export default function HODDashboard() {
             <h2 className={`font-bold flex items-center gap-2 ${isDark?'text-white':'text-gray-900'}`}>
               <span className="text-lg">💬</span> WhatsApp Notifications
             </h2>
-            {waStatus.status === 'ready' && (
+            {(waStatus.status === 'ready' || waStatus.status === 'ultramsg') && (
               <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1 rounded-full">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Connected
               </span>
@@ -282,9 +282,14 @@ export default function HODDashboard() {
             )}
           </div>
           <div className="p-5">
+            {waStatus.status === 'ultramsg' && (
+              <p className={`text-sm ${isDark?'text-gray-300':'text-gray-600'}`}>
+                ✅ <strong>UltraMsg connected</strong> — ready to send. Use the <a href="/hod/whatsapp-report" className="text-emerald-500 font-semibold underline">WA Report</a> page to manually send reports.
+              </p>
+            )}
             {waStatus.status === 'ready' && (
               <p className={`text-sm ${isDark?'text-gray-300':'text-gray-600'}`}>
-                ✅ WhatsApp is connected. Notifications will be sent automatically for OD requests, leave requests, and approvals.
+                ✅ WhatsApp is connected. Use the <a href="/hod/whatsapp-report" className="text-emerald-500 font-semibold underline">WA Report</a> page to send reports.
               </p>
             )}
             {waStatus.status === 'qr' && (
