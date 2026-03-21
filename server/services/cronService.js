@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import pool from '../database/connection.js';
+import { sendDailyGroupSummary } from './notificationService.js';
 
 const RESULT_DEADLINE_DAYS = 7;
 const CHECKIN_INTERVAL_MINUTES = 180; // 3 hours
@@ -313,6 +314,57 @@ async function notifyUpcomingEvents(io) {
 }
 
 /**
+ * Send a daily WhatsApp group summary of pending OD + leave requests
+ */
+async function sendDailyWhatsAppSummary() {
+  try {
+    const [[odStats]] = await pool.query(`
+      SELECT
+        SUM(CASE WHEN status IN ('pending','staff_review') THEN 1 ELSE 0 END) AS pendingOD,
+        SUM(CASE WHEN status = 'hod_review' THEN 1 ELSE 0 END) AS pendingHODOD,
+        SUM(CASE WHEN status = 'approved' AND DATE(hod_reviewed_at) = CURDATE() THEN 1 ELSE 0 END) AS approvedODToday
+      FROM od_requests
+    `);
+    const [[leaveStats]] = await pool.query(`
+      SELECT
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pendingLeave,
+        SUM(CASE WHEN status = 'staff_approved' THEN 1 ELSE 0 END) AS pendingHODLeave,
+        SUM(CASE WHEN status = 'approved' AND DATE(hod_reviewed_at) = CURDATE() THEN 1 ELSE 0 END) AS approvedLeaveToday
+      FROM leave_requests
+    `);
+
+    // Students on OD today (event is active today)
+    const [odStudents] = await pool.query(`
+      SELECT u.name, u.year_of_study, u.section, u.department,
+             od.event_name, od.event_start_date, od.event_end_date
+      FROM od_requests od
+      JOIN users u ON od.student_id = u.id
+      WHERE od.status = 'approved'
+        AND od.event_start_date <= CURDATE()
+        AND od.event_end_date >= CURDATE()
+      ORDER BY u.year_of_study, u.section, u.name
+    `);
+
+    // Students on approved leave today
+    const [leaveStudents] = await pool.query(`
+      SELECT u.name, u.year_of_study, u.section, u.department,
+             lr.leave_type, lr.from_date, lr.to_date, lr.days_count
+      FROM leave_requests lr
+      JOIN users u ON lr.student_id = u.id
+      WHERE lr.status = 'approved'
+        AND lr.from_date <= CURDATE()
+        AND lr.to_date >= CURDATE()
+      ORDER BY u.year_of_study, u.section, u.name
+    `);
+
+    const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    await sendDailyGroupSummary({ date: today, ...odStats, ...leaveStats, odStudents, leaveStudents });
+  } catch (error) {
+    console.error('❌ [Cron] WhatsApp daily summary error:', error.message);
+  }
+}
+
+/**
  * Initialize all cron jobs
  */
 export function initCronJobs(io) {
@@ -343,6 +395,12 @@ export function initCronJobs(io) {
     notifyUpcomingEvents(io);
   });
 
+  // Every day at 8:30 AM: WhatsApp group daily summary
+  cron.schedule('30 8 * * *', () => {
+    console.log('⏰ [Cron] Sending daily WhatsApp group summary...');
+    sendDailyWhatsAppSummary();
+  });
+
   // Run immediately on startup
   setTimeout(() => {
     updateEventPhases();
@@ -354,4 +412,5 @@ export function initCronJobs(io) {
   console.log('   • Event phase updates — every hour');
   console.log('   • Result deadline reminders — daily 8 AM');
   console.log('   • Upcoming event alerts — daily 7 AM');
+  console.log('   • WhatsApp group summary — daily 8:30 AM');
 }

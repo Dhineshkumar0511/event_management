@@ -39,8 +39,11 @@
     "nodemailer": "^6.9.9",
     "openai": "^4.28.0",
     "pdfkit": "^0.15.0",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
     "socket.io": "^4.7.4",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "whatsapp-web.js": "^1.34.6"
   },
   "devDependencies": {
     "axios": "^1.13.6",

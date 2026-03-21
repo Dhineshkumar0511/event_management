@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import pool from '../database/connection.js';
 import { authenticate, isStaffOrHOD } from '../middleware/auth.js';
 import { verifyEventWithAI, generateEventSummary } from '../services/aiService.js';
+import { notifyStaffApproved, notifyStaffRejected } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -275,7 +276,10 @@ router.put('/od-request/:id/approve', [
     const { comments } = req.body;
 
     const [requests] = await pool.query(
-      'SELECT * FROM od_requests WHERE id = ?',
+      `SELECT od.*, u.name as student_name, u.phone as student_phone
+       FROM od_requests od
+       JOIN users u ON od.student_id = u.id
+       WHERE od.id = ?`,
       [req.params.id]
     );
 
@@ -344,6 +348,12 @@ router.put('/od-request/:id/approve', [
       eventName: requests[0].event_name
     });
 
+    // WhatsApp / SMS notify student
+    notifyStaffApproved(
+      { name: requests[0].student_name, phone: requests[0].student_phone },
+      { event_name: requests[0].event_name, id: req.params.id, request_id: requests[0].request_id }
+    ).catch(() => {});
+
     res.json({
       success: true,
       message: 'OD request approved and forwarded to HOD'
@@ -370,7 +380,10 @@ router.put('/od-request/:id/reject', [
     const { comments } = req.body;
 
     const [requests] = await pool.query(
-      'SELECT * FROM od_requests WHERE id = ?',
+      `SELECT od.*, u.name as student_name, u.phone as student_phone
+       FROM od_requests od
+       JOIN users u ON od.student_id = u.id
+       WHERE od.id = ?`,
       [req.params.id]
     );
 
@@ -419,6 +432,13 @@ router.put('/od-request/:id/reject', [
       status: 'staff_rejected',
       message: `Rejected by staff: ${comments}`
     });
+
+    // WhatsApp / SMS notify student
+    notifyStaffRejected(
+      { name: requests[0].student_name, phone: requests[0].student_phone },
+      { event_name: requests[0].event_name, id: req.params.id, request_id: requests[0].request_id },
+      comments
+    ).catch(() => {});
 
     res.json({
       success: true,

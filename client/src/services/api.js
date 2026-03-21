@@ -169,3 +169,8 @@ export const leaveAPI = {
   // Signature
   signLetter: (id, data) => api.put(`/leave/${id}/sign`, data),
 };
+
+export const whatsappAPI = {
+  getStatus: () => api.get('/whatsapp/status'),
+  connect: () => api.post('/whatsapp/connect'),
+};

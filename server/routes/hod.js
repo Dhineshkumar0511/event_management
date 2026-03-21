@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import pool from '../database/connection.js';
 import { authenticate, isHOD } from '../middleware/auth.js';
 import { generateODLetter } from '../services/letterService.js';
+import { notifyHODApproved, notifyHODRejected } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -173,7 +174,7 @@ router.put('/od-request/:id/approve', [
     const { comments } = req.body;
 
     const [requests] = await pool.query(
-      `SELECT od.*, u.name as student_name, u.email as student_email, u.department
+      `SELECT od.*, u.name as student_name, u.email as student_email, u.phone as student_phone, u.department
        FROM od_requests od
        JOIN users u ON od.student_id = u.id
        WHERE od.id = ?`,
@@ -231,6 +232,12 @@ router.put('/od-request/:id/approve', [
       message: 'Your OD request has been approved!'
     });
 
+    // WhatsApp / SMS notify student
+    notifyHODApproved(
+      { name: requests[0].student_name, phone: requests[0].student_phone },
+      { event_name: requests[0].event_name, id: req.params.id, request_id: requests[0].request_id }
+    ).catch(() => {});
+
     res.json({
       success: true,
       message: 'OD request approved successfully',
@@ -258,7 +265,10 @@ router.put('/od-request/:id/reject', [
     const { comments } = req.body;
 
     const [requests] = await pool.query(
-      'SELECT * FROM od_requests WHERE id = ?',
+      `SELECT od.*, u.name as student_name, u.phone as student_phone
+       FROM od_requests od
+       JOIN users u ON od.student_id = u.id
+       WHERE od.id = ?`,
       [req.params.id]
     );
 
@@ -306,6 +316,13 @@ router.put('/od-request/:id/reject', [
       status: 'rejected',
       message: `Rejected by HOD: ${comments}`
     });
+
+    // WhatsApp / SMS notify student
+    notifyHODRejected(
+      { name: requests[0].student_name, phone: requests[0].student_phone },
+      { event_name: requests[0].event_name, id: req.params.id, request_id: requests[0].request_id },
+      comments
+    ).catch(() => {});
 
     res.json({
       success: true,

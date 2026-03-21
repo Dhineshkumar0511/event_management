@@ -222,6 +222,14 @@ export default function HODRequests() {
                     <button onClick={() => handleQuickReject(request.id)} disabled={actionId===request.id} title="Quick Reject"
                       className="p-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 transition-colors disabled:opacity-50"
                     ><XMarkIcon className="w-4 h-4" /></button>
+                    {request.student_phone && (
+                      <a
+                        href={`https://wa.me/${request.student_phone.replace(/\D/g,'').replace(/^0/,'91').replace(/^(?!91)/,'91')}?text=${encodeURIComponent(`Hi ${request.student_name} 👋\n\n*OD Request* – ${request.event_name}\n🆔 ID: #${request.id}\n\nPlease check your EventPass portal for updates or reply here if you have questions.`)}`}
+                        target="_blank" rel="noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="flex items-center gap-1 px-3 py-2 text-xs font-semibold text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition-colors border border-green-200 dark:border-green-800"
+                      >💬 WA</a>
+                    )}
                     <Link to={`/hod/review/${request.id}`}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 text-white text-xs font-bold hover:scale-[1.03] transition-all shadow"
                     ><EyeIcon className="w-3.5 h-3.5" /> Review</Link>

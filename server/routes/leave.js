@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import pool from '../database/connection.js';
 import { authenticate, isStudent, isStaffOrHOD, isHOD } from '../middleware/auth.js';
 import { uploadDocuments } from '../middleware/upload.js';
+import { notifyLeaveSubmitted, notifyLeaveStaffDecision, notifyLeaveHODDecision } from '../services/notificationService.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -66,6 +67,17 @@ router.post('/request', isStudent, (req, res, next) => {
       `INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)`,
       [req.user.id, 'LEAVE_SUBMITTED', 'leave_requests', result.insertId, JSON.stringify({ leave_id, leave_type, leave_mode, days_count })]
     );
+
+    // WhatsApp / SMS notify staff
+    const [staffForLeave] = await pool.query(
+      'SELECT phone FROM users WHERE role = "staff" AND department = ? AND phone IS NOT NULL',
+      [req.user.department]
+    );
+    notifyLeaveSubmitted(
+      { name: req.user.name, phone: req.user.phone, department: req.user.department },
+      { leave_id, leave_type, from_date, to_date, days_count },
+      staffForLeave
+    ).catch(() => {});
 
     res.status(201).json({ success: true, message: 'Leave request submitted', data: { id: result.insertId, leave_id } });
   } catch (error) {
@@ -252,6 +264,14 @@ router.put('/:id/staff-review', isStaffOrHOD, [
        JSON.stringify({ leave_id: leave.leave_id, remarks })]
     );
 
+    // WhatsApp / SMS notify student
+    const [[studentUser]] = await pool.query('SELECT name, phone FROM users WHERE id = ?', [leave.student_id]);
+    notifyLeaveStaffDecision(
+      { name: studentUser?.name, phone: studentUser?.phone },
+      { leave_id: leave.leave_id },
+      action, req.user.role, remarks
+    ).catch(() => {});
+
     res.json({ success: true, message: `Leave ${action === 'approve' ? (req.user.role === 'hod' ? 'approved' : 'forwarded') : 'rejected'} successfully` });
   } catch (error) {
     console.error('Staff review error:', error);
@@ -325,6 +345,14 @@ router.put('/:id/hod-review', isHOD, [
       [req.user.id, action === 'approve' ? 'HOD_LEAVE_APPROVE' : 'HOD_LEAVE_REJECT',
        'leave_requests', req.params.id, JSON.stringify({ leave_id: leave.leave_id, remarks })]
     );
+
+    // WhatsApp / SMS notify student
+    const [[studentForLeave]] = await pool.query('SELECT name, phone FROM users WHERE id = ?', [leave.student_id]);
+    notifyLeaveHODDecision(
+      { name: studentForLeave?.name, phone: studentForLeave?.phone },
+      { leave_id: leave.leave_id },
+      action, remarks
+    ).catch(() => {});
 
     res.json({ success: true, message: `Leave ${newStatus} by HOD` });
   } catch (error) {

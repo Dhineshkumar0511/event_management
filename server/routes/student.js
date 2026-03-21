@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import { v4 as uuidv4 } from 'uuid';
 import PDFDocument from 'pdfkit';
 import pool from '../database/connection.js';
+import { notifyODSubmitted } from '../services/notificationService.js';
 import { authenticate, isStudent } from '../middleware/auth.js';
 import { uploadDocuments } from '../middleware/upload.js';
 
@@ -137,6 +138,17 @@ router.post('/od-request', isStudent, uploadDocuments, [
       [req.user.id, 'CREATE_OD_REQUEST', 'od_request', odRequestId, 
        JSON.stringify({ event_name, event_type })]
     );
+
+    // WhatsApp / SMS notification to staff
+    const [staffPhones] = await pool.query(
+      'SELECT phone FROM users WHERE role = "staff" AND department = ? AND phone IS NOT NULL',
+      [req.user.department]
+    );
+    notifyODSubmitted(
+      { name: req.user.name, phone: req.user.phone, department: req.user.department },
+      { event_name, event_start_date, event_end_date, request_id: requestId },
+      staffPhones
+    ).catch(() => {});
 
     res.status(201).json({
       success: true,

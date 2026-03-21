@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { hodAPI, leaveAPI } from '../../services/api'
+import { hodAPI, leaveAPI, whatsappAPI } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 import { useTheme } from '../../context/ThemeContext'
 import {
@@ -15,8 +15,30 @@ export default function HODDashboard() {
   const [pendingRequests, setPendingRequests] = useState([])
   const [leaveStats, setLeaveStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [waStatus, setWaStatus] = useState(null)
+  const waPollerRef = useRef(null)
   const { user } = useAuthStore()
   const { isDark } = useTheme()
+
+  useEffect(() => {
+    fetchDashboard()
+    fetchWAStatus()
+    // Poll WA status every 5s so QR refreshes automatically
+    waPollerRef.current = setInterval(fetchWAStatus, 5000)
+    return () => clearInterval(waPollerRef.current)
+  }, [])
+
+  const fetchWAStatus = async () => {
+    try {
+      const res = await whatsappAPI.getStatus()
+      setWaStatus(res.data.data)
+    } catch { /* ignore */ }
+  }
+
+  const handleWAConnect = async () => {
+    try { await whatsappAPI.connect() } catch { /* ignore */ }
+    setTimeout(fetchWAStatus, 2000)
+  }
 
   useEffect(() => { fetchDashboard() }, [])
 
@@ -235,6 +257,60 @@ export default function HODDashboard() {
                     </span>
                   </Link>
                 ))}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* WhatsApp Notification Status */}
+      {waStatus && waStatus.status !== 'disabled' && waStatus.status !== 'ultramsg' && (
+        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.6 }}
+          className={`rounded-2xl shadow-sm border overflow-hidden ${isDark?'bg-gray-800 border-gray-700':'bg-white border-gray-100'}`}
+        >
+          <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark?'border-gray-700':'border-gray-100'}`}>
+            <h2 className={`font-bold flex items-center gap-2 ${isDark?'text-white':'text-gray-900'}`}>
+              <span className="text-lg">💬</span> WhatsApp Notifications
+            </h2>
+            {waStatus.status === 'ready' && (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Connected
+              </span>
+            )}
+            {waStatus.status === 'connecting' && (
+              <span className="text-xs text-amber-600 font-semibold">Initialising...</span>
+            )}
+          </div>
+          <div className="p-5">
+            {waStatus.status === 'ready' && (
+              <p className={`text-sm ${isDark?'text-gray-300':'text-gray-600'}`}>
+                ✅ WhatsApp is connected. Notifications will be sent automatically for OD requests, leave requests, and approvals.
+              </p>
+            )}
+            {waStatus.status === 'qr' && (
+              <div className="flex flex-col items-center gap-4">
+                <p className={`text-sm text-center ${isDark?'text-gray-300':'text-gray-600'}`}>
+                  Scan this QR code with WhatsApp to enable notifications.<br/>
+                  <span className="text-xs text-gray-400">Open WhatsApp → Linked Devices → Link a Device</span>
+                </p>
+                <div className="p-3 bg-white rounded-2xl shadow-lg border border-gray-100">
+                  <img src={waStatus.qr} alt="WhatsApp QR Code" className="w-60 h-60 rounded-xl" />
+                </div>
+                <p className="text-xs text-gray-400">QR refreshes automatically. Scan once — stays connected forever.</p>
+              </div>
+            )}
+            {(waStatus.status === 'not_started' || waStatus.status === 'connecting') && (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <p className={`text-sm text-center ${isDark?'text-gray-300':'text-gray-600'}`}>
+                  {waStatus.status === 'connecting' ? 'WhatsApp client is starting up, QR will appear shortly...' : 'WhatsApp client not started yet.'}
+                </p>
+                {waStatus.status === 'not_started' && (
+                  <button onClick={handleWAConnect}
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-bold shadow hover:scale-[1.03] transition-transform"
+                  >
+                    Connect WhatsApp
+                  </button>
+                )}
               </div>
             )}
           </div>

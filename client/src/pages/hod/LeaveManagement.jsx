@@ -291,6 +291,17 @@ export default function HodLeaveManagement() {
                         Final Decision
                       </button>
                     )}
+                    {/* WhatsApp student */}
+                    {leave.student_phone && (
+                      <a
+                        href={`https://wa.me/${leave.student_phone.replace(/\D/g,'').replace(/^0/,'91').replace(/^(?!91)/,'91')}?text=${encodeURIComponent(`Hi ${leave.student_name} 👋\n\n*${leave.leave_type.charAt(0).toUpperCase()+leave.leave_type.slice(1)} Leave Request*\n📅 ${fmtDate(leave.from_date)} → ${fmtDate(leave.to_date)} (${leave.days_count} day${leave.days_count>1?'s':''})\n🆔 ID: #${leave.leave_id}\n\nPlease check your EventPass portal for updates or reply here if you have questions.`)}`}
+                        target="_blank" rel="noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors border border-green-200 dark:border-green-800"
+                      >
+                        💬 WA
+                      </a>
+                    )}
                     {/* Letter link visible for all leaves */}
                     <Link
                       to={`/hod/leave-letter/${leave.id}`}
