@@ -12,7 +12,8 @@ import {
   MapPinIcon,
   UserGroupIcon,
   SparklesIcon,
-  DocumentArrowDownIcon
+  DocumentArrowDownIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline'
 
 export default function HODReview() {
@@ -197,6 +198,43 @@ export default function HODReview() {
                   </div>
                 ))}
               </div>
+            </motion.div>
+          )}
+
+          {/* Supporting Documents */}
+          {request.supporting_documents && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="card p-6"
+            >
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <ArrowDownTrayIcon className="w-5 h-5" />
+                Supporting Documents
+              </h2>
+              {Array.isArray(request.supporting_documents) && request.supporting_documents.length > 0 ? (
+                <div className="space-y-2">
+                  {request.supporting_documents.map((doc, index) => {
+                    const docUrl = typeof doc === 'string' ? doc : doc.url || doc.secure_url;
+                    const fileName = docUrl?.split('/').pop()?.split('?')[0] || `Document ${index + 1}`;
+                    return (
+                      <a
+                        key={index}
+                        href={docUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-3 rounded-lg bg-gray-50 hover:bg-blue-50 transition-colors"
+                      >
+                        <ArrowDownTrayIcon className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm text-blue-600 hover:text-blue-700 truncate">{decodeURIComponent(fileName)}</span>
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No supporting documents provided</p>
+              )}
             </motion.div>
           )}
         </div>

@@ -4,8 +4,27 @@ import pool from '../database/connection.js';
 import { authenticate, isStaffOrHOD } from '../middleware/auth.js';
 import { verifyEventWithAI, generateEventSummary } from '../services/aiService.js';
 import { notifyStaffApproved, notifyStaffRejected, isAutoEnabled } from '../services/notificationService.js';
+import { cloudinary } from '../middleware/upload.js';
 
 const router = express.Router();
+
+// Helper function to delete files from Cloudinary
+const deleteCloudinaryFiles = async (fileUrls = []) => {
+  if (!Array.isArray(fileUrls) || fileUrls.length === 0) return;
+  
+  for (const url of fileUrls) {
+    try {
+      const matches = url.match(/\/upload\/(?:v\d+\/)?(?:eventpass\/)?(.*?)(?:\.[^.]+)?$/);
+      if (matches && matches[1]) {
+        const publicId = `eventpass/${matches[1]}`;
+        await cloudinary.uploader.destroy(publicId, { resource_type: 'auto' });
+        console.log(`✓ Deleted from Cloudinary: ${publicId}`);
+      }
+    } catch (error) {
+      console.error(`Error deleting file from Cloudinary: ${url}`, error);
+    }
+  }
+};
 
 // Apply authentication to all routes
 router.use(authenticate);
@@ -566,7 +585,7 @@ router.get('/history', async (req, res) => {
 });
 
 // @route   DELETE /api/staff/od-request/:id
-// @desc    Delete rejected OD request
+// @desc    Delete OD request and cleanup files
 // @access  Staff
 router.delete('/od-request/:id', async (req, res) => {
   try {
@@ -579,11 +598,19 @@ router.delete('/od-request/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'OD request not found' });
     }
 
-    if (existing[0].status !== 'staff_rejected') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Can only delete staff-rejected requests' 
-      });
+    // Get supporting documents and delete from Cloudinary
+    let supportingDocs = existing[0].supporting_documents || [];
+    if (typeof supportingDocs === 'string') {
+      try {
+        supportingDocs = JSON.parse(supportingDocs);
+      } catch {
+        supportingDocs = [];
+      }
+    }
+    
+    if (Array.isArray(supportingDocs) && supportingDocs.length > 0) {
+      const fileUrls = supportingDocs.map(doc => doc.url || doc).filter(Boolean);
+      await deleteCloudinaryFiles(fileUrls);
     }
 
     // Delete related records
@@ -600,7 +627,7 @@ router.delete('/od-request/:id', async (req, res) => {
        JSON.stringify({ event_name: existing[0].event_name })]
     );
 
-    res.json({ success: true, message: 'OD request deleted successfully' });
+    res.json({ success: true, message: 'OD request and files deleted successfully' });
 
   } catch (error) {
     console.error('Delete OD request error:', error);
@@ -609,7 +636,7 @@ router.delete('/od-request/:id', async (req, res) => {
 });
 
 // @route   DELETE /api/staff/od-requests
-// @desc    Bulk delete rejected OD requests
+// @desc    Bulk delete OD requests and cleanup files
 // @access  Staff
 router.delete('/od-requests', [
   body('ids').isArray().withMessage('IDs must be array')
@@ -622,17 +649,34 @@ router.delete('/od-requests', [
 
     const { ids } = req.body;
 
-    // Verify all requests are staff_rejected
+    // Get all requests with supporting documents
     const [existing] = await pool.query(
-      `SELECT id FROM od_requests WHERE id IN (${ids.map(() => '?').join(',')}) AND status = 'staff_rejected'`,
+      `SELECT id, supporting_documents FROM od_requests WHERE id IN (${ids.map(() => '?').join(',')})`,
       ids
     );
 
     if (existing.length !== ids.length) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Some requests cannot be deleted (not all staff-rejected)' 
+        message: 'Some requests not found' 
       });
+    }
+
+    // Delete supporting documents from Cloudinary
+    for (const request of existing) {
+      let supportingDocs = request.supporting_documents || [];
+      if (typeof supportingDocs === 'string') {
+        try {
+          supportingDocs = JSON.parse(supportingDocs);
+        } catch {
+          supportingDocs = [];
+        }
+      }
+      
+      if (Array.isArray(supportingDocs) && supportingDocs.length > 0) {
+        const fileUrls = supportingDocs.map(doc => doc.url || doc).filter(Boolean);
+        await deleteCloudinaryFiles(fileUrls);
+      }
     }
 
     // Delete all related records and requests

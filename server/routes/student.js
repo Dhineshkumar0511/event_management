@@ -5,9 +5,30 @@ import PDFDocument from 'pdfkit';
 import pool from '../database/connection.js';
 import { notifyODSubmitted, isAutoEnabled } from '../services/notificationService.js';
 import { authenticate, isStudent } from '../middleware/auth.js';
-import { uploadDocuments } from '../middleware/upload.js';
+import { uploadDocuments, cloudinary } from '../middleware/upload.js';
 
 const router = express.Router();
+
+// Helper function to delete files from Cloudinary
+const deleteCloudinaryFiles = async (fileUrls = []) => {
+  if (!Array.isArray(fileUrls) || fileUrls.length === 0) return;
+  
+  for (const url of fileUrls) {
+    try {
+      // Extract public_id from Cloudinary URL
+      // URL format: https://res.cloudinary.com/[cloud_name]/image/upload/v[version]/[folder]/[public_id]
+      const matches = url.match(/\/upload\/(?:v\d+\/)?(?:eventpass\/)?(.*?)(?:\.[^.]+)?$/);
+      if (matches && matches[1]) {
+        const publicId = `eventpass/${matches[1]}`;
+        await cloudinary.uploader.destroy(publicId, { resource_type: 'auto' });
+        console.log(`✓ Deleted from Cloudinary: ${publicId}`);
+      }
+    } catch (error) {
+      console.error(`Error deleting file from Cloudinary: ${url}`, error);
+      // Continue even if deletion fails
+    }
+  }
+};
 
 // Apply authentication to all routes
 router.use(authenticate);
@@ -635,11 +656,19 @@ router.delete('/od-request/:id', isStudent, async (req, res) => {
       return res.status(404).json({ success: false, message: 'OD request not found' });
     }
 
-    if (!['draft', 'rejected', 'staff_rejected'].includes(existing[0].status)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Cannot delete request in current status' 
-      });
+    // Get supporting documents and delete from Cloudinary
+    let supportingDocs = existing[0].supporting_documents || [];
+    if (typeof supportingDocs === 'string') {
+      try {
+        supportingDocs = JSON.parse(supportingDocs);
+      } catch {
+        supportingDocs = [];
+      }
+    }
+    
+    if (Array.isArray(supportingDocs) && supportingDocs.length > 0) {
+      const fileUrls = supportingDocs.map(doc => doc.url || doc).filter(Boolean);
+      await deleteCloudinaryFiles(fileUrls);
     }
 
     // Delete related records
@@ -658,7 +687,7 @@ router.delete('/od-request/:id', isStudent, async (req, res) => {
        JSON.stringify({ event_name: existing[0].event_name })]
     );
 
-    res.json({ success: true, message: 'OD request deleted successfully' });
+    res.json({ success: true, message: 'OD request and files deleted successfully' });
 
   } catch (error) {
     console.error('Delete OD request error:', error);
@@ -680,9 +709,9 @@ router.delete('/od-requests', isStudent, [
 
     const { ids } = req.body;
 
-    // Verify all requests belong to student and can be deleted
+    // Get all requests with their documents
     const [existing] = await pool.query(
-      `SELECT id, status FROM od_requests 
+      `SELECT id, status, supporting_documents FROM od_requests 
        WHERE student_id = ? AND id IN (${ids.map(() => '?').join(',')})`,
       [req.user.id, ...ids]
     );
@@ -691,16 +720,21 @@ router.delete('/od-requests', isStudent, [
       return res.status(404).json({ success: false, message: 'No requests found' });
     }
 
-    // Check if all can be deleted
-    const canDelete = existing.every(r => 
-      ['draft', 'rejected', 'staff_rejected'].includes(r.status)
-    );
-
-    if (!canDelete) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Cannot delete requests with approved/review status' 
-      });
+    // Delete supporting documents from Cloudinary for each request
+    for (const request of existing) {
+      let supportingDocs = request.supporting_documents || [];
+      if (typeof supportingDocs === 'string') {
+        try {
+          supportingDocs = JSON.parse(supportingDocs);
+        } catch {
+          supportingDocs = [];
+        }
+      }
+      
+      if (Array.isArray(supportingDocs) && supportingDocs.length > 0) {
+        const fileUrls = supportingDocs.map(doc => doc.url || doc).filter(Boolean);
+        await deleteCloudinaryFiles(fileUrls);
+      }
     }
 
     // Delete all related records
@@ -724,7 +758,7 @@ router.delete('/od-requests', isStudent, [
        JSON.stringify({ count: ids.length })]
     );
 
-    res.json({ success: true, message: `${ids.length} OD request(s) deleted successfully` });
+    res.json({ success: true, message: `${ids.length} OD request(s) and files deleted successfully` });
 
   } catch (error) {
     console.error('Bulk delete error:', error);

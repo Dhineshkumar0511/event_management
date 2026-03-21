@@ -6,8 +6,27 @@ import pool from '../database/connection.js';
 import { authenticate, isHOD } from '../middleware/auth.js';
 import { generateODLetter } from '../services/letterService.js';
 import { notifyHODApproved, notifyHODRejected, isAutoEnabled } from '../services/notificationService.js';
+import { cloudinary } from '../middleware/upload.js';
 
 const router = express.Router();
+
+// Helper function to delete files from Cloudinary
+const deleteCloudinaryFiles = async (fileUrls = []) => {
+  if (!Array.isArray(fileUrls) || fileUrls.length === 0) return;
+  
+  for (const url of fileUrls) {
+    try {
+      const matches = url.match(/\/upload\/(?:v\d+\/)?(?:eventpass\/)?(.*?)(?:\.[^.]+)?$/);
+      if (matches && matches[1]) {
+        const publicId = `eventpass/${matches[1]}`;
+        await cloudinary.uploader.destroy(publicId, { resource_type: 'auto' });
+        console.log(`✓ Deleted from Cloudinary: ${publicId}`);
+      }
+    } catch (error) {
+      console.error(`Error deleting file from Cloudinary: ${url}`, error);
+    }
+  }
+};
 
 // Apply authentication to all routes
 router.use(authenticate);
@@ -979,7 +998,7 @@ router.delete('/users/:id', async (req, res) => {
 });
 
 // @route   DELETE /api/hod/od-request/:id
-// @desc    Delete rejected OD request
+// @desc    Delete OD request and cleanup files
 // @access  HOD
 router.delete('/od-request/:id', isHOD, async (req, res) => {
   try {
@@ -990,6 +1009,21 @@ router.delete('/od-request/:id', isHOD, async (req, res) => {
 
     if (existing.length === 0) {
       return res.status(404).json({ success: false, message: 'OD request not found' });
+    }
+
+    // Get supporting documents and delete from Cloudinary
+    let supportingDocs = existing[0].supporting_documents || [];
+    if (typeof supportingDocs === 'string') {
+      try {
+        supportingDocs = JSON.parse(supportingDocs);
+      } catch {
+        supportingDocs = [];
+      }
+    }
+    
+    if (Array.isArray(supportingDocs) && supportingDocs.length > 0) {
+      const fileUrls = supportingDocs.map(doc => doc.url || doc).filter(Boolean);
+      await deleteCloudinaryFiles(fileUrls);
     }
 
     // Delete related records
@@ -1006,7 +1040,7 @@ router.delete('/od-request/:id', isHOD, async (req, res) => {
        JSON.stringify({ event_name: existing[0].event_name })]
     );
 
-    res.json({ success: true, message: 'OD request deleted successfully' });
+    res.json({ success: true, message: 'OD request and files deleted successfully' });
 
   } catch (error) {
     console.error('Delete OD request error:', error);
@@ -1015,7 +1049,7 @@ router.delete('/od-request/:id', isHOD, async (req, res) => {
 });
 
 // @route   DELETE /api/hod/od-requests
-// @desc    Bulk delete rejected OD requests
+// @desc    Bulk delete OD requests and cleanup files
 // @access  HOD
 router.delete('/od-requests', isHOD, [
   body('ids').isArray().withMessage('IDs must be array')
@@ -1028,9 +1062,9 @@ router.delete('/od-requests', isHOD, [
 
     const { ids } = req.body;
 
-    // Verify all requests exist and belong to HOD's department
+    // Get all requests with supporting documents
     const [existing] = await pool.query(
-      `SELECT id FROM od_requests WHERE id IN (${ids.map(() => '?').join(',')})`,
+      `SELECT id, supporting_documents FROM od_requests WHERE id IN (${ids.map(() => '?').join(',')})`,
       ids
     );
 
@@ -1039,6 +1073,23 @@ router.delete('/od-requests', isHOD, [
         success: false, 
         message: 'Some requests were not found' 
       });
+    }
+
+    // Delete supporting documents from Cloudinary
+    for (const request of existing) {
+      let supportingDocs = request.supporting_documents || [];
+      if (typeof supportingDocs === 'string') {
+        try {
+          supportingDocs = JSON.parse(supportingDocs);
+        } catch {
+          supportingDocs = [];
+        }
+      }
+      
+      if (Array.isArray(supportingDocs) && supportingDocs.length > 0) {
+        const fileUrls = supportingDocs.map(doc => doc.url || doc).filter(Boolean);
+        await deleteCloudinaryFiles(fileUrls);
+      }
     }
 
     // Delete all related records
@@ -1061,7 +1112,7 @@ router.delete('/od-requests', isHOD, [
        JSON.stringify({ count: ids.length })]
     );
 
-    res.json({ success: true, message: `${ids.length} request(s) deleted successfully` });
+    res.json({ success: true, message: `${ids.length} request(s) and files deleted successfully` });
 
   } catch (error) {
     console.error('Bulk delete error:', error);
