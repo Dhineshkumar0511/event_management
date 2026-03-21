@@ -39,6 +39,10 @@ coverage/
 tmp/
 temp/
 
+# WhatsApp Web session & browser cache (contains auth credentials — never commit)
+.wwebjs_auth/session/ 
+.wwebjs_cache/
+
 # Database
 *.sql
 database_backup*.sql
@@ -52,3 +56,4 @@ client/node_modules/
 
 # Server
 server/node_modules/
+

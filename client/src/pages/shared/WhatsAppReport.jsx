@@ -649,34 +649,61 @@ export default function WhatsAppReport() {
                     {/* GROUP CHOICES */}
                     {sendMode === 'group' && (
                       <div className="space-y-3">
-                        {waOK && groups.length > 0 && (
+                        {/* WA Web connected — show groups */}
+                        {waOK && (
                           <>
                             <div className="flex items-center justify-between">
                               <span className={lbl}>Groups</span>
                               <button onClick={fetchGroups} disabled={loadingGroups}
                                 className={`text-[11px] font-bold ${isDark ? 'text-green-400' : 'text-green-600'} disabled:opacity-40`}>
-                                <ArrowPathIcon className={`inline w-3 h-3 mr-0.5 ${loadingGroups ? 'animate-spin' : ''}`} />Refresh
+                                <ArrowPathIcon className={`inline w-3 h-3 mr-0.5 ${loadingGroups ? 'animate-spin' : ''}`} />
+                                {loadingGroups ? 'Loading…' : 'Refresh'}
                               </button>
                             </div>
-                            <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                              {groups.map(g => {
-                                const sel = selectedGroup?.id === g.id
-                                return (
-                                  <button key={g.id} onClick={() => { setSelectedGroup(g); setCustomTo('') }}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs text-left transition-all ${
-                                      sel
-                                        ? 'bg-green-600 text-white shadow'
-                                        : isDark ? 'bg-gray-900/40 text-gray-300 hover:bg-gray-700/40 ring-1 ring-gray-700/40' : 'bg-gray-50 text-gray-800 hover:bg-gray-100 ring-1 ring-gray-100'
-                                    }`}>
-                                    <UserGroupIcon className={`w-4 h-4 flex-shrink-0 ${sel ? 'text-white/70' : 'opacity-40'}`} />
-                                    <span className="font-bold truncate">{g.name}</span>
-                                    {sel && <CheckSolid className="w-4 h-4 ml-auto flex-shrink-0" />}
-                                  </button>
-                                )
-                              })}
-                            </div>
+
+                            {/* loading */}
+                            {loadingGroups && (
+                              <div className={`flex items-center justify-center gap-2 py-4 rounded-xl ${isDark ? 'bg-gray-900/30' : 'bg-gray-50'}`}>
+                                <div className="w-4 h-4 rounded-full border-2 border-green-500/30 border-t-green-500 animate-spin" />
+                                <span className={`text-[11px] font-medium ${muted}`}>Fetching groups…</span>
+                              </div>
+                            )}
+
+                            {/* groups list */}
+                            {!loadingGroups && groups.length > 0 && (
+                              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                {groups.map(g => {
+                                  const sel = selectedGroup?.id === g.id
+                                  return (
+                                    <button key={g.id} onClick={() => { setSelectedGroup(g); setCustomTo('') }}
+                                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs text-left transition-all ${
+                                        sel
+                                          ? 'bg-green-600 text-white shadow'
+                                          : isDark ? 'bg-gray-900/40 text-gray-300 hover:bg-gray-700/40 ring-1 ring-gray-700/40' : 'bg-gray-50 text-gray-800 hover:bg-gray-100 ring-1 ring-gray-100'
+                                      }`}>
+                                      <UserGroupIcon className={`w-4 h-4 flex-shrink-0 ${sel ? 'text-white/70' : 'opacity-40'}`} />
+                                      <span className="font-bold truncate">{g.name}</span>
+                                      {sel && <CheckSolid className="w-4 h-4 ml-auto flex-shrink-0" />}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            )}
+
+                            {/* empty state */}
+                            {!loadingGroups && groups.length === 0 && (
+                              <div className={`flex flex-col items-center gap-2 py-5 rounded-xl ${isDark ? 'bg-gray-900/30 ring-1 ring-gray-700/40' : 'bg-gray-50 ring-1 ring-gray-100'}`}>
+                                <UserGroupIcon className={`w-7 h-7 opacity-30 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                                <p className={`text-[11px] font-medium ${muted}`}>No groups found</p>
+                                <button onClick={fetchGroups}
+                                  className={`text-[11px] font-bold px-3 py-1.5 rounded-lg transition ${isDark ? 'bg-gray-700 text-green-400 hover:bg-gray-600' : 'bg-white text-green-600 hover:bg-gray-100 shadow-sm'}`}>
+                                  <ArrowPathIcon className="inline w-3 h-3 mr-0.5" /> Load Groups
+                                </button>
+                              </div>
+                            )}
                           </>
                         )}
+
                         {!waOK && (
                           <p className={`text-[11px] p-3 rounded-lg ${isDark ? 'bg-gray-900/30 text-gray-400 ring-1 ring-gray-700/40' : 'bg-gray-50 text-gray-500 ring-1 ring-gray-100'}`}>
                             {hasUM ? 'Group list needs WA Web. Enter ID manually.' : 'Connect WA Web to see groups.'}
