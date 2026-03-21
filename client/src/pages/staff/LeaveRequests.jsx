@@ -13,6 +13,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   FunnelIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import { leaveAPI } from '../../services/api';
 
@@ -120,6 +121,8 @@ export default function StaffLeaveRequests() {
   const [expanded, setExpanded] = useState(null);
   const [reviewLeave, setReviewLeave] = useState(null);
   const [filters, setFilters] = useState({ status: '', leave_type: '' });
+  const [deletingAll, setDeletingAll] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const loadLeaves = async () => {
     setLoading(true);
@@ -142,14 +145,38 @@ export default function StaffLeaveRequests() {
     }
   };
 
+  const handleDeleteAll = async () => {
+    setDeletingAll(true);
+    try {
+      const res = await leaveAPI.deleteAll();
+      toast.success(res.data.message || 'All leave requests deleted');
+      setShowDeleteConfirm(false);
+      setLeaves([]);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete all requests');
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   useEffect(() => { loadLeaves(); }, [tab, filters]);
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Leave Requests</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Review and approve student leave applications</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Leave Requests</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Review and approve student leave applications</p>
+        </div>
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+          disabled={deletingAll}
+        >
+          <TrashIcon className="h-4 w-4" />
+          Delete All
+        </button>
       </div>
 
       {/* Tabs */}
@@ -332,6 +359,43 @@ export default function StaffLeaveRequests() {
           onClose={() => setReviewLeave(null)}
           onDone={() => { setReviewLeave(null); loadLeaves(); }}
         />
+      )}
+
+      {/* Delete All Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowDeleteConfirm(false)}>
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
+                <TrashIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Delete All Leave Requests</h2>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              This will permanently delete <strong>all leave requests</strong> in your department, including their data and any uploaded documents from cloud storage. This action <strong>cannot be undone</strong>.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAll}
+                disabled={deletingAll}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-60"
+              >
+                {deletingAll ? 'Deleting...' : 'Delete All'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   );

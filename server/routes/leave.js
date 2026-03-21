@@ -2,7 +2,7 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import pool from '../database/connection.js';
 import { authenticate, isStudent, isStaffOrHOD, isHOD } from '../middleware/auth.js';
-import { uploadDocuments } from '../middleware/upload.js';
+import { uploadDocuments, cloudinary } from '../middleware/upload.js';
 import { notifyLeaveSubmitted, notifyLeaveStaffDecision, notifyLeaveHODDecision } from '../services/notificationService.js';
 
 const router = express.Router();
@@ -412,6 +412,60 @@ router.get('/hod/all', isHOD, async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 // SIGN LEAVE LETTER
 // ─────────────────────────────────────────────────────────────
+
+// @route   DELETE /api/leave/staff/delete-all
+// @desc    Delete all leave requests in staff's department + Cloudinary documents
+// @access  Staff/HOD
+router.delete('/staff/delete-all', isStaffOrHOD, async (req, res) => {
+  try {
+    const isHodRole = req.user.role === 'hod';
+    const conditions = isHodRole ? [] : ['u.department = ?'];
+    const params = isHodRole ? [] : [req.user.department];
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const [leaves] = await pool.query(
+      `SELECT lr.id, lr.document_url FROM leave_requests lr
+       JOIN users u ON lr.student_id = u.id ${where}`,
+      params
+    );
+
+    if (leaves.length === 0) {
+      return res.json({ success: true, message: 'No leave requests to delete', deleted: 0 });
+    }
+
+    // Delete Cloudinary documents
+    for (const leave of leaves) {
+      if (leave.document_url) {
+        try {
+          const matches = leave.document_url.match(/\/upload\/(?:v\d+\/)?(?:eventpass\/)?(.*?)(?:\.[^.]+)?$/);
+          if (matches && matches[1]) {
+            const publicId = `eventpass/${matches[1]}`;
+            await cloudinary.uploader.destroy(publicId, { resource_type: 'auto' });
+          }
+        } catch (e) {
+          console.error(`Error deleting Cloudinary file: ${leave.document_url}`, e);
+        }
+      }
+    }
+
+    const ids = leaves.map(l => l.id);
+    await pool.query(
+      `DELETE FROM leave_requests WHERE id IN (${ids.map(() => '?').join(',')})`,
+      ids
+    );
+
+    await pool.query(
+      `INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)`,
+      [req.user.id, 'DELETE_ALL_LEAVES', 'leave_requests', 0,
+       JSON.stringify({ count: ids.length, department: req.user.department || 'all' })]
+    );
+
+    res.json({ success: true, message: `${ids.length} leave request(s) deleted`, deleted: ids.length });
+  } catch (error) {
+    console.error('Delete all leaves error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete leave requests' });
+  }
+});
 
 // @route  PUT /api/leave/:id/sign
 // @desc   Staff or HOD signs the leave letter with a base64 signature

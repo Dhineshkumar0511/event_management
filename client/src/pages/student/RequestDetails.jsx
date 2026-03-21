@@ -357,7 +357,7 @@ export default function RequestDetails() {
             </motion.div>
           )}
 
-          {request.supporting_documents && (
+          {request.supporting_documents && request.supporting_documents.length > 0 && (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -366,9 +366,26 @@ export default function RequestDetails() {
             >
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <DocumentIcon className="w-5 h-5" />
-                Documents
+                Supporting Documents
               </h2>
-              <p className="text-sm text-gray-500">Supporting documents attached</p>
+              <div className="space-y-2">
+                {request.supporting_documents.map((doc, index) => {
+                  const docUrl = typeof doc === 'string' ? doc : doc.path || doc.url || doc.secure_url;
+                  const fileName = (typeof doc === 'object' && doc.name) || docUrl?.split('/').pop()?.split('?')[0] || `Document ${index + 1}`;
+                  return (
+                    <a
+                      key={index}
+                      href={docUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 p-3 rounded-lg bg-gray-50 hover:bg-blue-50 transition-colors"
+                    >
+                      <ArrowDownTrayIcon className="w-4 h-4 text-blue-600 shrink-0" />
+                      <span className="text-sm text-blue-600 hover:text-blue-700 truncate">{decodeURIComponent(fileName)}</span>
+                    </a>
+                  );
+                })}
+              </div>
             </motion.div>
           )}
         </div>

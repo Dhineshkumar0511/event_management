@@ -246,7 +246,7 @@ export default function Review() {
               {Array.isArray(request.supporting_documents) && request.supporting_documents.length > 0 ? (
                 <div className="space-y-2">
                   {request.supporting_documents.map((doc, index) => {
-                    const docUrl = typeof doc === 'string' ? doc : doc.url || doc.secure_url;
+                    const docUrl = typeof doc === 'string' ? doc : doc.path || doc.url || doc.secure_url;
                     const fileName = docUrl?.split('/').pop()?.split('?')[0] || `Document ${index + 1}`;
                     return (
                       <a

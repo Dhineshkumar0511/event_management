@@ -168,6 +168,8 @@ export const leaveAPI = {
   hodReview: (id, data) => api.put(`/leave/${id}/hod-review`, data),
   // Signature
   signLetter: (id, data) => api.put(`/leave/${id}/sign`, data),
+  // Staff/HOD
+  deleteAll: () => api.delete('/leave/staff/delete-all'),
 };
 
 export const whatsappAPI = {
