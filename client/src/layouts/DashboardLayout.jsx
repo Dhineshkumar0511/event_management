@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore'
 import { useTheme } from '../context/ThemeContext'
 import { initSocket, disconnectSocket, subscribeToNotifications, unsubscribe } from '../services/socket'
 import AIChatWidget from '../components/AIChatWidget'
+import AnnouncementBanner from '../components/AnnouncementBanner'
 import { studentAPI } from '../services/api'
 import {
   HomeIcon,
@@ -27,7 +28,13 @@ import {
   ChartPieIcon,
   CalendarDaysIcon,
   ClipboardDocumentListIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  MegaphoneIcon,
+  ShieldExclamationIcon,
+  StarIcon,
+  FolderIcon,
+  BoltIcon,
+  ScaleIcon,
 } from '@heroicons/react/24/outline'
 
 // Navigation items based on role
@@ -41,8 +48,11 @@ const getNavItems = (role) => {
       { name: 'Event Calendar', path: '/student/calendar', icon: CalendarDaysIcon },
       { name: 'Active Event', path: '/student/active-event', icon: MapPinIcon },
       { name: 'Submit Result', path: '/student/submit-result', icon: TrophyIcon },
+      { name: 'Certificates', path: '/student/certificates', icon: FolderIcon },
       { name: 'Leaderboard', path: '/student/leaderboard', icon: TrophyIcon },
+      { name: 'Hall of Fame', path: '/student/hall-of-fame', icon: StarIcon },
       { name: 'Achievement Wall', path: '/student/achievements', icon: ChartBarIcon },
+      { name: 'Grievances', path: '/student/grievances', icon: ScaleIcon },
       { name: 'My Profile', path: '/student/profile', icon: Cog6ToothIcon },
     ],
     staff: [
@@ -53,8 +63,11 @@ const getNavItems = (role) => {
       { name: 'Review History', path: '/staff/history', icon: CheckCircleIcon },
       { name: 'Event Calendar', path: '/staff/calendar', icon: CalendarDaysIcon },
       { name: 'Event Results', path: '/staff/results', icon: TrophyIcon },
+      { name: 'Certificates', path: '/staff/certificates', icon: FolderIcon },
       { name: 'Leaderboard', path: '/staff/leaderboard', icon: TrophyIcon },
+      { name: 'Hall of Fame', path: '/staff/hall-of-fame', icon: StarIcon },
       { name: 'Achievement Wall', path: '/staff/achievements', icon: ChartBarIcon },
+      { name: 'Grievances', path: '/staff/grievances', icon: ScaleIcon },
       { name: 'My Profile', path: '/staff/profile', icon: Cog6ToothIcon },
     ],
     hod: [
@@ -63,14 +76,20 @@ const getNavItems = (role) => {
       { name: 'Leave Management', path: '/hod/leaves', icon: ClipboardDocumentListIcon },
       { name: 'WA Report', path: '/hod/whatsapp-report', icon: ChatBubbleLeftRightIcon },
       { name: 'All Requests', path: '/hod/all-requests', icon: DocumentTextIcon },
+      { name: 'Announcements', path: '/hod/announcements', icon: MegaphoneIcon },
       { name: 'Event Calendar', path: '/hod/calendar', icon: CalendarDaysIcon },
       { name: 'Reports', path: '/hod/reports', icon: ChartPieIcon },
       { name: 'Audit Trail', path: '/hod/audit-trail', icon: ClipboardDocumentListIcon },
       { name: 'Live Tracking', path: '/hod/tracking', icon: MapPinIcon },
       { name: 'Manage Users', path: '/hod/users', icon: UsersIcon },
+      { name: 'Auto Rules', path: '/hod/auto-rules', icon: BoltIcon },
+      { name: 'Staff Workload', path: '/hod/staff-workload', icon: UsersIcon },
+      { name: 'Certificates', path: '/hod/certificates', icon: FolderIcon },
       { name: 'Event Results', path: '/hod/results', icon: TrophyIcon },
       { name: 'Leaderboard', path: '/hod/leaderboard', icon: TrophyIcon },
+      { name: 'Hall of Fame', path: '/hod/hall-of-fame', icon: StarIcon },
       { name: 'Achievement Wall', path: '/hod/achievements', icon: ChartBarIcon },
+      { name: 'Grievances', path: '/hod/grievances', icon: ScaleIcon },
       { name: 'My Profile', path: '/hod/profile', icon: Cog6ToothIcon },
     ]
   }
@@ -385,6 +404,7 @@ export default function DashboardLayout() {
 
         {/* Page content */}
         <main className={`p-4 lg:p-6 ${isDark ? 'bg-gray-900' : ''}`}>
+          <AnnouncementBanner />
           <Outlet />
         </main>
       </div>

@@ -42,20 +42,29 @@ export default function Reports() {
   const { isDark } = useTheme()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [dateRange, setDateRange] = useState({ from: '', to: '' })
 
   useEffect(() => {
     fetchReports()
   }, [])
 
-  const fetchReports = async () => {
+  const fetchReports = async (range) => {
+    setLoading(true)
     try {
-      const response = await hodAPI.getReports()
+      const params = {}
+      if (range?.from) params.from = range.from
+      if (range?.to) params.to = range.to
+      const response = await hodAPI.getReports(params)
       setData(response.data.data)
     } catch (error) {
       console.error('Failed to fetch reports:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDateFilter = () => {
+    fetchReports(dateRange)
   }
 
   const exportCSV = () => {
@@ -222,6 +231,17 @@ export default function Reports() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <input type="date" value={dateRange.from}
+            onChange={e => setDateRange(d => ({ ...d, from: e.target.value }))}
+            className={`text-sm px-2 py-1.5 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200'}`}
+          />
+          <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>to</span>
+          <input type="date" value={dateRange.to}
+            onChange={e => setDateRange(d => ({ ...d, to: e.target.value }))}
+            className={`text-sm px-2 py-1.5 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200'}`}
+          />
+          <button onClick={handleDateFilter} className="btn btn-outline text-sm px-3 py-1.5">Filter</button>
+          <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
           <button onClick={exportCSV} className="btn btn-outline flex items-center gap-2 text-sm">
             <ArrowDownTrayIcon className="w-4 h-4" />
             CSV

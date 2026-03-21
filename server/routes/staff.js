@@ -276,7 +276,7 @@ router.put('/od-request/:id/approve', [
     const { comments } = req.body;
 
     const [requests] = await pool.query(
-      `SELECT od.*, u.name as student_name, u.phone as student_phone
+      `SELECT od.*, u.name as student_name, u.phone as student_phone, u.department as student_department
        FROM od_requests od
        JOIN users u ON od.student_id = u.id
        WHERE od.id = ?`,
@@ -285,6 +285,11 @@ router.put('/od-request/:id/approve', [
 
     if (requests.length === 0) {
       return res.status(404).json({ success: false, message: 'OD request not found' });
+    }
+
+    // Department ownership check: staff can only action requests from their own department
+    if (req.user.role === 'staff' && requests[0].student_department !== req.user.department) {
+      return res.status(403).json({ success: false, message: 'Access denied: this request is not from your department' });
     }
 
     if (!['pending', 'staff_review'].includes(requests[0].status)) {
@@ -380,7 +385,7 @@ router.put('/od-request/:id/reject', [
     const { comments } = req.body;
 
     const [requests] = await pool.query(
-      `SELECT od.*, u.name as student_name, u.phone as student_phone
+      `SELECT od.*, u.name as student_name, u.phone as student_phone, u.department as student_department
        FROM od_requests od
        JOIN users u ON od.student_id = u.id
        WHERE od.id = ?`,
@@ -389,6 +394,11 @@ router.put('/od-request/:id/reject', [
 
     if (requests.length === 0) {
       return res.status(404).json({ success: false, message: 'OD request not found' });
+    }
+
+    // Department ownership check: staff can only action requests from their own department
+    if (req.user.role === 'staff' && requests[0].student_department !== req.user.department) {
+      return res.status(403).json({ success: false, message: 'Access denied: this request is not from your department' });
     }
 
     if (!['pending', 'staff_review'].includes(requests[0].status)) {

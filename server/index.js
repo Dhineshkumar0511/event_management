@@ -17,6 +17,7 @@ import aiRoutes from './routes/ai.js';
 import odLetterRoutes from './routes/odletter.js';
 import leaveRoutes from './routes/leave.js';
 import whatsappRoutes from './routes/whatsapp.js';
+import featuresRoutes from './routes/features.js';
 
 // Middleware imports
 import { errorHandler } from './middleware/errorHandler.js';
@@ -87,6 +88,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/od-letter', odLetterRoutes);
 app.use('/api/leave', leaveRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/features', featuresRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

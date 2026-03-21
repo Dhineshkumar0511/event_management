@@ -49,10 +49,17 @@ export const verifyTeamMemberAccess = async (requestId, studentId) => {
   return members.length > 0;
 };
 
+// Allowlist to prevent SQL injection via dynamic table/column names
+const ALLOWED_TABLES = new Set(['od_requests', 'leave_requests', 'event_results', 'location_checkins']);
+const ALLOWED_COLUMNS = new Set(['student_id', 'user_id', 'reviewed_by']);
+
 /**
  * Generic access check - prevents IDOR
  */
 export const ensureResourceAccess = async (resourceId, userId, resourceTable, userColumn = 'student_id') => {
+  if (!ALLOWED_TABLES.has(resourceTable) || !ALLOWED_COLUMNS.has(userColumn)) {
+    throw new Error(`Invalid table or column name: ${resourceTable}.${userColumn}`);
+  }
   const [resources] = await pool.query(
     `SELECT id FROM ${resourceTable} WHERE id = ? AND ${userColumn} = ?`,
     [resourceId, userId]

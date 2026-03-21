@@ -1,6 +1,9 @@
 import jwt from 'jsonwebtoken';
 
 export const setupSocketIO = (io) => {
+  // Per-socket throttle map for location updates (ms timestamp of last accepted event)
+  const locationUpdateThrottle = new Map();
+  const LOCATION_THROTTLE_MS = 5000; // max one location update per 5 seconds per socket
   // Authentication middleware for Socket.IO
   io.use((socket, next) => {
     const token = socket.handshake.auth.token;
@@ -50,6 +53,11 @@ export const setupSocketIO = (io) => {
     // Handle real-time location updates from students
     socket.on('location_update', (data) => {
       if (socket.userRole === 'student') {
+        const now = Date.now();
+        const last = locationUpdateThrottle.get(socket.id) || 0;
+        if (now - last < LOCATION_THROTTLE_MS) return; // throttle: drop update
+        locationUpdateThrottle.set(socket.id, now);
+
         // Broadcast to tracking room
         socket.to('tracking').emit('student_location_update', {
           studentId: socket.userId,
@@ -87,6 +95,7 @@ export const setupSocketIO = (io) => {
 
     // Handle disconnect
     socket.on('disconnect', () => {
+      locationUpdateThrottle.delete(socket.id);
       console.log(`🔌 User disconnected: ${socket.userId}`);
     });
   });

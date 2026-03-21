@@ -2,7 +2,7 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
-import api from '../../services/api'
+import api, { featuresAPI } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 import { useTheme } from '../../context/ThemeContext'
 import {
@@ -76,6 +76,51 @@ export default function NewODRequest() {
 
   const [teamMembers, setTeamMembers] = useState([])
   const [documents, setDocuments] = useState([])
+  const [duplicateWarning, setDuplicateWarning] = useState(null)
+
+  // Draft auto-save (localStorage)
+  const DRAFT_KEY = 'od_request_draft'
+  useEffect(() => {
+    if (editId) return
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY)
+      if (saved) {
+        const draft = JSON.parse(saved)
+        if (draft.formData) setFormData(prev => ({ ...prev, ...draft.formData }))
+        if (draft.teamMembers?.length) setTeamMembers(draft.teamMembers)
+        if (draft.currentStep) setCurrentStep(draft.currentStep)
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    if (editId) return
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ formData, teamMembers, currentStep }))
+      } catch {}
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [formData, teamMembers, currentStep, editId])
+
+  // Duplicate detection
+  useEffect(() => {
+    if (!formData.event_name || !formData.event_start_date || editId) return
+    const timer = setTimeout(async () => {
+      try {
+        const res = await featuresAPI.checkDuplicate({
+          event_name: formData.event_name,
+          event_start_date: formData.event_start_date
+        })
+        if (res.data.data?.isDuplicate) {
+          setDuplicateWarning(res.data.data.existingRequest)
+        } else {
+          setDuplicateWarning(null)
+        }
+      } catch { setDuplicateWarning(null) }
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [formData.event_name, formData.event_start_date, editId])
 
   useEffect(() => {
     if (!editId) {
@@ -161,6 +206,7 @@ export default function NewODRequest() {
       } else {
         await api.post('/student/od-request', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
         toast.success('OD request submitted successfully!')
+        localStorage.removeItem(DRAFT_KEY)
       }
       navigate('/student/my-requests')
     } catch (error) {
@@ -265,6 +311,35 @@ export default function NewODRequest() {
           })}
         </div>
       </motion.div>
+
+      {/* Duplicate Warning */}
+      {duplicateWarning && (
+        <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
+          className={`mb-4 p-4 rounded-xl border flex items-start gap-3 ${isDark ? 'bg-yellow-900/20 border-yellow-700 text-yellow-300' : 'bg-yellow-50 border-yellow-200 text-yellow-800'}`}
+        >
+          <ExclamationTriangleIcon className="w-5 h-5 flex-shrink-0 mt-0.5 text-yellow-500" />
+          <div className="text-sm">
+            <p className="font-semibold">Possible duplicate detected</p>
+            <p className="text-xs mt-0.5 opacity-80">
+              You already have a request for "{duplicateWarning.event_name}" on {new Date(duplicateWarning.event_start_date).toLocaleDateString()} (Status: {duplicateWarning.status})
+            </p>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Draft indicator */}
+      {!editId && localStorage.getItem(DRAFT_KEY) && currentStep === 1 && (
+        <div className={`mb-4 flex items-center justify-between text-xs px-3 py-2 rounded-lg ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+          <span>📝 Draft auto-saved</span>
+          <button onClick={() => {
+            localStorage.removeItem(DRAFT_KEY)
+            setFormData({ event_name: '', event_type: 'hackathon', event_description: '', organizer_name: '', organizer_contact: '', event_website: '', venue: '', location_city: '', location_state: '', event_start_date: '', event_end_date: '', event_start_time: '', event_end_time: '', parent_name: '', parent_phone: '', parent_email: '', emergency_contact: '' })
+            setTeamMembers([])
+            setCurrentStep(1)
+            toast.success('Draft cleared')
+          }} className="text-red-400 hover:text-red-500">Clear draft</button>
+        </div>
+      )}
 
       {/* Form Content */}
       <AnimatePresence mode="wait">

@@ -1,4 +1,6 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { body, validationResult } from 'express-validator';
 import pool from '../database/connection.js';
 import { authenticate, isHOD } from '../middleware/auth.js';
@@ -864,7 +866,7 @@ router.post('/users', [
     .withMessage('Password must be at least 12 characters')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
     .withMessage('Password must contain uppercase, lowercase, number, and special character (@$!%*?&)'),
-  body('role').isIn(['student', 'staff', 'hod']).withMessage('Invalid role')
+  body('role').isIn(['student', 'staff']).withMessage('Role must be student or staff')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -880,7 +882,6 @@ router.post('/users', [
       return res.status(400).json({ success: false, message: 'Email already exists' });
     }
 
-    const bcrypt = await import('bcryptjs');
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await pool.query(
@@ -904,11 +905,22 @@ router.post('/users', [
 // @route   PUT /api/hod/users/:id
 // @desc    Update a user
 // @access  HOD
-router.put('/users/:id', async (req, res) => {
+router.put('/users/:id', [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('role').isIn(['student', 'staff']).withMessage('Role must be student or staff'),
+  body('password').optional().isLength({ min: 12 })
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
+    .withMessage('Password must be at least 12 chars with uppercase, lowercase, number and special char'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   try {
     const { name, email, password, role, department, roll_number, year } = req.body;
 
-    const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [req.params.id]);
+    const [users] = await pool.query('SELECT id FROM users WHERE id = ?', [req.params.id]);
     if (users.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -917,7 +929,6 @@ router.put('/users/:id', async (req, res) => {
     let params = [name, email, role, department || null, roll_number || null, year || null];
 
     if (password) {
-      const bcrypt = await import('bcryptjs');
       const hashedPassword = await bcrypt.hash(password, 10);
       updateQuery += ', password = ?';
       params.push(hashedPassword);
@@ -1183,7 +1194,6 @@ router.post('/users/bulk-import', [
   if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
 
   const { users } = req.body;
-  const bcrypt = await import('bcryptjs');
 
   const results = { created: 0, skipped: 0, errors: [] };
 
@@ -1194,9 +1204,9 @@ router.post('/users/bulk-import', [
       results.skipped++;
       continue;
     }
-    const validRoles = ['student', 'staff', 'hod'];
+    const validRoles = ['student', 'staff'];
     if (!validRoles.includes(role)) {
-      results.errors.push({ email, reason: `Invalid role: ${role}` });
+      results.errors.push({ email, reason: `Invalid role: ${role} (must be student or staff)` });
       results.skipped++;
       continue;
     }
@@ -1209,13 +1219,16 @@ router.post('/users/bulk-import', [
         results.skipped++;
         continue;
       }
-      const defaultPassword = employee_id; // Default password = employee ID
-      const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+      // Generate a unique random temporary password (not predictable)
+      const tempPassword = crypto.randomBytes(8).toString('hex'); // 16-char hex
+      const hashedPassword = await bcrypt.hash(tempPassword, 10);
       await pool.query(
         'INSERT INTO users (name, email, employee_id, password, role, department, phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [name.trim(), email.trim().toLowerCase(), employee_id.trim(), hashedPassword, role, department || null, phone || null]
       );
       results.created++;
+      // Include temp password in response so HOD can distribute credentials
+      results.errors.push({ email, reason: `Created — temp password: ${tempPassword}` });
     } catch (err) {
       results.errors.push({ email, reason: err.message });
       results.skipped++;

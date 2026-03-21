@@ -19,9 +19,16 @@ const suggestedQuestions = [
 
 export default function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hi! I\'m your EventPass AI assistant. Ask me anything about OD requests, events, or policies!' }
-  ])
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ai_chat_history')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {}
+    return [{ role: 'assistant', content: 'Hi! I\'m your EventPass AI assistant. Ask me anything about OD requests, events, or policies!' }]
+  })
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef(null)
@@ -35,6 +42,16 @@ export default function AIChatWidget() {
   useEffect(() => {
     if (isOpen) inputRef.current?.focus()
   }, [isOpen])
+
+  // Persist chat history
+  useEffect(() => {
+    try { localStorage.setItem('ai_chat_history', JSON.stringify(messages.slice(-50))) } catch {}
+  }, [messages])
+
+  const clearHistory = () => {
+    setMessages([{ role: 'assistant', content: 'Hi! I\'m your EventPass AI assistant. Ask me anything about OD requests, events, or policies!' }])
+    localStorage.removeItem('ai_chat_history')
+  }
 
   const sendMessage = async (text) => {
     const userMessage = text || input.trim()
@@ -119,6 +136,15 @@ export default function AIChatWidget() {
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Clear history bar */}
+            {messages.length > 1 && (
+              <div className={`px-3 py-1.5 flex justify-end border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                <button onClick={clearHistory} className="text-[10px] text-gray-400 hover:text-red-400 transition-colors">
+                  Clear history
+                </button>
+              </div>
+            )}
 
             {/* Messages */}
             <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>

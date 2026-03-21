@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { hodAPI } from '../../services/api'
+import { hodAPI, featuresAPI } from '../../services/api'
 import { useTheme } from '../../context/ThemeContext'
 import {
   ClipboardDocumentListIcon,
@@ -123,15 +123,35 @@ export default function AuditTrail() {
             Complete timeline of all system actions — {total} events total
           </p>
         </div>
-        <button
-          onClick={handleRefresh}
-          className={`flex items-center gap-2 text-sm px-4 py-2 rounded-lg border font-medium transition-colors ${
-            isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              try {
+                const res = await featuresAPI.exportAuditLogs({ format: 'csv' })
+                const blob = new Blob([JSON.stringify(res.data.data, null, 2)], { type: 'text/csv' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url; a.download = `audit-log-${new Date().toISOString().split('T')[0]}.json`; a.click()
+                URL.revokeObjectURL(url)
+              } catch {}
+            }}
+            className={`flex items-center gap-2 text-sm px-4 py-2 rounded-lg border font-medium transition-colors ${
+              isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <ArrowDownTrayIcon className="w-4 h-4" />
+            Export
+          </button>
+          <button
+            onClick={handleRefresh}
+            className={`flex items-center gap-2 text-sm px-4 py-2 rounded-lg border font-medium transition-colors ${
+              isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

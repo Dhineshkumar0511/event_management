@@ -6,10 +6,13 @@ const router = express.Router();
 
 router.use(authenticate);
 
-// Chat is accessible to all authenticated users
+// Staff/HOD only routes below
+router.use(isStaffOrHOD);
+
+// Chat is accessible to staff and HOD
 // @route   POST /api/ai/chat
 // @desc    Chat with AI assistant
-// @access  All authenticated users
+// @access  Staff/HOD
 router.post('/chat', async (req, res) => {
   try {
     const { message, context } = req.body;
@@ -37,9 +40,6 @@ router.post('/chat', async (req, res) => {
     });
   }
 });
-
-// Staff/HOD only routes below
-router.use(isStaffOrHOD);
 
 // @route   POST /api/ai/verify-event
 // @desc    Verify if an event is real using AI

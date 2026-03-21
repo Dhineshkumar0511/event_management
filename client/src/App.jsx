@@ -44,6 +44,7 @@ import LiveTracking from './pages/hod/LiveTracking'
 import Reports from './pages/hod/Reports'
 import AuditTrail from './pages/hod/AuditTrail'
 import LeaveManagement from './pages/hod/LeaveManagement'
+import WhatsAppSettings from './pages/hod/WhatsAppSettings'
 
 // Leave Pages
 import NewLeaveRequest from './pages/student/NewLeaveRequest'
@@ -53,6 +54,14 @@ import StaffLeaveRequests from './pages/staff/LeaveRequests'
 // Shared Pages
 import Profile from './pages/shared/Profile'
 import WhatsAppReport from './pages/shared/WhatsAppReport'
+
+// New Feature Pages
+import Grievances from './pages/shared/Grievances'
+import HallOfFame from './pages/shared/HallOfFame'
+import CertificateRepository from './pages/shared/CertificateRepository'
+import AnnouncementManager from './pages/hod/AnnouncementManager'
+import AutoApprovalRules from './pages/hod/AutoApprovalRules'
+import StaffWorkload from './pages/hod/StaffWorkload'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -151,6 +160,9 @@ function App() {
           <Route path="leaves" element={<MyLeaves />} />
           <Route path="leaves/new" element={<NewLeaveRequest />} />
           <Route path="leave-letter/:id" element={<LeaveLetterView />} />
+          <Route path="grievances" element={<Grievances />} />
+          <Route path="hall-of-fame" element={<HallOfFame />} />
+          <Route path="certificates" element={<CertificateRepository />} />
         </Route>
 
         {/* Staff Routes */}
@@ -176,6 +188,9 @@ function App() {
           <Route path="leaves" element={<StaffLeaveRequests />} />
           <Route path="leave-letter/:id" element={<LeaveLetterView />} />
           <Route path="whatsapp-report" element={<WhatsAppReport />} />
+          <Route path="grievances" element={<Grievances />} />
+          <Route path="hall-of-fame" element={<HallOfFame />} />
+          <Route path="certificates" element={<CertificateRepository />} />
         </Route>
 
         {/* HOD Routes */}
@@ -205,6 +220,13 @@ function App() {
           <Route path="leaves" element={<LeaveManagement />} />
           <Route path="leave-letter/:id" element={<LeaveLetterView />} />
           <Route path="whatsapp-report" element={<WhatsAppReport />} />
+          <Route path="whatsapp-settings" element={<WhatsAppSettings />} />
+          <Route path="grievances" element={<Grievances />} />
+          <Route path="hall-of-fame" element={<HallOfFame />} />
+          <Route path="certificates" element={<CertificateRepository />} />
+          <Route path="announcements" element={<AnnouncementManager />} />
+          <Route path="auto-rules" element={<AutoApprovalRules />} />
+          <Route path="staff-workload" element={<StaffWorkload />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

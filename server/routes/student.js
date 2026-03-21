@@ -58,7 +58,7 @@ router.post('/od-request', isStudent, uploadDocuments, [
       });
     }
 
-    const requestId = `OD${Date.now().toString().slice(-8)}`;
+    const requestId = `OD${uuidv4().replace(/-/g, '').substring(0, 8).toUpperCase()}`;
     
     // Handle uploaded documents
     const supportingDocs = req.files ? req.files.map(f => ({

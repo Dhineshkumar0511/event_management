@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { studentAPI, leaveAPI } from '../../services/api'
+import { studentAPI, leaveAPI, featuresAPI } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 import { useTheme } from '../../context/ThemeContext'
 import {
@@ -22,6 +22,7 @@ const STATUS = {
 export default function StudentDashboard() {
   const [data, setData] = useState(null)
   const [leaveStats, setLeaveStats] = useState(null)
+  const [leaveBalance, setLeaveBalance] = useState(null)
   const [loading, setLoading] = useState(true)
   const { user } = useAuthStore()
   const { isDark } = useTheme()
@@ -30,11 +31,13 @@ export default function StudentDashboard() {
 
   const fetchDashboard = async () => {
     try {
-      const [response, lRes] = await Promise.all([
+      const [response, lRes, balRes] = await Promise.all([
         studentAPI.getDashboard(),
         leaveAPI.getMyLeaves({ limit: 100 }).catch(() => null),
+        featuresAPI.getLeaveBalance().catch(() => null),
       ])
       setData(response.data.data)
+      if (balRes?.data?.data) setLeaveBalance(balRes.data.data)
       if (lRes) {
         const leaves = lRes.data.data || []
         setLeaveStats({
@@ -111,6 +114,35 @@ export default function StudentDashboard() {
           )
         })}
       </div>
+
+      {/* Leave Balance */}
+      {leaveBalance && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <div className={`rounded-2xl p-5 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow`}>
+            <h3 className={`text-sm font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Leave Balance</h3>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: 'Total', value: leaveBalance.total_allowed || 15, color: 'text-blue-500' },
+                { label: 'Used', value: leaveBalance.used || 0, color: 'text-orange-500' },
+                { label: 'Remaining', value: (leaveBalance.total_allowed || 15) - (leaveBalance.used || 0), color: 'text-green-500' },
+              ].map(b => (
+                <div key={b.label} className="text-center">
+                  <div className={`text-2xl font-black ${b.color}`}>{b.value}</div>
+                  <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{b.label}</div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3">
+              <div className={`w-full h-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all"
+                  style={{ width: `${Math.min(100, ((leaveBalance.used || 0) / (leaveBalance.total_allowed || 15)) * 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Active Events Alert */}
       {data?.activeEvents?.length > 0 && (

@@ -19,7 +19,7 @@ const registerValidation = [
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
     .withMessage('Password must contain uppercase, lowercase, number, and special character (@$!%*?&)'),
   body('name').trim().notEmpty().withMessage('Name is required'),
-  body('role').isIn(['student', 'staff', 'hod']).withMessage('Invalid role')
+  body('role').isIn(['student', 'staff']).withMessage('Invalid role')
 ];
 
 const loginValidation = [
@@ -130,9 +130,9 @@ router.post('/login', loginValidation, async (req, res) => {
 
     const { email, password } = req.body;
 
-    // Find user
+    // Find user — select only required columns, never SELECT *
     const [users] = await pool.query(
-      'SELECT * FROM users WHERE email = ?',
+      'SELECT id, employee_id, email, password, name, role, department, year_of_study, section, phone, profile_image, is_active FROM users WHERE email = ?',
       [email]
     );
 
@@ -218,7 +218,17 @@ router.get('/me', authenticate, async (req, res) => {
 // @route   PUT /api/auth/profile
 // @desc    Update user profile
 // @access  Private
-router.put('/profile', authenticate, async (req, res) => {
+router.put('/profile', authenticate, [
+  body('name').trim().notEmpty().isLength({ max: 100 }).withMessage('Name is required (max 100 chars)'),
+  body('phone').optional({ nullable: true }).isMobilePhone().withMessage('Invalid phone number'),
+  body('department').optional({ nullable: true }).trim().isLength({ max: 100 }),
+  body('year_of_study').optional({ nullable: true }).isInt({ min: 1, max: 6 }),
+  body('section').optional({ nullable: true }).trim().isLength({ max: 10 })
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   try {
     const { name, phone, department, year_of_study, section } = req.body;
 
@@ -277,7 +287,10 @@ router.post('/profile-photo', authenticate, (req, res, next) => {
 // @access  Private
 router.put('/change-password', authenticate, [
   body('currentPassword').notEmpty().withMessage('Current password is required'),
-  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters')
+  body('newPassword')
+    .isLength({ min: 12 }).withMessage('New password must be at least 12 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
+    .withMessage('New password must contain uppercase, lowercase, number and special character (@$!%*?&)')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -354,13 +367,15 @@ router.post('/forgot-password', [
       return res.json({ success: true, message: 'If that email exists, a reset link has been sent.' });
     }
     const user = users[0];
-    const token = crypto.randomBytes(32).toString('hex');
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    // Store only the hashed token — raw token goes in the email URL only
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
     const expires = new Date(Date.now() + 3600000); // 1 hour
     await pool.query(
       'UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?',
-      [token, expires, user.id]
+      [hashedToken, expires, user.id]
     );
-    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
+    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${rawToken}`;
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -406,9 +421,11 @@ router.post('/reset-password', [
       return res.status(400).json({ success: false, errors: errors.array() });
     }
     const { token, password } = req.body;
+    // Compare hashed token — raw token was emailed, only hash stored in DB
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
     const [users] = await pool.query(
       'SELECT id FROM users WHERE password_reset_token = ? AND password_reset_expires > NOW()',
-      [token]
+      [hashedToken]
     );
     if (users.length === 0) {
       return res.status(400).json({ success: false, message: 'Invalid or expired reset link. Please request a new one.' });

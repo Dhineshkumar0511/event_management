@@ -181,3 +181,86 @@ export const whatsappAPI = {
   getUltraMsgGroups:  ()            => api.get('/whatsapp/ultramsg-groups'),
   getStaffContacts:   ()            => api.get('/whatsapp/staff-contacts'),
 };
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURES API - New enhancements
+// ═══════════════════════════════════════════════════════════════
+export const featuresAPI = {
+  // Announcements
+  getAnnouncements: () => api.get('/features/announcements'),
+  createAnnouncement: (data) => api.post('/features/announcements', data),
+  deleteAnnouncement: (id) => api.delete(`/features/announcements/${id}`),
+
+  // Comments / Messaging
+  getComments: (entityType, entityId) => api.get(`/features/comments/${entityType}/${entityId}`),
+  postComment: (data) => api.post('/features/comments', data),
+
+  // Rejection Templates
+  getRejectionTemplates: () => api.get('/features/rejection-templates'),
+  createRejectionTemplate: (data) => api.post('/features/rejection-templates', data),
+  useRejectionTemplate: (id) => api.put(`/features/rejection-templates/${id}/use`),
+  deleteRejectionTemplate: (id) => api.delete(`/features/rejection-templates/${id}`),
+
+  // Grievances / Appeals
+  fileGrievance: (data) => api.post('/features/grievances', data),
+  getGrievances: (params) => api.get('/features/grievances', { params }),
+  resolveGrievance: (id, data) => api.put(`/features/grievances/${id}/resolve`, data),
+
+  // Leave Balance
+  getLeaveBalance: (params) => api.get('/features/leave-balance', { params }),
+  updateLeaveBalance: (studentId, data) => api.put(`/features/leave-balance/${studentId}`, data),
+
+  // Auto-Approval Rules
+  getAutoRules: () => api.get('/features/auto-rules'),
+  createAutoRule: (data) => api.post('/features/auto-rules', data),
+  toggleAutoRule: (id) => api.put(`/features/auto-rules/${id}/toggle`),
+  deleteAutoRule: (id) => api.delete(`/features/auto-rules/${id}`),
+
+  // Bulk Actions
+  bulkApprove: (data) => api.put('/features/bulk-approve', data),
+  bulkReject: (data) => api.put('/features/bulk-reject', data),
+
+  // Sessions
+  getSessions: () => api.get('/features/sessions'),
+  revokeSession: (id) => api.delete(`/features/sessions/${id}`),
+
+  // Certificates
+  getCertificates: (params) => api.get('/features/certificates', { params }),
+  uploadCertificate: (formData) => api.post('/features/certificates', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  verifyCertificate: (id) => api.put(`/features/certificates/${id}/verify`),
+
+  // Audit Export
+  exportAuditLogs: (params) => api.get('/features/audit-export', { params }),
+
+  // Enhanced Reports
+  getEnhancedReports: (params) => api.get('/features/reports/enhanced', { params }),
+
+  // Bulk Import
+  bulkImportUsers: (users) => api.post('/features/bulk-import-users', { users }),
+
+  // Staff Workload
+  getStaffWorkload: () => api.get('/features/staff-workload'),
+
+  // Hall of Fame
+  getHallOfFame: (params) => api.get('/features/hall-of-fame', { params }),
+
+  // Student of the Month
+  getStudentOfMonth: (params) => api.get('/features/student-of-month', { params }),
+  selectStudentOfMonth: (data) => api.post('/features/student-of-month', data),
+  getTop5Students: () => api.get('/features/student-of-month/top5'),
+  deleteStudentOfMonth: (id) => api.delete(`/features/student-of-month/${id}`),
+  resetAllStudentOfMonth: () => api.delete('/features/student-of-month'),
+  seedDemoStudentOfMonth: () => api.post('/features/student-of-month/seed-demo'),
+
+  // Student Lookup
+  lookupStudent: (params) => api.get('/features/lookup-student', { params }),
+
+  // Duplicate Check
+  checkDuplicate: (params) => api.get('/features/check-duplicate', { params }),
+
+  // Calendar Export
+  exportCalendar: () => api.get('/features/calendar-export', { responseType: 'blob' }),
+
+  // Geofence
+  updateGeofence: (requestId, data) => api.put(`/features/geofence/${requestId}`, data),
+};

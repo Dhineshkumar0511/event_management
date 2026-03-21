@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { hodAPI } from '../../services/api'
+import { hodAPI, featuresAPI } from '../../services/api'
 import toast from 'react-hot-toast'
+import RequestComments from '../../components/RequestComments'
 import { 
   ArrowLeftIcon,
   CheckCircleIcon,
@@ -22,9 +23,11 @@ export default function HODReview() {
   const [submitting, setSubmitting] = useState(false)
   const [comments, setComments] = useState('')
   const [action, setAction] = useState(null)
+  const [rejectionTemplates, setRejectionTemplates] = useState([])
 
   useEffect(() => {
     fetchRequest()
+    featuresAPI.getRejectionTemplates().then(r => setRejectionTemplates(r.data.data || [])).catch(() => {})
   }, [id])
 
   const fetchRequest = async () => {
@@ -231,6 +234,16 @@ export default function HODReview() {
             </div>
           </motion.div>
 
+          {/* Request Discussion */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="card p-6"
+          >
+            <RequestComments entityType="od_request" entityId={id} />
+          </motion.div>
+
           {/* HOD Decision */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -244,6 +257,21 @@ export default function HODReview() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Comments (optional)
                 </label>
+                {rejectionTemplates.length > 0 && (
+                  <div className="mb-2">
+                    <p className="text-xs text-gray-500 mb-1">Quick templates:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {rejectionTemplates.map(t => (
+                        <button key={t.id} type="button"
+                          onClick={() => setComments(t.message)}
+                          className="text-xs px-2 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                        >
+                          {t.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <textarea
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}

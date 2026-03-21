@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../../store/authStore'
 import { useTheme } from '../../context/ThemeContext'
-import api, { leaveAPI } from '../../services/api'
+import api, { leaveAPI, featuresAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 import {
   ChevronLeftIcon,
@@ -14,7 +14,8 @@ import {
   PlusIcon,
   XMarkIcon,
   CheckCircleIcon,
-  UserIcon
+  UserIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -201,32 +202,50 @@ export default function EventCalendar() {
             {role === 'student' ? 'Your events overview' : 'Department events & availability'}
           </p>
         </div>
-        {role !== 'student' && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab('events')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                activeTab === 'events' ? 'bg-primary-600 text-white' : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
-              }`}
-            >Events</button>
-            <button
-              onClick={() => setActiveTab('availability')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                activeTab === 'availability' ? 'bg-primary-600 text-white' : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
-              }`}
-            >My Availability</button>
-            <button
-              onClick={() => {
-              const now = getNowTime()
-              setAvailForm({ date: selectedDate ? getDateStr(selectedDate) : getTodayStr(), start_time: now, duration: 1, end_time: addHours(now, 1), title: '', note: '' })
-              setShowAvailForm(true)
+        <div className="flex flex-wrap gap-2 items-center">
+          <button
+            onClick={async () => {
+              try {
+                const res = await featuresAPI.exportCalendar()
+                const blob = new Blob([res.data], { type: 'text/calendar' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url; a.download = 'eventpass-calendar.ics'; a.click()
+                URL.revokeObjectURL(url)
+                toast.success('Calendar exported')
+              } catch { toast.error('Export failed') }
             }}
-              className="btn btn-primary text-sm flex items-center gap-1"
-            >
-              <PlusIcon className="w-4 h-4" /> Set Availability
-            </button>
-          </div>
-        )}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          >
+            <ArrowDownTrayIcon className="w-4 h-4" /> Export iCal
+          </button>
+          {role !== 'student' && (
+            <>
+              <button
+                onClick={() => setActiveTab('events')}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  activeTab === 'events' ? 'bg-primary-600 text-white' : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
+                }`}
+              >Events</button>
+              <button
+                onClick={() => setActiveTab('availability')}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  activeTab === 'availability' ? 'bg-primary-600 text-white' : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
+                }`}
+              >My Availability</button>
+              <button
+                onClick={() => {
+                const now = getNowTime()
+                setAvailForm({ date: selectedDate ? getDateStr(selectedDate) : getTodayStr(), start_time: now, duration: 1, end_time: addHours(now, 1), title: '', note: '' })
+                setShowAvailForm(true)
+              }}
+                className="btn btn-primary text-sm flex items-center gap-1"
+              >
+                <PlusIcon className="w-4 h-4" /> Set Availability
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">

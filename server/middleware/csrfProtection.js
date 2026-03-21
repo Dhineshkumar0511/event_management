@@ -22,8 +22,10 @@ export const csrfProtection = (req, res, next) => {
       maxAge: 3600000, // 1 hour
       path: '/' // Ensure cookie is sent to all paths
     });
-    console.log('[CSRF] Generated new token:', token.substring(0, 10) + '...');
-  } else {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[CSRF] Generated new token:', token.substring(0, 10) + '...');
+    }
+  } else if (process.env.NODE_ENV !== 'production') {
     console.log('[CSRF] Reused existing token:', token.substring(0, 10) + '...');
   }
   
@@ -43,18 +45,16 @@ export const csrfValidate = (req, res, next) => {
   const token = req.headers['x-csrf-token'] || req.body?.csrfToken;
   const cookieToken = req.cookies?.['csrf-token'];
   
-  // Debug logging
-  console.log(`[CSRF] Method: ${req.method}, URL: ${req.path}, Token Header: ${token?.substring(0, 10) || 'undefined'}..., Cookie: ${cookieToken?.substring(0, 10) || 'undefined'}...`);
-  
   // Validate tokens match
   if (!token || !cookieToken || token !== cookieToken) {
-    console.log('[CSRF] Validation FAILED - tokens do not match or missing');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[CSRF] Validation FAILED — Method: ${req.method}, URL: ${req.path}`);
+    }
     return res.status(403).json({
       success: false,
       message: 'CSRF token validation failed'
     });
   }
   
-  console.log('[CSRF] Validation PASSED');
   next();
 };

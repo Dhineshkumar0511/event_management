@@ -1,17 +1,6 @@
 import PDFDocument from 'pdfkit';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import pool from '../database/connection.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Ensure letters directory exists
-const lettersDir = path.join(__dirname, '../../uploads/letters');
-if (!fs.existsSync(lettersDir)) {
-  fs.mkdirSync(lettersDir, { recursive: true });
-}
+import { cloudinary } from '../middleware/upload.js';
 
 /**
  * Generate OD Letter PDF
@@ -45,9 +34,8 @@ export const generateODLetter = async (odRequestId) => {
     [odRequestId]
   );
 
-  // Create PDF
-  const fileName = `OD_${request.request_id}_${Date.now()}.pdf`;
-  const filePath = path.join(lettersDir, fileName);
+  // Create PDF and upload to Cloudinary
+  const publicId = `OD_${request.request_id}_${Date.now()}`;
 
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -55,8 +43,15 @@ export const generateODLetter = async (odRequestId) => {
       margins: { top: 50, bottom: 50, left: 60, right: 60 }
     });
 
-    const stream = fs.createWriteStream(filePath);
-    doc.pipe(stream);
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: 'eventpass/letters', resource_type: 'raw', public_id: publicId, format: 'pdf' },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result.secure_url);
+      }
+    );
+
+    doc.pipe(uploadStream);
 
     // Header
     doc.fontSize(16)
@@ -208,12 +203,6 @@ export const generateODLetter = async (odRequestId) => {
 
     // Finalize
     doc.end();
-
-    stream.on('finish', () => {
-      resolve(`uploads/letters/${fileName}`);
-    });
-
-    stream.on('error', reject);
   });
 };
 
@@ -234,8 +223,7 @@ export const generateStatusLetter = async (odRequestId, status, comments) => {
   }
 
   const request = requests[0];
-  const fileName = `${status.toUpperCase()}_${request.request_id}_${Date.now()}.pdf`;
-  const filePath = path.join(lettersDir, fileName);
+  const publicId = `${status.toUpperCase()}_${request.request_id}_${Date.now()}`;
 
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -243,8 +231,15 @@ export const generateStatusLetter = async (odRequestId, status, comments) => {
       margins: { top: 50, bottom: 50, left: 60, right: 60 }
     });
 
-    const stream = fs.createWriteStream(filePath);
-    doc.pipe(stream);
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: 'eventpass/letters', resource_type: 'raw', public_id: publicId, format: 'pdf' },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result.secure_url);
+      }
+    );
+
+    doc.pipe(uploadStream);
 
     // Header
     doc.fontSize(16)
@@ -293,12 +288,6 @@ export const generateStatusLetter = async (odRequestId, status, comments) => {
     doc.text(`Date: ${new Date().toLocaleDateString('en-IN')}`);
 
     doc.end();
-
-    stream.on('finish', () => {
-      resolve(`uploads/letters/${fileName}`);
-    });
-
-    stream.on('error', reject);
   });
 };
 
