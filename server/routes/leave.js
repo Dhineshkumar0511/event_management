@@ -426,7 +426,8 @@ router.delete('/hod/:id', isHOD, async (req, res) => {
       try {
         const matches = leave.document_url.match(/\/upload\/(?:v\d+\/)?(?:eventpass\/)?(.*?)(?:\.[^.]+)?$/);
         if (matches?.[1]) {
-          await cloudinary.uploader.destroy(`eventpass/${matches[1]}`, { resource_type: 'auto' });
+          const resType = (leave.document_url.includes('/raw/') || /\.pdf$/i.test(leave.document_url)) ? 'raw' : 'image';
+          await cloudinary.uploader.destroy(`eventpass/${matches[1]}`, { resource_type: resType });
         }
       } catch (e) { console.error('Cloudinary delete error:', e); }
     }
@@ -470,7 +471,8 @@ router.delete('/staff/delete-all', isStaffOrHOD, async (req, res) => {
           const matches = leave.document_url.match(/\/upload\/(?:v\d+\/)?(?:eventpass\/)?(.*?)(?:\.[^.]+)?$/);
           if (matches && matches[1]) {
             const publicId = `eventpass/${matches[1]}`;
-            await cloudinary.uploader.destroy(publicId, { resource_type: 'auto' });
+            const resType = (leave.document_url.includes('/raw/') || /\.pdf$/i.test(leave.document_url)) ? 'raw' : 'image';
+            await cloudinary.uploader.destroy(publicId, { resource_type: resType });
           }
         } catch (e) {
           console.error(`Error deleting Cloudinary file: ${leave.document_url}`, e);
