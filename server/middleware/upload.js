@@ -5,13 +5,6 @@ import { fileURLToPath } from 'url';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
-<<<<<<< HEAD
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: (process.env.CLOUDINARY_CLOUD_NAME || '').trim(),
-  api_key:    (process.env.CLOUDINARY_API_KEY    || '').trim(),
-  api_secret: (process.env.CLOUDINARY_API_SECRET || '').trim(),
-=======
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const uploadsRoot = path.resolve(__dirname, '../../uploads');
@@ -56,7 +49,6 @@ const localStorageFor = (folder) => multer.diskStorage({
     const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
     cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`);
   },
->>>>>>> c3865dfd00ca7ce5331a945bfa9e3dac4132d0db
 });
 
 // Helper: create a Cloudinary storage for a specific folder + allowed formats

@@ -91,6 +91,7 @@ const migrate = async () => {
         year_of_study INT,
         section VARCHAR(10),
         phone VARCHAR(20),
+        parent_contact VARCHAR(20),
         is_team_lead BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (od_request_id) REFERENCES od_requests(id) ON DELETE CASCADE,
@@ -245,6 +246,10 @@ const migrate = async () => {
       try { await pool.query(sql); } catch {}
     }
     console.log('✅ OD Letter signature columns added');
+
+    // Add parent_contact column to team_members
+    try { await pool.query("ALTER TABLE team_members ADD COLUMN IF NOT EXISTS parent_contact VARCHAR(20) AFTER phone"); } catch {}
+    console.log('✅ team_members parent_contact column ensured');
 
     // ═══════════════════════════════════════════════════════════════
     // NEW: Automation, deadline enforcement & compliance tracking

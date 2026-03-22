@@ -64,6 +64,7 @@ const normalizeTeamMember = (member = {}) => ({
   year_of_study: member.year_of_study ? String(member.year_of_study).trim() : '',
   section: (member.section || '').trim(),
   phone: (member.phone || '').trim(),
+  parent_contact: (member.parent_contact || '').trim(),
 })
 
 const hasAnyTeamMemberValue = (member = {}) => Object.values(normalizeTeamMember(member)).some(Boolean)
@@ -166,7 +167,7 @@ export default function NewODRequest() {
             name: m.name || m.member_name || '', email: m.email || m.member_email || '',
             register_number: m.register_number || m.member_roll_number || '',
             department: m.department || '', year_of_study: m.year_of_study || '',
-            section: m.section || '', phone: m.phone || ''
+            section: m.section || '', phone: m.phone || '', parent_contact: m.parent_contact || ''
           })))
         }
       })
@@ -195,7 +196,7 @@ export default function NewODRequest() {
   }
 
   const addTeamMember = () => {
-    setTeamMembers([...teamMembers, { name: '', email: '', register_number: '', department: '', year_of_study: '', section: '', phone: '' }])
+    setTeamMembers([...teamMembers, { name: '', email: '', register_number: '', department: '', year_of_study: '', section: '', phone: '', parent_contact: '' }])
   }
   const updateTeamMember = (index, field, value) => {
     const updated = [...teamMembers]; updated[index][field] = value; setTeamMembers(updated)
@@ -669,6 +670,8 @@ export default function NewODRequest() {
                         </select>
                         <input type="tel" placeholder="Phone Number" value={member.phone}
                           onChange={(e) => updateTeamMember(index, 'phone', e.target.value)} className={inputCls} />
+                        <input type="tel" placeholder="Parent Contact Number" value={member.parent_contact}
+                          onChange={(e) => updateTeamMember(index, 'parent_contact', e.target.value)} className={inputCls} />
                       </div>
                     </motion.div>
                   ))}
