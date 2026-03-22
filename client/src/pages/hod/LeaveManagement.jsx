@@ -37,6 +37,14 @@ const STATUS_BADGE = {
   rejected:      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
 };
 
+const STATUS_LABEL = {
+  pending:        'Awaiting Staff Review',
+  staff_approved: 'Staff Approved',
+  staff_rejected: 'Rejected by Staff',
+  approved:       'Approved by HOD',
+  rejected:       'Rejected by HOD',
+};
+
 function HodReviewModal({ leave, onClose, onDone }) {
   const [action, setAction] = useState('approve');
   const [remarks, setRemarks] = useState('');
@@ -290,7 +298,7 @@ export default function HodLeaveManagement() {
             {[
               {
                 key: 'status', label: 'Status',
-                opts: [['', 'All Statuses'], ['pending','Pending'], ['staff_approved','Staff Approved'], ['staff_rejected','Staff Rejected'], ['approved','Approved'], ['rejected','Rejected']],
+                opts: [['', 'All Statuses'], ['pending','Awaiting Staff Review'], ['staff_approved','Staff Approved'], ['staff_rejected','Rejected by Staff'], ['approved','Approved by HOD'], ['rejected','Rejected by HOD']],
               },
               {
                 key: 'leave_type', label: 'Leave Type',
@@ -362,7 +370,7 @@ export default function HodLeaveManagement() {
                       leave.status === 'rejected' || leave.status === 'staff_rejected' ? 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700' :
                       'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700'
                     }`}>
-                      {leave.status.replace(/_/g, ' ')}
+                      {STATUS_LABEL[leave.status] || leave.status.replace(/_/g, ' ')}
                     </span>
                     {/* WhatsApp student */}
                     {leave.student_phone && (
@@ -375,29 +383,40 @@ export default function HodLeaveManagement() {
                         💬 WA
                       </a>
                     )}
-                    {/* Letter — highlighted as primary action */}
-                    <Link
-                      to={`/hod/leave-letter/${leave.id}`}
-                      onClick={e => e.stopPropagation()}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors border ${
-                        leave.hod_signature
-                          ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
-                          : 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600'
-                      }`}
-                    >
-                      <DocumentTextIcon className="h-3.5 w-3.5" />
-                      {leave.hod_signature ? '✓ Letter' : 'Sign Letter'}
-                    </Link>
+                    {/* Letter — only after staff approves */}
+                    {(leave.status === 'staff_approved' || leave.status === 'approved' || leave.status === 'rejected') && (
+                      <Link
+                        to={`/hod/leave-letter/${leave.id}`}
+                        onClick={e => e.stopPropagation()}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors border ${
+                          leave.hod_signature
+                            ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                            : 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600'
+                        }`}
+                      >
+                        <DocumentTextIcon className="h-3.5 w-3.5" />
+                        {leave.hod_signature ? '✓ Letter' : 'Sign Letter'}
+                      </Link>
+                    )}
                     {/* Final Decision — only for staff_approved, gated on signature */}
                     {leave.status === 'staff_approved' && (
-                      <button
-                        onClick={e => { e.stopPropagation(); setReviewLeave(leave); }}
-                        disabled={!leave.hod_signature}
-                        title={!leave.hod_signature ? 'Sign the letter first to enable Final Decision' : ''}
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        Final Decision
-                      </button>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <button
+                          onClick={e => { e.stopPropagation(); setReviewLeave(leave); }}
+                          disabled={!leave.hod_signature}
+                          title={!leave.hod_signature ? 'Sign the leave letter first, then Final Decision will unlock' : 'Give HOD final decision'}
+                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                            leave.hod_signature
+                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
+                              : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          {leave.hod_signature ? 'Final Decision' : '🔒 Final Decision'}
+                        </button>
+                        {!leave.hod_signature && (
+                          <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Sign letter first</span>
+                        )}
+                      </div>
                     )}
                     <button
                       onClick={e => handleDeleteOne(leave.id, e)}

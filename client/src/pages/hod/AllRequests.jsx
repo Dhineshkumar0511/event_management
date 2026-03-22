@@ -13,12 +13,12 @@ import {
 } from '@heroicons/react/24/outline'
 
 const statusConfig = {
-  pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' },
-  staff_review: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Staff Review' },
-  hod_review: { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'HOD Review' },
-  approved: { bg: 'bg-green-100', text: 'text-green-800', label: 'Approved' },
-  rejected: { bg: 'bg-red-100', text: 'text-red-800', label: 'Rejected' },
-  staff_rejected: { bg: 'bg-red-100', text: 'text-red-800', label: 'Staff Rejected' }
+  pending:        { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Awaiting Staff Review' },
+  staff_review:   { bg: 'bg-blue-100',   text: 'text-blue-800',   label: 'Under Staff Review' },
+  hod_review:     { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'Awaiting HOD Review' },
+  approved:       { bg: 'bg-green-100',  text: 'text-green-800',  label: 'Approved by HOD' },
+  rejected:       { bg: 'bg-red-100',    text: 'text-red-800',    label: 'Rejected by HOD' },
+  staff_rejected: { bg: 'bg-red-100',    text: 'text-red-800',    label: 'Rejected by Staff' },
 }
 
 const canDelete = () => true

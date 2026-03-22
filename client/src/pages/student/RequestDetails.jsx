@@ -16,12 +16,12 @@ import {
 } from '@heroicons/react/24/outline'
 
 const statusConfig = {
-  pending: { icon: ClockIcon, bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending Review' },
-  staff_review: { icon: ClockIcon, bg: 'bg-blue-100', text: 'text-blue-800', label: 'Staff Reviewing' },
-  hod_review: { icon: ClockIcon, bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'HOD Review' },
-  approved: { icon: CheckCircleIcon, bg: 'bg-green-100', text: 'text-green-800', label: 'Approved' },
-  rejected: { icon: XCircleIcon, bg: 'bg-red-100', text: 'text-red-800', label: 'Rejected' },
-  staff_rejected: { icon: XCircleIcon, bg: 'bg-red-100', text: 'text-red-800', label: 'Rejected by Staff' }
+  pending:        { icon: ClockIcon,       bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Awaiting Staff Review' },
+  staff_review:   { icon: ClockIcon,       bg: 'bg-blue-100',   text: 'text-blue-800',   label: 'Under Staff Review' },
+  hod_review:     { icon: ClockIcon,       bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'Awaiting HOD Review' },
+  approved:       { icon: CheckCircleIcon, bg: 'bg-green-100',  text: 'text-green-800',  label: 'Approved by HOD' },
+  rejected:       { icon: XCircleIcon,     bg: 'bg-red-100',    text: 'text-red-800',    label: 'Rejected by HOD' },
+  staff_rejected: { icon: XCircleIcon,     bg: 'bg-red-100',    text: 'text-red-800',    label: 'Rejected by Staff' },
 }
 
 export default function RequestDetails() {

@@ -12,13 +12,13 @@ const EVENT_EMOJI = {
 }
 
 const statusMap = {
-  pending:        { dot: 'bg-amber-400',   badge: 'bg-amber-100 text-amber-800',    label: 'Pending' },
+  pending:        { dot: 'bg-amber-400',   badge: 'bg-amber-100 text-amber-800',    label: 'Awaiting Staff Review' },
   draft:          { dot: 'bg-gray-400',    badge: 'bg-gray-100 text-gray-700',      label: 'Draft' },
-  staff_review:   { dot: 'bg-blue-400',    badge: 'bg-blue-100 text-blue-800',      label: 'Staff Review' },
-  hod_review:     { dot: 'bg-indigo-400',  badge: 'bg-indigo-100 text-indigo-800',  label: 'HOD Review' },
-  approved:       { dot: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-800',label: 'Approved' },
-  rejected:       { dot: 'bg-red-400',     badge: 'bg-red-100 text-red-800',        label: 'Rejected' },
-  staff_rejected: { dot: 'bg-red-400',     badge: 'bg-red-100 text-red-800',        label: 'Rejected' },
+  staff_review:   { dot: 'bg-blue-400',    badge: 'bg-blue-100 text-blue-800',      label: 'Under Staff Review' },
+  hod_review:     { dot: 'bg-indigo-400',  badge: 'bg-indigo-100 text-indigo-800',  label: 'Awaiting HOD Review' },
+  approved:       { dot: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-800',label: 'Approved by HOD' },
+  rejected:       { dot: 'bg-red-400',     badge: 'bg-red-100 text-red-800',        label: 'Rejected by HOD' },
+  staff_rejected: { dot: 'bg-red-400',     badge: 'bg-red-100 text-red-800',        label: 'Rejected by Staff' },
 }
 
 const canDelete = (status) => ['draft', 'rejected', 'staff_rejected'].includes(status)
