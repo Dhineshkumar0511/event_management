@@ -36,7 +36,7 @@ const migrate = async () => {
         id INT PRIMARY KEY AUTO_INCREMENT,
         request_id VARCHAR(50) UNIQUE NOT NULL,
         student_id INT NOT NULL,
-        event_name VARCHAR(255) NOT NULL,
+        event_name VARCHAR(500) NOT NULL,
         event_type ENUM('hackathon', 'symposium', 'sports', 'workshop', 'conference', 'cultural', 'other') NOT NULL,
         event_description TEXT,
         organizer_name VARCHAR(255),
@@ -239,6 +239,7 @@ const migrate = async () => {
     const sigColumns = [
       "ALTER TABLE od_requests ADD COLUMN IF NOT EXISTS staff_signature LONGTEXT",
       "ALTER TABLE od_requests ADD COLUMN IF NOT EXISTS hod_signature LONGTEXT",
+      "ALTER TABLE od_requests MODIFY COLUMN event_name VARCHAR(500) NOT NULL",
     ];
     for (const sql of sigColumns) {
       try { await pool.query(sql); } catch {}

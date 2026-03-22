@@ -9,6 +9,40 @@ import { uploadDocuments, cloudinary } from '../middleware/upload.js';
 
 const router = express.Router();
 
+const trimToNull = (value) => {
+  if (value === undefined || value === null) return null;
+  const trimmed = String(value).trim();
+  return trimmed === '' ? null : trimmed;
+};
+
+const normalizeTeamMember = (member = {}) => ({
+  name: trimToNull(member.name),
+  email: trimToNull(member.email),
+  register_number: trimToNull(member.register_number),
+  department: trimToNull(member.department),
+  year_of_study: trimToNull(member.year_of_study),
+  section: trimToNull(member.section),
+  phone: trimToNull(member.phone),
+});
+
+const hasAnyTeamMemberValue = (member = {}) => Object.values(normalizeTeamMember(member)).some(Boolean);
+
+const parseTeamMembers = (rawTeamMembers) => {
+  if (!rawTeamMembers) return [];
+
+  const parsed = typeof rawTeamMembers === 'string'
+    ? JSON.parse(rawTeamMembers)
+    : rawTeamMembers;
+
+  if (!Array.isArray(parsed)) {
+    throw new Error('Team members payload must be an array');
+  }
+
+  return parsed
+    .map(normalizeTeamMember)
+    .filter(hasAnyTeamMemberValue);
+};
+
 // Helper function to delete files from Cloudinary
 // Accepts URL strings OR doc objects {name, path, size} / {url} / {secure_url}
 const deleteCloudinaryFiles = async (fileUrls = []) => {
@@ -49,6 +83,11 @@ router.post('/od-request', isStudent, uploadDocuments, [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.error('[OD Create] Validation failed', {
+        studentId: req.user?.id,
+        errors: errors.array(),
+        body: req.body,
+      });
       return res.status(400).json({ success: false, errors: errors.array() });
     }
 
@@ -59,6 +98,30 @@ router.post('/od-request', isStudent, uploadDocuments, [
       event_start_time, event_end_time, parent_name, parent_phone,
       parent_email, emergency_contact, team_members
     } = req.body;
+
+    let parsedTeamMembers = [];
+    try {
+      parsedTeamMembers = parseTeamMembers(team_members);
+    } catch (parseError) {
+      console.error('[OD Create] Team member parse failed', {
+        studentId: req.user?.id,
+        rawTeamMembers: team_members,
+        message: parseError.message,
+        stack: parseError.stack,
+      });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid team member details. Please review the team section and try again.'
+      });
+    }
+
+    const invalidMemberIndex = parsedTeamMembers.findIndex(member => !member.name);
+    if (invalidMemberIndex !== -1) {
+      return res.status(400).json({
+        success: false,
+        message: `Team member ${invalidMemberIndex + 1} must include a name`
+      });
+    }
 
     // Duplicate check: same student, overlapping date range, not rejected/cancelled
     const [existing] = await pool.query(
@@ -117,9 +180,8 @@ router.post('/od-request', isStudent, uploadDocuments, [
     );
 
     // Add team members if provided
-    if (team_members) {
-      const members = JSON.parse(team_members);
-      for (const member of members) {
+    if (parsedTeamMembers.length > 0) {
+      for (const member of parsedTeamMembers) {
         await pool.query(
           `INSERT INTO team_members 
            (od_request_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
@@ -185,8 +247,33 @@ router.post('/od-request', isStudent, uploadDocuments, [
     });
 
   } catch (error) {
-    console.error('Create OD request error:', error);
-    res.status(500).json({ success: false, message: 'Failed to create OD request' });
+    console.error('[OD Create] Request failed', {
+      studentId: req.user?.id,
+      body: req.body,
+      files: req.files?.map(file => ({
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+      })),
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        errno: error.errno,
+        sqlState: error.sqlState,
+        sqlMessage: error.sqlMessage,
+        stack: error.stack,
+      }
+    });
+
+    const errorMessage = error.code === 'ER_DATA_TOO_LONG'
+      ? 'One of the submitted fields is too long. Please shorten it and try again.'
+      : error.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD'
+      ? 'One of the submitted values has an invalid format. Please review the form and try again.'
+      : 'Failed to create OD request';
+
+    res.status(500).json({ success: false, message: errorMessage });
   }
 });
 
@@ -334,8 +421,33 @@ router.put('/od-request/:id', isStudent, uploadDocuments, async (req, res) => {
       organizer_contact, event_website, venue, location_city,
       location_state, event_start_date, event_end_date,
       event_start_time, event_end_time, parent_name, parent_phone,
-      parent_email, emergency_contact
+      parent_email, emergency_contact, team_members
     } = req.body;
+
+    let parsedTeamMembers = [];
+    try {
+      parsedTeamMembers = parseTeamMembers(team_members);
+    } catch (parseError) {
+      console.error('[OD Update] Team member parse failed', {
+        studentId: req.user?.id,
+        requestId: req.params.id,
+        rawTeamMembers: team_members,
+        message: parseError.message,
+        stack: parseError.stack,
+      });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid team member details. Please review the team section and try again.'
+      });
+    }
+
+    const invalidMemberIndex = parsedTeamMembers.findIndex(member => !member.name);
+    if (invalidMemberIndex !== -1) {
+      return res.status(400).json({
+        success: false,
+        message: `Team member ${invalidMemberIndex + 1} must include a name`
+      });
+    }
 
     // Handle new uploaded documents
     let supportingDocs = existing[0].supporting_documents || [];
@@ -358,7 +470,7 @@ router.put('/od-request/:id', isStudent, uploadDocuments, async (req, res) => {
        venue = ?, location_city = ?, location_state = ?,
        event_start_date = ?, event_end_date = ?, event_start_time = ?,
        event_end_time = ?, parent_name = ?, parent_phone = ?,
-       parent_email = ?, emergency_contact = ?, supporting_documents = ?,
+      parent_email = ?, emergency_contact = ?, supporting_documents = ?,
        status = 'pending', staff_comments = NULL, hod_comments = NULL
        WHERE id = ?`,
       [event_name, event_type, event_description, organizer_name,
@@ -368,14 +480,59 @@ router.put('/od-request/:id', isStudent, uploadDocuments, async (req, res) => {
        emergency_contact, JSON.stringify(supportingDocs), req.params.id]
     );
 
+    await pool.query('DELETE FROM team_members WHERE od_request_id = ?', [req.params.id]);
+    await pool.query(
+      `INSERT INTO team_members 
+       (od_request_id, student_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [req.params.id, req.user.id, req.user.name, req.user.email, req.user.employee_id,
+       req.user.department, req.user.year_of_study, req.user.section, req.user.phone, true]
+    );
+
+    for (const member of parsedTeamMembers) {
+      await pool.query(
+        `INSERT INTO team_members 
+         (od_request_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [req.params.id, member.name, member.email, member.register_number,
+         member.department, member.year_of_study, member.section, member.phone, false]
+      );
+    }
+
     res.json({
       success: true,
       message: 'OD request updated and resubmitted'
     });
 
   } catch (error) {
-    console.error('Update OD request error:', error);
-    res.status(500).json({ success: false, message: 'Failed to update OD request' });
+    console.error('[OD Update] Request failed', {
+      studentId: req.user?.id,
+      requestId: req.params.id,
+      body: req.body,
+      files: req.files?.map(file => ({
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+      })),
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        errno: error.errno,
+        sqlState: error.sqlState,
+        sqlMessage: error.sqlMessage,
+        stack: error.stack,
+      }
+    });
+
+    const errorMessage = error.code === 'ER_DATA_TOO_LONG'
+      ? 'One of the submitted fields is too long. Please shorten it and try again.'
+      : error.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD'
+      ? 'One of the submitted values has an invalid format. Please review the form and try again.'
+      : 'Failed to update OD request';
+
+    res.status(500).json({ success: false, message: errorMessage });
   }
 });
 
