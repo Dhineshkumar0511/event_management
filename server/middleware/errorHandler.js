@@ -23,6 +23,12 @@ export const errorHandler = (err, req, res, next) => {
     message = 'Invalid reference. Related record not found.';
   }
 
+  // Unknown column / bad field — DB schema mismatch
+  if (err.code === 'ER_BAD_FIELD_ERROR') {
+    statusCode = 500;
+    message = 'A database configuration error occurred. Please contact support or try again shortly.';
+  }
+
   res.status(statusCode).json({
     success: false,
     message,

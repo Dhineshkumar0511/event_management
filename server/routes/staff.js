@@ -480,7 +480,12 @@ router.put('/od-request/:id/reject', [
 
   } catch (error) {
     console.error('Staff reject error:', error);
-    res.status(500).json({ success: false, message: 'Failed to reject request' });
+    res.status(500).json({
+      success: false,
+      message: error.sqlMessage
+        ? `Database error: ${error.sqlMessage}`
+        : (error.message || 'Failed to reject request')
+    });
   }
 });
 

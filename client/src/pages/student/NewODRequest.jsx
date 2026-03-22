@@ -263,14 +263,26 @@ export default function NewODRequest() {
         message: error.message,
         status: error.response?.status,
         data: error.response?.data,
-        requestPayload: {
-          ...formData,
-          teamMembers: teamMembers.map(normalizeTeamMember),
-          documentCount: documents.length,
-        }
       })
-      const validationMessage = error.response?.data?.errors?.[0]?.msg
-      toast.error(error.response?.data?.message || validationMessage || 'Failed to submit request')
+      const serverMsg = error.response?.data?.message
+      const validationMsg = error.response?.data?.errors?.[0]?.msg
+      const status = error.response?.status
+
+      let userMsg = 'Failed to submit request. Please try again.'
+      if (validationMsg) {
+        userMsg = validationMsg
+      } else if (serverMsg) {
+        userMsg = serverMsg
+      } else if (!error.response) {
+        userMsg = 'Network error — check your connection and try again.'
+      } else if (status === 413) {
+        userMsg = 'Uploaded files are too large. Please reduce file sizes and try again.'
+      } else if (status === 400) {
+        userMsg = 'Some fields are invalid. Please review your form and try again.'
+      } else if (status >= 500) {
+        userMsg = 'Server error while saving your request. Please try again in a moment.'
+      }
+      toast.error(userMsg, { duration: 5000 })
     } finally {
       setIsSubmitting(false)
     }

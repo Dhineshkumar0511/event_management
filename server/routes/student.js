@@ -171,24 +171,49 @@ router.post('/od-request', isStudent, uploadDocuments, [
     const odRequestId = result.insertId;
 
     // Add the student as team lead
-    await pool.query(
-      `INSERT INTO team_members 
-       (od_request_id, student_id, name, email, register_number, department, year_of_study, section, phone, parent_contact, is_team_lead)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [odRequestId, req.user.id, req.user.name, req.user.email, req.user.employee_id,
-       req.user.department, req.user.year_of_study, req.user.section, req.user.phone, null, true]
-    );
+    try {
+      await pool.query(
+        `INSERT INTO team_members 
+         (od_request_id, student_id, name, email, register_number, department, year_of_study, section, phone, parent_contact, is_team_lead)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [odRequestId, req.user.id, req.user.name, req.user.email, req.user.employee_id,
+         req.user.department, req.user.year_of_study, req.user.section, req.user.phone, null, true]
+      );
+    } catch (tmErr) {
+      if (tmErr.code === 'ER_BAD_FIELD_ERROR' && tmErr.message.includes('parent_contact')) {
+        // Column missing — fallback without parent_contact
+        await pool.query(
+          `INSERT INTO team_members 
+           (od_request_id, student_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [odRequestId, req.user.id, req.user.name, req.user.email, req.user.employee_id,
+           req.user.department, req.user.year_of_study, req.user.section, req.user.phone, true]
+        );
+      } else throw tmErr;
+    }
 
     // Add team members if provided
     if (parsedTeamMembers.length > 0) {
       for (const member of parsedTeamMembers) {
-        await pool.query(
-          `INSERT INTO team_members 
-           (od_request_id, name, email, register_number, department, year_of_study, section, phone, parent_contact, is_team_lead)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [odRequestId, member.name, member.email, member.register_number,
-           member.department, member.year_of_study, member.section, member.phone, member.parent_contact || null, false]
-        );
+        try {
+          await pool.query(
+            `INSERT INTO team_members 
+             (od_request_id, name, email, register_number, department, year_of_study, section, phone, parent_contact, is_team_lead)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [odRequestId, member.name, member.email, member.register_number,
+             member.department, member.year_of_study, member.section, member.phone, member.parent_contact || null, false]
+          );
+        } catch (tmErr) {
+          if (tmErr.code === 'ER_BAD_FIELD_ERROR' && tmErr.message.includes('parent_contact')) {
+            await pool.query(
+              `INSERT INTO team_members 
+               (od_request_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [odRequestId, member.name, member.email, member.register_number,
+               member.department, member.year_of_study, member.section, member.phone, false]
+            );
+          } else throw tmErr;
+        }
       }
     }
 
@@ -481,22 +506,48 @@ router.put('/od-request/:id', isStudent, uploadDocuments, async (req, res) => {
     );
 
     await pool.query('DELETE FROM team_members WHERE od_request_id = ?', [req.params.id]);
-    await pool.query(
-      `INSERT INTO team_members 
-       (od_request_id, student_id, name, email, register_number, department, year_of_study, section, phone, parent_contact, is_team_lead)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [req.params.id, req.user.id, req.user.name, req.user.email, req.user.employee_id,
-       req.user.department, req.user.year_of_study, req.user.section, req.user.phone, null, true]
-    );
 
-    for (const member of parsedTeamMembers) {
+    // Insert team lead — fallback if parent_contact column not yet migrated
+    try {
       await pool.query(
         `INSERT INTO team_members 
-         (od_request_id, name, email, register_number, department, year_of_study, section, phone, parent_contact, is_team_lead)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [req.params.id, member.name, member.email, member.register_number,
-         member.department, member.year_of_study, member.section, member.phone, member.parent_contact || null, false]
+         (od_request_id, student_id, name, email, register_number, department, year_of_study, section, phone, parent_contact, is_team_lead)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [req.params.id, req.user.id, req.user.name, req.user.email, req.user.employee_id,
+         req.user.department, req.user.year_of_study, req.user.section, req.user.phone, null, true]
       );
+    } catch (tmErr) {
+      if (tmErr.code === 'ER_BAD_FIELD_ERROR' && tmErr.message.includes('parent_contact')) {
+        await pool.query(
+          `INSERT INTO team_members 
+           (od_request_id, student_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [req.params.id, req.user.id, req.user.name, req.user.email, req.user.employee_id,
+           req.user.department, req.user.year_of_study, req.user.section, req.user.phone, true]
+        );
+      } else throw tmErr;
+    }
+
+    for (const member of parsedTeamMembers) {
+      try {
+        await pool.query(
+          `INSERT INTO team_members 
+           (od_request_id, name, email, register_number, department, year_of_study, section, phone, parent_contact, is_team_lead)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [req.params.id, member.name, member.email, member.register_number,
+           member.department, member.year_of_study, member.section, member.phone, member.parent_contact || null, false]
+        );
+      } catch (tmErr) {
+        if (tmErr.code === 'ER_BAD_FIELD_ERROR' && tmErr.message.includes('parent_contact')) {
+          await pool.query(
+            `INSERT INTO team_members 
+             (od_request_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [req.params.id, member.name, member.email, member.register_number,
+             member.department, member.year_of_study, member.section, member.phone, false]
+          );
+        } else throw tmErr;
+      }
     }
 
     res.json({

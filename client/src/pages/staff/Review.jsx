@@ -79,7 +79,25 @@ export default function Review() {
         navigate('/staff/requests')
       }
     } catch (error) {
-      toast.error(`Failed to ${actionType} request`)
+      // Show the actual reason from the server
+      const serverMsg = error.response?.data?.message
+      const validationMsg = error.response?.data?.errors?.[0]?.msg
+      const status = error.response?.status
+
+      let msg
+      if (validationMsg) {
+        msg = validationMsg  // e.g. 'Please provide a reason for rejection'
+      } else if (serverMsg) {
+        msg = serverMsg      // e.g. 'Cannot reject request in current status'
+      } else if (!error.response) {
+        msg = 'Network error — check your connection'
+      } else if (status === 403) {
+        msg = 'You do not have permission to perform this action'
+      } else {
+        msg = `Failed to ${actionType} request`
+      }
+
+      toast.error(msg, { duration: 5000 })
       console.error('Submit error:', error)
     } finally {
       setSubmitting(false)

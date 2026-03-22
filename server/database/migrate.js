@@ -247,9 +247,17 @@ const migrate = async () => {
     }
     console.log('✅ OD Letter signature columns added');
 
-    // Add parent_contact column to team_members
-    try { await pool.query("ALTER TABLE team_members ADD COLUMN IF NOT EXISTS parent_contact VARCHAR(20) AFTER phone"); } catch {}
-    console.log('✅ team_members parent_contact column ensured');
+    // Add parent_contact column to team_members (TiDB-safe: no IF NOT EXISTS)
+    try {
+      await pool.query('ALTER TABLE team_members ADD COLUMN parent_contact VARCHAR(20) AFTER phone');
+      console.log('✅ team_members parent_contact column added');
+    } catch (e) {
+      if (e.errno === 1060 || e.code === 'ER_DUP_FIELDNAME') {
+        console.log('✅ team_members parent_contact column already exists');
+      } else {
+        console.error('⚠️  Could not add parent_contact column:', e.message);
+      }
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // NEW: Automation, deadline enforcement & compliance tracking
