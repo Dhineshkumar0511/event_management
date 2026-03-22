@@ -88,6 +88,12 @@ export default function AuditTrail() {
 
   useEffect(() => { fetchLogs(0) }, [])
 
+  // Auto-refresh every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => fetchLogs(page), 60000)
+    return () => clearInterval(interval)
+  }, [page, fetchLogs])
+
   const handleFilter = (key, val) => {
     const f = { ...filters, [key]: val }
     setFilters(f)
@@ -114,7 +120,7 @@ export default function AuditTrail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -273,7 +279,7 @@ export default function AuditTrail() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pr-20">
           <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             Page {page + 1} of {totalPages} ({total} total)
           </p>

@@ -96,6 +96,7 @@ export default function Leaderboard() {
   const [selected, setSelected] = useState(new Set())
   const [deleting, setDeleting] = useState(false)
   const [confirmBulk, setConfirmBulk] = useState(false)
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
 
   const fetchLeaderboard = useCallback(async () => {
     setLoading(true)
@@ -129,7 +130,8 @@ export default function Leaderboard() {
 
   useEffect(() => {
     const timer = setTimeout(fetchLeaderboard, 300)
-    return () => clearTimeout(timer)
+    const interval = setInterval(fetchLeaderboard, 60000)
+    return () => { clearTimeout(timer); clearInterval(interval) }
   }, [fetchLeaderboard])
 
   const toggleSelect = (id) => {
@@ -171,6 +173,23 @@ export default function Leaderboard() {
       fetchLeaderboard()
     } catch {
       toast.error('Failed to delete entries')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleDeleteAll = async () => {
+    setDeleting(true)
+    try {
+      const ids = entries.map(e => e.id)
+      if (!ids.length) { toast.error('No entries to delete'); setDeleting(false); return }
+      await trackingAPI.deleteResults(ids)
+      toast.success(`${ids.length} entry(s) deleted`)
+      setSelected(new Set())
+      setConfirmDeleteAll(false)
+      fetchLeaderboard()
+    } catch {
+      toast.error('Failed to delete all entries')
     } finally {
       setDeleting(false)
     }
@@ -260,6 +279,15 @@ export default function Leaderboard() {
             >
               <TrashIcon className="w-4 h-4" />
               Delete {selected.size}
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={() => setConfirmDeleteAll(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+            >
+              <TrashIcon className="w-4 h-4" />
+              Delete All
             </button>
           )}
           <button
@@ -636,6 +664,49 @@ export default function Leaderboard() {
           </div>
         </div>
       )}
+
+      {/* Delete All confirmation modal */}
+      <AnimatePresence>
+        {confirmDeleteAll && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+            onClick={() => setConfirmDeleteAll(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className={`w-full max-w-sm rounded-2xl shadow-xl p-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <TrashIcon className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Delete All {entries.length} Entries</h3>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>This action cannot be undone.</p>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={() => setConfirmDeleteAll(false)}
+                  className={`flex-1 py-2 rounded-lg border text-sm font-medium ${
+                    isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >Cancel</button>
+                <button
+                  onClick={handleDeleteAll}
+                  disabled={deleting}
+                  className="flex-1 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-70 flex items-center justify-center gap-2"
+                >
+                  {deleting ? <div className="spinner w-4 h-4" /> : <TrashIcon className="w-4 h-4" />}
+                  {deleting ? 'Deleting...' : 'Delete All'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Bulk delete confirmation modal */}
       <AnimatePresence>

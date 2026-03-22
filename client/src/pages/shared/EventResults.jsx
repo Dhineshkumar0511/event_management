@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { trackingAPI } from '../../services/api'
 import { useTheme } from '../../context/ThemeContext'
+import { useAuthStore } from '../../store/authStore'
 import toast from 'react-hot-toast'
 import {
   TrophyIcon, MagnifyingGlassIcon, CheckBadgeIcon as CheckBadgeOutline,
   DocumentTextIcon, PhotoIcon, XMarkIcon, CurrencyRupeeIcon, GiftIcon,
   LightBulbIcon, UserGroupIcon, ChatBubbleLeftRightIcon, FunnelIcon,
-  ChevronDownIcon, ChevronUpIcon, ClockIcon, SparklesIcon,
+  ChevronDownIcon, ChevronUpIcon, ClockIcon, SparklesIcon, TrashIcon, ArrowPathIcon,
 } from '@heroicons/react/24/outline'
 import { CheckBadgeIcon } from '@heroicons/react/24/solid'
 
@@ -32,6 +33,8 @@ const TYPE_STYLES = {
 
 export default function EventResults() {
   const { isDark } = useTheme()
+  const { user } = useAuthStore()
+  const canDelete = user?.role === 'staff' || user?.role === 'hod'
 
   const [results, setResults]               = useState([])
   const [loading, setLoading]               = useState(true)
@@ -43,8 +46,15 @@ export default function EventResults() {
   const [showVerifyFor, setShowVerifyFor]   = useState(null)
   const [lightboxPhoto, setLightboxPhoto]   = useState(null)
   const [stats, setStats]                   = useState({})
+  const [deletingId, setDeletingId]         = useState(null)
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
+  const [deletingAll, setDeletingAll]       = useState(false)
 
-  useEffect(() => { fetchResults() }, [filterType])
+  useEffect(() => {
+    fetchResults()
+    const interval = setInterval(fetchResults, 60000)
+    return () => clearInterval(interval)
+  }, [filterType])
 
   const fetchResults = async () => {
     setLoading(true)
@@ -77,6 +87,30 @@ export default function EventResults() {
     } catch (e) { toast.error('Failed to verify') } finally { setVerifyingId(null) }
   }
 
+  const handleDeleteOne = async (id, e) => {
+    e.stopPropagation()
+    if (!window.confirm('Delete this result entry? This cannot be undone.')) return
+    setDeletingId(id)
+    try {
+      await trackingAPI.deleteResult(id)
+      toast.success('Result deleted')
+      setResults(prev => prev.filter(r => r.id !== id))
+    } catch { toast.error('Failed to delete result') } finally { setDeletingId(null) }
+  }
+
+  const handleDeleteAll = async () => {
+    setDeletingAll(true)
+    try {
+      const ids = results.map(r => r.id)
+      if (!ids.length) { toast.error('No results to delete'); return }
+      await trackingAPI.deleteResults(ids)
+      toast.success(`${ids.length} result(s) deleted`)
+      setResults([])
+      setStats({})
+      setConfirmDeleteAll(false)
+    } catch { toast.error('Failed to delete results') } finally { setDeletingAll(false) }
+  }
+
   const card = isDark ? 'bg-gray-800' : 'bg-white'
   const sub  = isDark ? 'text-gray-400' : 'text-gray-500'
   const head = isDark ? 'text-white' : 'text-gray-900'
@@ -101,6 +135,25 @@ export default function EventResults() {
             <span>🏆</span> Event Results
           </h1>
           <p className={sub}>Post-event reports submitted by students</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`text-xs ${sub}`}>Auto-refresh: 1 min</span>
+          <button
+            onClick={fetchResults}
+            className={`p-2 rounded-lg border text-sm font-medium transition-colors ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            title="Refresh"
+          >
+            <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          {canDelete && results.length > 0 && (
+            <button
+              onClick={() => setConfirmDeleteAll(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-700 text-white"
+            >
+              <TrashIcon className="w-4 h-4" />
+              Delete All
+            </button>
+          )}
         </div>
       </motion.div>
 
@@ -203,6 +256,18 @@ export default function EventResults() {
                           className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white text-xs font-semibold shadow flex items-center gap-1.5 transition-all"
                         >
                           <CheckBadgeOutline className="w-4 h-4" /> Verify
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={e => handleDeleteOne(r.id, e)}
+                          disabled={deletingId === r.id}
+                          className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${isDark ? 'text-red-400 hover:bg-red-900/20' : 'text-red-400 hover:bg-red-50'}`}
+                          title="Delete result"
+                        >
+                          {deletingId === r.id
+                            ? <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                            : <TrashIcon className="w-4 h-4" />}
                         </button>
                       )}
                       <button onClick={() => setExpanded(isOpen ? null : r.id)}
@@ -325,6 +390,44 @@ export default function EventResults() {
           })}
         </div>
       )}
+
+      {/* ── Delete All Modal ── */}
+      <AnimatePresence>
+        {confirmDeleteAll && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+            onClick={() => setConfirmDeleteAll(false)}
+          >
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className={`w-full max-w-sm rounded-2xl shadow-xl p-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <TrashIcon className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Delete All {results.length} Results</h3>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>This cannot be undone.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setConfirmDeleteAll(false)}
+                  className={`flex-1 py-2.5 rounded-xl border text-sm font-medium ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                >Cancel</button>
+                <button onClick={handleDeleteAll} disabled={deletingAll}
+                  className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {deletingAll
+                    ? <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    : <TrashIcon className="w-4 h-4" />}
+                  {deletingAll ? 'Deleting...' : 'Delete All'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Lightbox ── */}
       <AnimatePresence>

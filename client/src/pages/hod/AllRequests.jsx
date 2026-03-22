@@ -28,11 +28,17 @@ export default function AllRequests() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [eventTypeFilter, setEventTypeFilter] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [studentSearch, setStudentSearch] = useState('')
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [toast, setToast] = useState(null)
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false)
+  const [deletingAll, setDeletingAll] = useState(false)
 
   useEffect(() => {
     fetchRequests()
@@ -57,12 +63,20 @@ export default function AllRequests() {
     setTimeout(() => setToast(null), 3000)
   }
 
-  const filteredRequests = requests.filter(req => 
-    search === '' || 
-    req.event_name?.toLowerCase().includes(search.toLowerCase()) ||
-    req.student_name?.toLowerCase().includes(search.toLowerCase()) ||
-    req.student_roll_number?.toLowerCase().includes(search.toLowerCase())
-  )
+  const filteredRequests = requests.filter(req => {
+    const eventMatch = search === '' ||
+      req.event_name?.toLowerCase().includes(search.toLowerCase()) ||
+      req.venue?.toLowerCase().includes(search.toLowerCase())
+    const studentMatch = studentSearch === '' ||
+      req.student_name?.toLowerCase().includes(studentSearch.toLowerCase()) ||
+      req.student_roll_number?.toLowerCase().includes(studentSearch.toLowerCase())
+    const typeMatch = eventTypeFilter === '' ||
+      req.event_type?.toLowerCase() === eventTypeFilter.toLowerCase()
+    const eventDate = req.event_start_date ? new Date(req.event_start_date) : null
+    const fromMatch = !dateFrom || (eventDate && eventDate >= new Date(dateFrom))
+    const toMatch = !dateTo || (eventDate && eventDate <= new Date(dateTo))
+    return eventMatch && studentMatch && typeMatch && fromMatch && toMatch
+  })
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -124,6 +138,21 @@ export default function AllRequests() {
 
   const deletableCount = filteredRequests.filter(r => canDelete(r.status)).length
 
+  const handleDeleteAll = async () => {
+    setDeletingAll(true)
+    try {
+      const res = await hodAPI.deleteAll()
+      showToast(res.data.message || 'All requests deleted')
+      setRequests([])
+      setSelectedIds(new Set())
+      setShowDeleteAllModal(false)
+    } catch (error) {
+      showToast(error.response?.data?.message || 'Failed to delete all', 'error')
+    } finally {
+      setDeletingAll(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -131,42 +160,91 @@ export default function AllRequests() {
           <h1 className="text-2xl font-bold text-gray-900">All Requests</h1>
           <p className="text-gray-500">Complete history of all OD requests</p>
         </div>
-        {filteredRequests.length > 0 && (
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => exportToCSV(filteredRequests.map(formatRequestForExport), 'all_od_requests')}
-            className="btn btn-outline btn-sm"
+            onClick={() => setShowDeleteAllModal(true)}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
           >
-            <ArrowDownTrayIcon className="w-4 h-4" />
-            Export CSV
+            <TrashIcon className="w-4 h-4" />
+            Delete All
           </button>
-        )}
+          {filteredRequests.length > 0 && (
+            <button
+              onClick={() => exportToCSV(filteredRequests.map(formatRequestForExport), 'all_od_requests')}
+              className="btn btn-outline btn-sm"
+            >
+              <ArrowDownTrayIcon className="w-4 h-4" />
+              Export CSV
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* Event name / venue search */}
+          <div className="relative">
+            <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by event, student name or roll number..."
-              className="input pl-10"
+              placeholder="Search event or venue..."
+              className="input pl-9 text-sm"
             />
           </div>
+          {/* Student search */}
+          <div className="relative">
+            <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+              placeholder="Search student name or roll no..."
+              className="input pl-9 text-sm"
+            />
+          </div>
+          {/* Status filter */}
           <div className="flex items-center gap-2">
-            <FunnelIcon className="w-5 h-5 text-gray-400" />
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="input w-auto"
-            >
+            <FunnelIcon className="w-4 h-4 text-gray-400 shrink-0" />
+            <select value={filter} onChange={(e) => setFilter(e.target.value)} className="input text-sm">
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
               <option value="hod_review">HOD Review</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
+              <option value="staff_rejected">Staff Rejected</option>
             </select>
+          </div>
+          {/* Event type filter */}
+          <div className="flex items-center gap-2">
+            <FunnelIcon className="w-4 h-4 text-gray-400 shrink-0" />
+            <select value={eventTypeFilter} onChange={(e) => setEventTypeFilter(e.target.value)} className="input text-sm">
+              <option value="">All Event Types</option>
+              <option value="hackathon">Hackathon</option>
+              <option value="symposium">Symposium</option>
+              <option value="workshop">Workshop</option>
+              <option value="cultural">Cultural</option>
+              <option value="sports">Sports</option>
+              <option value="conference">Conference</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          {/* Date from */}
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="w-4 h-4 text-gray-400 shrink-0" />
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="input text-sm" title="Event date from" />
+          </div>
+          {/* Date to */}
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="w-4 h-4 text-gray-400 shrink-0" />
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="input text-sm" title="Event date to" />
+            {(search || studentSearch || eventTypeFilter || dateFrom || dateTo || filter !== 'all') && (
+              <button
+                onClick={() => { setSearch(''); setStudentSearch(''); setEventTypeFilter(''); setDateFrom(''); setDateTo(''); setFilter('all'); }}
+                className="text-xs px-2 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 whitespace-nowrap transition-colors"
+              >Clear</button>
+            )}
           </div>
         </div>
       </div>
@@ -308,6 +386,43 @@ export default function AllRequests() {
           </div>
         </div>
       )}
+
+      {/* Delete All Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteAllModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => !deletingAll && setShowDeleteAllModal(false)}>
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-red-100 rounded-full">
+                  <TrashIcon className="w-6 h-6 text-red-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete All Requests</h3>
+              </div>
+              <p className="text-gray-600 mb-6 text-sm">
+                This will permanently delete <strong>all OD requests</strong> across all departments, including their data and any uploaded supporting documents from cloud storage. This action <strong>cannot be undone</strong>.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteAllModal(false)}
+                  disabled={deletingAll}
+                  className="flex-1 btn btn-outline"
+                >Cancel</button>
+                <button
+                  onClick={handleDeleteAll}
+                  disabled={deletingAll}
+                  className="flex-1 btn bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+                >{deletingAll ? 'Deleting...' : 'Delete All'}</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>

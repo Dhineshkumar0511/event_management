@@ -35,7 +35,7 @@ export const generateODLetter = async (odRequestId) => {
   );
 
   // Create PDF and upload to Cloudinary
-  const publicId = `OD_${request.request_id}_${Date.now()}`;
+  const publicId = `OD_${request.request_id}_${Date.now()}.pdf`;
 
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -44,7 +44,7 @@ export const generateODLetter = async (odRequestId) => {
     });
 
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder: 'eventpass/letters', resource_type: 'raw', public_id: publicId, format: 'pdf' },
+      { folder: 'eventpass/letters', resource_type: 'raw', public_id: publicId },
       (error, result) => {
         if (error) reject(error);
         else resolve(result.secure_url);
@@ -223,7 +223,7 @@ export const generateStatusLetter = async (odRequestId, status, comments) => {
   }
 
   const request = requests[0];
-  const publicId = `${status.toUpperCase()}_${request.request_id}_${Date.now()}`;
+  const publicId = `${status.toUpperCase()}_${request.request_id}_${Date.now()}.pdf`;
 
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -232,7 +232,7 @@ export const generateStatusLetter = async (odRequestId, status, comments) => {
     });
 
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder: 'eventpass/letters', resource_type: 'raw', public_id: publicId, format: 'pdf' },
+      { folder: 'eventpass/letters', resource_type: 'raw', public_id: publicId },
       (error, result) => {
         if (error) reject(error);
         else resolve(result.secure_url);

@@ -11,11 +11,15 @@ import { cloudinary } from '../middleware/upload.js';
 const router = express.Router();
 
 // Helper function to delete files from Cloudinary
+// Accepts either an array of URL strings OR an array of doc objects {name, path, size} / {url} / {secure_url}
 const deleteCloudinaryFiles = async (fileUrls = []) => {
   if (!Array.isArray(fileUrls) || fileUrls.length === 0) return;
   
-  for (const url of fileUrls) {
+  for (const entry of fileUrls) {
     try {
+      // Coerce doc objects to URL strings
+      const url = typeof entry === 'string' ? entry : (entry?.path || entry?.url || entry?.secure_url);
+      if (!url || typeof url !== 'string') continue;
       const matches = url.match(/\/upload\/(?:v\d+\/)?(?:eventpass\/)?(.*?)(?:\.[^.]+)?$/);
       if (matches && matches[1]) {
         const publicId = `eventpass/${matches[1]}`;
@@ -23,7 +27,7 @@ const deleteCloudinaryFiles = async (fileUrls = []) => {
         console.log(`✓ Deleted from Cloudinary: ${publicId}`);
       }
     } catch (error) {
-      console.error(`Error deleting file from Cloudinary: ${url}`, error);
+      console.error(`Error deleting file from Cloudinary:`, error);
     }
   }
 };
@@ -213,8 +217,13 @@ router.put('/od-request/:id/approve', [
       });
     }
 
-    // Generate OD letter
-    const letterPath = await generateODLetter(req.params.id);
+    // Generate OD letter (non-blocking — approval succeeds even if PDF fails)
+    let letterPath = null;
+    try {
+      letterPath = await generateODLetter(req.params.id);
+    } catch (pdfErr) {
+      console.error('OD letter PDF generation failed (non-fatal):', pdfErr?.message || pdfErr);
+    }
 
     // Update request status
     await pool.query(
@@ -1022,8 +1031,7 @@ router.delete('/od-request/:id', isHOD, async (req, res) => {
     }
     
     if (Array.isArray(supportingDocs) && supportingDocs.length > 0) {
-      const fileUrls = supportingDocs.map(doc => doc.url || doc).filter(Boolean);
-      await deleteCloudinaryFiles(fileUrls);
+      await deleteCloudinaryFiles(supportingDocs);
     }
 
     // Delete related records
@@ -1087,8 +1095,7 @@ router.delete('/od-requests', isHOD, [
       }
       
       if (Array.isArray(supportingDocs) && supportingDocs.length > 0) {
-        const fileUrls = supportingDocs.map(doc => doc.url || doc).filter(Boolean);
-        await deleteCloudinaryFiles(fileUrls);
+        await deleteCloudinaryFiles(supportingDocs);
       }
     }
 
@@ -1117,6 +1124,55 @@ router.delete('/od-requests', isHOD, [
   } catch (error) {
     console.error('Bulk delete error:', error);
     res.status(500).json({ success: false, message: 'Failed to delete requests' });
+  }
+});
+
+// @route   DELETE /api/hod/od-requests/delete-all
+// @desc    Delete ALL OD requests + Cloudinary docs
+// @access  HOD
+router.delete('/od-requests/delete-all', isHOD, async (req, res) => {
+  try {
+    const [existing] = await pool.query(
+      'SELECT id, supporting_documents FROM od_requests'
+    );
+
+    if (existing.length === 0) {
+      return res.json({ success: true, message: 'No requests to delete', deleted: 0 });
+    }
+
+    // Delete Cloudinary files
+    for (const request of existing) {
+      let supportingDocs = request.supporting_documents || [];
+      if (typeof supportingDocs === 'string') {
+        try { supportingDocs = JSON.parse(supportingDocs); } catch { supportingDocs = []; }
+      }
+      if (Array.isArray(supportingDocs) && supportingDocs.length > 0) {
+        const fileUrls = supportingDocs.map(doc => doc.path || doc.url || doc).filter(Boolean);
+        await deleteCloudinaryFiles(fileUrls);
+      }
+    }
+
+    const ids = existing.map(r => r.id);
+    for (const id of ids) {
+      await pool.query('DELETE FROM team_members WHERE od_request_id = ?', [id]);
+      await pool.query('DELETE FROM location_checkins WHERE od_request_id = ?', [id]);
+      await pool.query('DELETE FROM event_results WHERE od_request_id = ?', [id]);
+    }
+    await pool.query(
+      `DELETE FROM od_requests WHERE id IN (${ids.map(() => '?').join(',')})`,
+      ids
+    );
+
+    await pool.query(
+      `INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)`,
+      [req.user.id, 'HOD_DELETE_ALL', 'od_requests', null,
+       JSON.stringify({ count: ids.length })]
+    );
+
+    res.json({ success: true, message: `${ids.length} request(s) deleted successfully`, deleted: ids.length });
+  } catch (error) {
+    console.error('Delete all error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete all requests' });
   }
 });
 

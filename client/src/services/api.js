@@ -98,6 +98,7 @@ export const staffAPI = {
   deleteRequest: (id) => api.delete(`/staff/od-request/${id}`),
   deleteRequests: (ids) => api.delete('/staff/od-requests', { data: { ids } }),
   getHistory: (params) => api.get('/staff/history', { params }),
+  deleteAll: () => api.delete('/staff/od-requests/delete-all'),
 }
 
 // HOD APIs
@@ -110,6 +111,7 @@ export const hodAPI = {
   deleteRequest: (id) => api.delete(`/hod/od-request/${id}`),
   deleteRequests: (ids) => api.delete('/hod/od-requests', { data: { ids } }),
   getAllRequests: (params) => api.get('/hod/all-requests', { params }),
+  deleteAll: () => api.delete('/hod/od-requests/delete-all'),
   getUsers: (params) => api.get('/hod/users', { params }),
   createUser: (data) => api.post('/hod/users', data),
   updateUser: (id, data) => api.put(`/hod/users/${id}`, data),
@@ -166,10 +168,12 @@ export const leaveAPI = {
   getHodPending: () => api.get('/leave/hod/pending'),
   getHodAll: (params) => api.get('/leave/hod/all', { params }),
   hodReview: (id, data) => api.put(`/leave/${id}/hod-review`, data),
+  hodDeleteOne: (id) => api.delete(`/leave/hod/${id}`),
   // Signature
   signLetter: (id, data) => api.put(`/leave/${id}/sign`, data),
   // Staff/HOD
   deleteAll: () => api.delete('/leave/staff/delete-all'),
+  hodDeleteAll: () => api.delete('/leave/staff/delete-all'),
 };
 
 export const whatsappAPI = {

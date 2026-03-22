@@ -50,8 +50,8 @@ export default function HODReview() {
     try {
       if (actionType === 'approve') {
         await hodAPI.approveRequest(id, { comments })
-        toast.success('Request approved! Sign the OD letter now.')
-        navigate(`/hod/od-letter/${id}`)
+        toast.success('Request approved successfully!')
+        navigate('/hod/requests')
       } else {
         await hodAPI.rejectRequest(id, { comments })
         toast.success('Request rejected')
@@ -89,11 +89,6 @@ export default function HODReview() {
           <h1 className="text-2xl font-bold text-gray-900">Final Review</h1>
           <p className="text-gray-500">{request.event_name}</p>
         </div>
-        <Link to={`/hod/od-letter/${id}`}
-          className="btn btn-outline btn-sm flex items-center gap-1.5 border-purple-300 text-purple-700 hover:bg-purple-50"
-        >
-          📄 View OD Letter
-        </Link>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -216,8 +211,8 @@ export default function HODReview() {
               {Array.isArray(request.supporting_documents) && request.supporting_documents.length > 0 ? (
                 <div className="space-y-2">
                   {request.supporting_documents.map((doc, index) => {
-                    const docUrl = typeof doc === 'string' ? doc : doc.url || doc.secure_url;
-                    const fileName = docUrl?.split('/').pop()?.split('?')[0] || `Document ${index + 1}`;
+                    const docUrl = typeof doc === 'string' ? doc : doc.path || doc.url || doc.secure_url;
+                    const fileName = (typeof doc === 'object' && doc.name) || docUrl?.split('/').pop()?.split('?')[0] || `Document ${index + 1}`;
                     return (
                       <a
                         key={index}
@@ -291,6 +286,23 @@ export default function HODReview() {
           >
             <h2 className="text-lg font-semibold mb-4">Your Decision</h2>
             <div className="space-y-4">
+              {/* Sign OD Letter — must do before approving */}
+              <Link
+                to={`/hod/od-letter/${id}`}
+                className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border-2 text-sm font-semibold transition-colors ${
+                  request.hod_signature
+                    ? 'border-green-400 bg-green-50 text-green-700 hover:bg-green-100'
+                    : 'border-purple-400 bg-purple-50 text-purple-700 hover:bg-purple-100'
+                }`}
+              >
+                <DocumentArrowDownIcon className="w-5 h-5" />
+                {request.hod_signature ? '✅ OD Letter Signed — View Again' : '📄 View & Sign OD Letter'}
+              </Link>
+              {!request.hod_signature && (
+                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
+                  ⚠️ You must sign the OD letter before approving
+                </p>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Comments (optional)
@@ -333,8 +345,9 @@ export default function HODReview() {
                 </button>
                 <button
                   onClick={() => handleSubmit('approve')}
-                  disabled={submitting}
-                  className="btn btn-primary"
+                  disabled={submitting || !request.hod_signature}
+                  title={!request.hod_signature ? 'Sign the OD letter first to enable approval' : ''}
+                  className="btn btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {submitting && action === 'approve' ? (
                     <div className="spinner w-4 h-4" />
@@ -344,8 +357,11 @@ export default function HODReview() {
                   Approve
                 </button>
               </div>
-              <p className="text-xs text-gray-500 text-center">
-                Approved requests will receive an official OD letter
+              <p className="text-xs text-center mt-1">
+                {request.hod_signature
+                  ? <span className="text-green-600">✓ Signed — ready to approve</span>
+                  : <span className="text-gray-400">Sign the OD letter above to enable approval</span>
+                }
               </p>
             </div>
           </motion.div>

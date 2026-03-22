@@ -413,6 +413,36 @@ router.get('/hod/all', isHOD, async (req, res) => {
 // SIGN LEAVE LETTER
 // ─────────────────────────────────────────────────────────────
 
+// @route   DELETE /api/leave/hod/:id
+// @desc    HOD deletes a single leave request
+// @access  HOD
+router.delete('/hod/:id', isHOD, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [[leave]] = await pool.query('SELECT id, document_url FROM leave_requests WHERE id = ?', [id]);
+    if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found' });
+
+    if (leave.document_url) {
+      try {
+        const matches = leave.document_url.match(/\/upload\/(?:v\d+\/)?(?:eventpass\/)?(.*?)(?:\.[^.]+)?$/);
+        if (matches?.[1]) {
+          await cloudinary.uploader.destroy(`eventpass/${matches[1]}`, { resource_type: 'auto' });
+        }
+      } catch (e) { console.error('Cloudinary delete error:', e); }
+    }
+
+    await pool.query('DELETE FROM leave_requests WHERE id = ?', [id]);
+    await pool.query(
+      `INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)`,
+      [req.user.id, 'HOD_DELETE_LEAVE', 'leave_requests', id, JSON.stringify({ deleted_id: id })]
+    );
+    res.json({ success: true, message: 'Leave request deleted' });
+  } catch (error) {
+    console.error('HOD delete leave error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete leave request' });
+  }
+});
+
 // @route   DELETE /api/leave/staff/delete-all
 // @desc    Delete all leave requests in staff's department + Cloudinary documents
 // @access  Staff/HOD
