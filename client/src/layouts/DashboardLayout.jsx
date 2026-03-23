@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../store/authStore'
@@ -19,9 +19,6 @@ import {
   XMarkIcon,
   BellIcon,
   ArrowRightOnRectangleIcon,
-  UserCircleIcon,
-  ChartBarIcon,
-  TrophyIcon,
   MoonIcon,
   SunIcon,
   Cog6ToothIcon,
@@ -30,13 +27,12 @@ import {
   ClipboardDocumentListIcon,
   ChatBubbleLeftRightIcon,
   MegaphoneIcon,
-  ShieldExclamationIcon,
   StarIcon,
   FolderIcon,
   BoltIcon,
+  CpuChipIcon,
 } from '@heroicons/react/24/outline'
 
-// Navigation items based on role
 const getNavItems = (role) => {
   const items = {
     student: [
@@ -46,9 +42,9 @@ const getNavItems = (role) => {
       { name: 'My Leaves', path: '/student/leaves', icon: ClipboardDocumentListIcon },
       { name: 'Event Calendar', path: '/student/calendar', icon: CalendarDaysIcon },
       { name: 'Active Event', path: '/student/active-event', icon: MapPinIcon },
-      { name: 'Submit Result', path: '/student/submit-result', icon: TrophyIcon },
+      { name: 'Submit Result', path: '/student/submit-result', icon: StarIcon },
       { name: 'Certificates', path: '/student/certificates', icon: FolderIcon },
-      { name: 'Leaderboard', path: '/student/leaderboard', icon: TrophyIcon },
+      { name: 'Leaderboard', path: '/student/leaderboard', icon: ChartPieIcon },
       { name: 'Hall of Fame', path: '/student/hall-of-fame', icon: StarIcon },
       { name: 'My Profile', path: '/student/profile', icon: Cog6ToothIcon },
     ],
@@ -59,9 +55,9 @@ const getNavItems = (role) => {
       { name: 'WA Report', path: '/staff/whatsapp-report', icon: ChatBubbleLeftRightIcon },
       { name: 'Review History', path: '/staff/history', icon: CheckCircleIcon },
       { name: 'Event Calendar', path: '/staff/calendar', icon: CalendarDaysIcon },
-      { name: 'Event Results', path: '/staff/results', icon: TrophyIcon },
+      { name: 'Event Results', path: '/staff/results', icon: StarIcon },
       { name: 'Certificates', path: '/staff/certificates', icon: FolderIcon },
-      { name: 'Leaderboard', path: '/staff/leaderboard', icon: TrophyIcon },
+      { name: 'Leaderboard', path: '/staff/leaderboard', icon: ChartPieIcon },
       { name: 'Hall of Fame', path: '/staff/hall-of-fame', icon: StarIcon },
       { name: 'My Profile', path: '/staff/profile', icon: Cog6ToothIcon },
     ],
@@ -80,8 +76,8 @@ const getNavItems = (role) => {
       { name: 'Auto Rules', path: '/hod/auto-rules', icon: BoltIcon },
       { name: 'Staff Workload', path: '/hod/staff-workload', icon: UsersIcon },
       { name: 'Certificates', path: '/hod/certificates', icon: FolderIcon },
-      { name: 'Event Results', path: '/hod/results', icon: TrophyIcon },
-      { name: 'Leaderboard', path: '/hod/leaderboard', icon: TrophyIcon },
+      { name: 'Event Results', path: '/hod/results', icon: StarIcon },
+      { name: 'Leaderboard', path: '/hod/leaderboard', icon: ChartPieIcon },
       { name: 'Hall of Fame', path: '/hod/hall-of-fame', icon: StarIcon },
       { name: 'My Profile', path: '/hod/profile', icon: Cog6ToothIcon },
     ]
@@ -90,21 +86,21 @@ const getNavItems = (role) => {
 }
 
 const roleLabels = {
-  student: 'Student Portal',
-  staff: 'Staff Portal',
-  hod: 'HOD Portal'
+  student: 'Student Intelligence Portal',
+  staff: 'Faculty Review Console',
+  hod: 'Department Command Center'
 }
 
-const roleColors = {
-  student: 'from-blue-500 to-indigo-600',
-  staff: 'from-emerald-500 to-teal-600',
-  hod: 'from-purple-500 to-indigo-600'
+const roleAccent = {
+  student: 'from-cyan-400 via-sky-400 to-emerald-300',
+  staff: 'from-emerald-300 via-teal-400 to-cyan-400',
+  hod: 'from-lime-300 via-cyan-300 to-teal-400',
 }
 
-const activeGradients = {
-  student: 'from-violet-500 to-purple-600',
-  staff:   'from-emerald-500 to-teal-600',
-  hod:     'from-purple-500 to-violet-600',
+const roleChip = {
+  student: 'Student',
+  staff: 'Staff',
+  hod: 'HOD',
 }
 
 export default function DashboardLayout() {
@@ -120,7 +116,6 @@ export default function DashboardLayout() {
   useEffect(() => {
     if (token) {
       initSocket(token)
-      // Real-time notification listener
       subscribeToNotifications((notif) => {
         setNotifications(prev => [notif, ...prev].slice(0, 20))
         setUnreadCount(prev => prev + 1)
@@ -167,148 +162,149 @@ export default function DashboardLayout() {
     navigate('/login')
   }
 
+  const shellBg = isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900'
+  const surface = isDark ? 'bg-slate-900/95 border-white/10' : 'bg-white/90 border-slate-200'
+  const sidebarSurface = isDark ? 'bg-slate-950/90 border-white/10' : 'bg-white/95 border-slate-200'
+  const headerSurface = isDark ? 'bg-slate-950/75 border-white/10' : 'bg-white/75 border-slate-200/70'
+
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Mobile sidebar overlay */}
+    <div className={`min-h-screen ${shellBg}`}>
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_12%_12%,_rgba(20,184,166,0.16),_transparent_20%),radial-gradient(circle_at_88%_10%,_rgba(34,211,238,0.12),_transparent_18%),linear-gradient(180deg,_#07111f_0%,_#091629_52%,_#08111d_100%)]" />
+
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+            className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
-      <aside className={`
-        fixed top-0 left-0 z-50 h-full w-64 shadow-xl transform transition-transform duration-300 ease-in-out
-        lg:translate-x-0
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        ${isDark ? 'bg-gray-800' : 'bg-white'}
-      `}>
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className={`p-5 bg-gradient-to-br ${roleColors[user?.role]} relative overflow-hidden`}>
-            <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-white/10" />
-            <div className="absolute -bottom-6 -left-3 w-16 h-16 rounded-full bg-white/10" />
-            <div className="relative z-10 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                  <span className="text-white font-black text-lg">🎟️</span>
+      <aside
+        className={`
+          fixed top-0 left-0 z-50 h-full w-72 border-r shadow-[0_24px_90px_rgba(2,8,23,0.45)] transform transition-transform duration-300 ease-in-out
+          lg:translate-x-0
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${sidebarSurface}
+        `}
+      >
+        <div className="flex h-full flex-col">
+          <div className={`relative overflow-hidden border-b p-6 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+            <div className={`absolute inset-0 bg-gradient-to-br ${roleAccent[user?.role] || roleAccent.student} opacity-14`} />
+            <div className="absolute -right-8 top-0 h-28 w-28 rounded-full bg-cyan-300/10 blur-2xl" />
+            <div className="relative z-10 flex items-start justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-3xl border border-white/15 bg-white/10 backdrop-blur-sm">
+                  <CpuChipIcon className="h-7 w-7 text-cyan-200" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-black text-white tracking-tight">EventPass</h1>
-                  <p className="text-xs text-white/70 font-medium">{roleLabels[user?.role]}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">AI and Data Science</p>
+                  <h1 className={`section-title text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>EventOS AI</h1>
+                  <p className="mt-1 text-xs text-slate-400">{roleLabels[user?.role]}</p>
                 </div>
               </div>
-              <button 
-                className="lg:hidden text-white/80 hover:text-white p-1"
-                onClick={() => setSidebarOpen(false)}
-              >
-                <XMarkIcon className="w-5 h-5" />
+              <button className="lg:hidden rounded-2xl p-2 text-slate-400 hover:bg-white/10 hover:text-white" onClick={() => setSidebarOpen(false)}>
+                <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className={`flex-1 p-4 space-y-1 overflow-y-auto ${isDark ? 'bg-gray-800' : ''}`}>
+          <div className="px-4 pt-4">
+            <div className="rounded-3xl border border-cyan-300/10 bg-slate-900/70 p-4">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Navigation Matrix</p>
+              <p className="mt-2 text-sm text-slate-300">Move through approvals, analytics, and student engagement from one connected workspace.</p>
+            </div>
+          </div>
+
+          <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-4">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) => `
-                  flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200
+                  group flex items-center gap-3 rounded-2xl px-4 py-3 transition-all duration-300
                   ${isActive
-                    ? `bg-gradient-to-r ${activeGradients[user?.role] || activeGradients.student} text-white font-semibold shadow-md`
+                    ? 'bg-gradient-to-r from-cyan-400/18 via-teal-400/16 to-lime-300/18 text-white shadow-[inset_0_0_0_1px_rgba(103,232,249,0.22)]'
                     : isDark
-                    ? 'text-gray-300 hover:bg-gray-700/60 hover:text-white'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'text-slate-400 hover:bg-white/5 hover:text-slate-100'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }
                 `}
               >
-                <item.icon className="w-5 h-5" />
-                <span>{item.name}</span>
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-cyan-200 transition-colors group-hover:bg-white/10">
+                  <item.icon className="h-5 w-5" />
+                </span>
+                <span className="text-sm font-medium">{item.name}</span>
               </NavLink>
             ))}
           </nav>
 
-          {/* User info */}
-          <div className={`p-4 ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200'} border-t`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${roleColors[user?.role] || roleColors.student} flex items-center justify-center shadow-md flex-shrink-0`}>
-                <span className="text-white font-bold text-sm">{user?.name?.charAt(0)?.toUpperCase()}</span>
+          <div className={`border-t p-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${roleAccent[user?.role] || roleAccent.student} text-slate-950 font-bold`}>
+                  {user?.name?.charAt(0)?.toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`truncate text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{user?.name}</p>
+                  <p className="truncate text-xs text-slate-400">{user?.email}</p>
+                </div>
+                <span className="rounded-full border border-cyan-300/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-200">
+                  {roleChip[user?.role] || 'User'}
+                </span>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{user?.name}</p>
-                <p className={`text-xs truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{user?.email}</p>
-              </div>
+              <button
+                onClick={handleLogout}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-200 transition-colors hover:bg-rose-500/15"
+              >
+                <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                Logout
+              </button>
             </div>
-            <button
-              onClick={handleLogout}
-              className={`w-full flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
-                isDark 
-                ? 'text-red-400 hover:bg-red-900/20' 
-                : 'text-red-600 hover:bg-red-50'
-              }`}
-            >
-              <ArrowRightOnRectangleIcon className="w-5 h-5" />
-              <span>Logout</span>
-            </button>
           </div>
         </div>
       </aside>
 
-      {/* Main content */}
-      <div className="lg:pl-64">
-        {/* Top header */}
-        <header className={`sticky top-0 z-30 backdrop-blur-lg border-b ${
-          isDark
-          ? 'bg-gray-800/80 border-gray-700'
-          : 'bg-white/80 border-gray-100'
-        }`}>
-          <div className="flex items-center justify-between px-4 py-3 lg:px-6">
+      <div className="lg:pl-72">
+        <header className={`sticky top-0 z-30 border-b backdrop-blur-2xl ${headerSurface}`}>
+          <div className="flex items-center justify-between gap-4 px-4 py-4 lg:px-8">
             <div className="flex items-center gap-4">
               <button
-                className={`lg:hidden p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                className={`rounded-2xl border p-2.5 lg:hidden ${surface}`}
                 onClick={() => setSidebarOpen(true)}
               >
-                <Bars3Icon className={`w-6 h-6 ${isDark ? 'text-gray-300' : 'text-gray-900'}`} />
+                <Bars3Icon className="h-6 w-6" />
               </button>
-              <div className="hidden sm:block">
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Welcome back,</p>
-                <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{user?.name}</p>
+
+              <div>
+                <p className={`text-xs font-semibold uppercase tracking-[0.28em] ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Department Workspace</p>
+                <h2 className={`section-title text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  Welcome back, {user?.name?.split(' ')?.[0] || 'User'}
+                </h2>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Theme toggle */}
+            <div className="flex items-center gap-3">
               <button
                 onClick={toggleTheme}
-                className={`p-2 rounded-lg transition-colors ${
-                  isDark 
-                  ? 'hover:bg-gray-700 text-yellow-400' 
-                  : 'hover:bg-gray-100 text-gray-600'
-                }`}
+                className={`rounded-2xl border p-3 transition-all ${surface}`}
                 title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               >
-                {isDark ? <SunIcon className="w-6 h-6" /> : <MoonIcon className="w-6 h-6" />}
+                {isDark ? <SunIcon className="h-5 w-5 text-amber-300" /> : <MoonIcon className="h-5 w-5 text-slate-600" />}
               </button>
 
-              {/* Notifications */}
               <div className="relative">
                 <button
-                  className={`p-2 rounded-lg relative ${
-                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                  }`}
+                  className={`relative rounded-2xl border p-3 transition-all ${surface}`}
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
                 >
-                  <BellIcon className={`w-6 h-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
+                  <BellIcon className={`h-5 w-5 ${isDark ? 'text-slate-200' : 'text-slate-700'}`} />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1">
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -320,63 +316,46 @@ export default function DashboardLayout() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className={`absolute right-0 mt-2 w-80 rounded-xl shadow-lg border overflow-hidden ${
-                        isDark
-                        ? 'bg-gray-800 border-gray-700'
-                        : 'bg-white border-gray-100'
-                      }`}
+                      className={`absolute right-0 mt-3 w-80 overflow-hidden rounded-[28px] border shadow-[0_24px_70px_rgba(2,8,23,0.45)] ${surface}`}
                     >
-                      <div className={`p-4 border-b flex items-center justify-between ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-                        <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Notifications</h3>
+                      <div className={`flex items-center justify-between border-b px-4 py-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+                        <div>
+                          <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Notifications</h3>
+                          <p className="text-xs text-slate-400">Realtime activity from your platform</p>
+                        </div>
                         {unreadCount > 0 && (
-                          <button onClick={markAllRead} className="text-xs text-primary-600 hover:underline">
+                          <button onClick={markAllRead} className="text-xs font-semibold text-cyan-300 hover:text-cyan-200">
                             Mark all read
                           </button>
                         )}
                       </div>
+
                       <div className="max-h-80 overflow-y-auto">
                         {notifications.length > 0 ? (
-                          notifications.map((notif) => {
-                            const catIcon = notif.category === 'checkin_reminder' ? '📍'
-                              : notif.category === 'result_deadline' ? '⏰'
-                              : notif.category === 'approval' ? '✅'
-                              : notif.category === 'rejection' ? '❌'
-                              : '🔔'
-                            const priorityClass = notif.priority === 'urgent'
-                              ? isDark ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-red-400'
-                              : notif.priority === 'high'
-                              ? isDark ? 'border-l-4 border-l-amber-500' : 'border-l-4 border-l-amber-400'
-                              : ''
-                            return (
-                              <div
-                                key={notif.id}
-                                className={`p-3 border-b last:border-b-0 transition-colors ${priorityClass} ${
-                                  !notif.is_read
-                                    ? isDark ? 'bg-gray-750 border-gray-700' : 'bg-blue-50/50 border-gray-100'
-                                    : isDark ? 'border-gray-700' : 'border-gray-50'
-                                }`}
-                              >
-                                <div className="flex items-start gap-2">
-                                  <span className="text-sm mt-0.5 flex-shrink-0">{catIcon}</span>
-                                  {!notif.is_read && (
-                                    <span className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                                      {notif.message}
-                                    </p>
-                                    <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                                      {new Date(notif.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                    </p>
-                                  </div>
+                          notifications.map((notif) => (
+                            <div
+                              key={notif.id}
+                              className={`border-b px-4 py-3 last:border-b-0 ${isDark ? 'border-white/10 hover:bg-white/[0.03]' : 'border-slate-200 hover:bg-slate-50'} transition-colors`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className={`mt-1 h-2.5 w-2.5 rounded-full ${notif.is_read ? 'bg-slate-600' : 'bg-cyan-400'}`} />
+                                <div className="min-w-0 flex-1">
+                                  <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{notif.message}</p>
+                                  <p className="mt-1 text-xs text-slate-500">
+                                    {new Date(notif.created_at).toLocaleString('en-IN', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </p>
                                 </div>
                               </div>
-                            )
-                          })
+                            </div>
+                          ))
                         ) : (
-                          <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                            <BellIcon className={`w-12 h-12 mx-auto mb-2 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
-                            <p>No notifications yet</p>
+                          <div className="px-4 py-10 text-center text-sm text-slate-400">
+                            No notifications yet
                           </div>
                         )}
                       </div>
@@ -384,25 +363,18 @@ export default function DashboardLayout() {
                   )}
                 </AnimatePresence>
               </div>
-
-              {/* User menu */}
-              <div className="hidden sm:flex items-center gap-2 pl-2 border-l" style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}>
-                <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${roleColors[user?.role] || roleColors.student} flex items-center justify-center shadow-sm`}>
-                  <span className="text-white text-xs font-bold">{user?.name?.charAt(0)?.toUpperCase()}</span>
-                </div>
-              </div>
             </div>
           </div>
         </header>
 
-        {/* Page content */}
-        <main className={`p-4 lg:p-6 ${isDark ? 'bg-gray-900' : ''}`}>
-          <AnnouncementBanner />
-          <Outlet />
+        <main className="p-4 lg:p-8">
+          <div className="mx-auto max-w-7xl space-y-6">
+            <AnnouncementBanner />
+            <Outlet />
+          </div>
         </main>
       </div>
 
-      {/* AI Chat Widget */}
       <AIChatWidget />
     </div>
   )

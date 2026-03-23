@@ -4,7 +4,18 @@ import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../../store/authStore'
 import { useTheme } from '../../context/ThemeContext'
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
+import {
+  EyeIcon,
+  EyeSlashIcon,
+  ArrowRightIcon,
+  CpuChipIcon,
+} from '@heroicons/react/24/outline'
+
+const demoAccounts = [
+  { role: 'HOD', email: 'hod@college.edu', tag: 'Department Admin' },
+  { role: 'Staff', email: 'staff1@college.edu', tag: 'Faculty Review' },
+  { role: 'Student', email: 'student1@college.edu', tag: 'Learner Portal' },
+]
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -22,9 +33,9 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     const result = await login(formData.email, formData.password)
-    
+
     if (result.success) {
       toast.success('Welcome back!')
       const dashboardRoutes = {
@@ -44,109 +55,127 @@ export default function Login() {
 
   return (
     <div>
-      {/* Mobile logo */}
       <div className="lg:hidden text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-2xl mb-4 shadow-lg shadow-violet-500/30">
-          <span className="text-2xl">📄</span>
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl border border-cyan-300/20 bg-gradient-to-br from-cyan-400/25 to-emerald-300/10 text-cyan-200 shadow-[0_18px_45px_rgba(34,211,238,0.18)]">
+          <CpuChipIcon className="h-8 w-8" />
         </div>
-        <h1 className="text-2xl font-black bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">EventPass</h1>
-        <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Smart OD Management System</p>
+        <p className={`text-xs font-semibold uppercase tracking-[0.26em] ${isDark ? 'text-cyan-200/80' : 'text-cyan-700'}`}>AI and Data Science</p>
+        <h1 className="section-title mt-2 text-3xl font-bold gradient-text">EventOS AI</h1>
       </div>
 
-      <div className={`rounded-2xl p-8 border shadow-xl ${isDark ? 'bg-gray-800/80 border-gray-700 shadow-black/30' : 'bg-white border-gray-200 shadow-gray-200/50'}`}>
-        {/* Card header */}
-        <div className="text-center mb-8">
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.1 }}
-            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 mb-4 shadow-lg shadow-violet-500/25"
-          >
-            <span className="text-2xl">👋</span>
-          </motion.div>
-          <h2 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-gray-900'}`}>Welcome back</h2>
-          <p className={`mt-1.5 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Sign in to your EventPass account</p>
-        </div>
+      <div className={`relative overflow-hidden rounded-[28px] border p-8 shadow-[0_30px_70px_rgba(2,8,23,0.18)] ${isDark ? 'border-white/10 bg-slate-900/80 text-slate-100' : 'border-slate-200 bg-white/90 text-slate-900'}`}>
+        <div className={`absolute inset-0 ${isDark ? 'bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.12),_transparent_30%)]' : 'bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.08),_transparent_30%)]'}`} />
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className={`block text-sm font-semibold mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Email address</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'}`}
-              placeholder="you@college.edu"
-              required
-            />
+        <div className="relative z-10">
+          <div className="text-center mb-8">
+            <motion.div
+              initial={{ scale: 0.88, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 220, damping: 16 }}
+              className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl border border-cyan-300/20 bg-gradient-to-br from-cyan-400/20 to-emerald-300/10 text-cyan-200"
+            >
+              <CpuChipIcon className="h-8 w-8" />
+            </motion.div>
+
+            <p className={`text-xs font-semibold uppercase tracking-[0.28em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Secure Department Access</p>
+            <h2 className="section-title mt-3 text-3xl font-bold">Sign in to your workspace</h2>
+            <p className={`mt-2 text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              Manage OD letters, approvals, and event intelligence from one professional portal.
+            </p>
           </div>
 
-          <div>
-            <label className={`block text-sm font-semibold mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Password</label>
-            <div className="relative">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="label">Institution Email</label>
               <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 pr-12 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'}`}
-                placeholder="Enter your password"
+                className={`input ${!isDark ? '!bg-slate-50 !text-slate-900 !border-slate-200 placeholder:!text-slate-400' : ''}`}
+                placeholder="you@college.edu"
                 required
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg transition-colors ${isDark ? 'text-gray-400 hover:text-violet-400' : 'text-gray-400 hover:text-violet-600'}`}
-              >
-                {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-              </button>
             </div>
-          </div>
 
-          {error && (
-            <motion.div initial={{ opacity:0, y:-10 }} animate={{ opacity:1, y:0 }}
-              className="p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm flex items-center gap-2 font-medium"
-            >
-              <span className="w-4 h-4 flex-shrink-0">⚠️</span> {error}
-            </motion.div>
-          )}
+            <div>
+              <label className="label">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`input pr-12 ${!isDark ? '!bg-slate-50 !text-slate-900 !border-slate-200 placeholder:!text-slate-400' : ''}`}
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-1.5 transition-colors ${isDark ? 'text-slate-400 hover:text-cyan-200' : 'text-slate-400 hover:text-cyan-700'}`}
+                >
+                  {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                </button>
+              </div>
+            </div>
 
-          <div className="text-right -mt-1">
-            <Link to="/forgot-password" className={`text-xs font-semibold ${isDark ? 'text-violet-400 hover:text-violet-300' : 'text-violet-600 hover:text-violet-700'}`}>
-              Forgot password?
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm font-medium text-rose-300"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            <div className="text-right">
+              <Link
+                to="/forgot-password"
+                className={`text-xs font-semibold ${isDark ? 'text-cyan-300 hover:text-cyan-200' : 'text-cyan-700 hover:text-cyan-900'}`}
+              >
+                Forgot password?
+              </Link>
+            </div>
+
+            <button type="submit" disabled={isLoading} className="btn btn-primary w-full h-12 rounded-2xl">
+              {isLoading ? <div className="h-5 w-5 rounded-full border-2 border-slate-950/20 border-t-slate-950 animate-spin" /> : (
+                <>
+                  Enter Platform
+                  <ArrowRightIcon className="h-4 w-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center text-sm">
+            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Need an account? </span>
+            <Link to="/register" className={`font-semibold ${isDark ? 'text-emerald-300 hover:text-emerald-200' : 'text-emerald-700 hover:text-emerald-900'}`}>
+              Create one
             </Link>
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full h-12 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-lg shadow-violet-500/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Sign In →'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            Don't have an account?{' '}
-            <Link to="/register" className="text-violet-500 font-bold hover:underline">Register</Link>
-          </p>
-        </div>
-
-        {/* Demo credentials - clickable */}
-        <div className={`mt-6 p-4 rounded-xl border ${isDark ? 'bg-gray-700/50 border-gray-600' : 'bg-gradient-to-br from-violet-50 to-indigo-50 border-violet-100'}`}>
-          <p className={`text-[11px] font-bold uppercase tracking-wider mb-3 ${isDark ? 'text-gray-400' : 'text-violet-400'}`}>Quick Login</p>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { role: 'HOD', email: 'hod@college.edu', icon: '👨‍💼', gradient: 'from-purple-500 to-violet-600' },
-              { role: 'Staff', email: 'staff1@college.edu', icon: '👩‍🏫', gradient: 'from-emerald-500 to-teal-600' },
-              { role: 'Student', email: 'student1@college.edu', icon: '🎓', gradient: 'from-blue-500 to-indigo-600' },
-            ].map(d => (
-              <button key={d.role} onClick={() => fillDemo(d.email)} type="button"
-                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-semibold transition-all hover:scale-[1.03] ${isDark ? 'bg-gray-700 border-gray-600 text-gray-300 hover:border-violet-500' : 'bg-white border-gray-200 text-gray-700 hover:border-violet-400 hover:shadow-md'}`}
-              >
-                <span className="text-lg">{d.icon}</span>
-                <span>{d.role}</span>
-              </button>
-            ))}
+          <div className={`mt-7 rounded-[24px] border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-slate-50/90'}`}>
+            <div className="mb-3 flex items-center justify-between">
+              <p className={`text-[11px] font-semibold uppercase tracking-[0.28em] ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+                Demo Access
+              </p>
+              <p className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Password: `password123`</p>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {demoAccounts.map((account) => (
+                <button
+                  key={account.role}
+                  onClick={() => fillDemo(account.email)}
+                  type="button"
+                  className={`rounded-2xl border px-4 py-3 text-left transition-all hover:-translate-y-0.5 ${isDark ? 'border-white/10 bg-slate-950/50 hover:border-cyan-300/30 hover:bg-slate-900' : 'border-slate-200 bg-white hover:border-cyan-200 hover:shadow-sm'}`}
+                >
+                  <p className="text-sm font-semibold">{account.role}</p>
+                  <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{account.tag}</p>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

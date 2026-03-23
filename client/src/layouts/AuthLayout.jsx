@@ -1,86 +1,127 @@
 import { Outlet } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useTheme } from '../context/ThemeContext'
-import { SunIcon, MoonIcon } from '@heroicons/react/24/outline'
+import {
+  SunIcon,
+  MoonIcon,
+  CpuChipIcon,
+  ChartBarSquareIcon,
+  SparklesIcon,
+} from '@heroicons/react/24/outline'
+
+const highlights = [
+  {
+    icon: CpuChipIcon,
+    title: 'AI-first approvals',
+    desc: 'Smart workflows for event validation, OD processing, and faster academic decisions.',
+  },
+  {
+    icon: ChartBarSquareIcon,
+    title: 'Data-driven visibility',
+    desc: 'Live request signals, activity summaries, and department-wide performance insights.',
+  },
+  {
+    icon: SparklesIcon,
+    title: 'Professional student experience',
+    desc: 'Elegant portals for students, staff, and HOD with one consistent digital identity.',
+  },
+]
 
 export default function AuthLayout() {
   const { isDark, toggleTheme } = useTheme()
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-violet-950 via-indigo-900 to-purple-900">
-        <div className="absolute inset-0">
-          <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] bg-violet-500/20 rounded-full blur-[100px]" />
-          <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-indigo-400/15 rounded-full blur-[120px]" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-purple-400/10 rounded-full blur-[80px]" />
-          {/* Grid pattern overlay */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-        </div>
+    <div className="min-h-screen flex bg-slate-950 text-slate-100">
+      <div className="hidden lg:flex lg:w-[56%] relative overflow-hidden border-r border-white/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.26),_transparent_28%),radial-gradient(circle_at_82%_18%,_rgba(34,211,238,0.18),_transparent_25%),linear-gradient(135deg,_#04101d_0%,_#0a1628_45%,_#081423_100%)]" />
+        <div className="absolute inset-0 panel-grid opacity-70" />
+        <div className="absolute top-20 left-16 h-40 w-40 rounded-full bg-cyan-400/10 blur-3xl pulse-ring" />
+        <div className="absolute bottom-24 right-10 h-56 w-56 rounded-full bg-emerald-400/10 blur-3xl float-orbit" />
 
-        <div className="relative z-10 flex flex-col justify-center items-center w-full p-12 text-white">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9 }} className="text-center max-w-lg">
-            {/* Logo */}
-            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2, type: 'spring' }}
-              className="mb-10"
-            >
-              <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl shadow-violet-500/20">
-                <svg className="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+        <div className="relative z-10 flex w-full flex-col justify-between p-12 xl:p-16">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+            className="max-w-2xl"
+          >
+            <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
+              Artificial Intelligence and Data Science
+            </div>
+
+            <div className="mt-10 flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-white/15 bg-white/10 backdrop-blur-xl">
+                <CpuChipIcon className="h-8 w-8 text-cyan-200" />
               </div>
-            </motion.div>
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.32em] text-slate-400">Department Control Hub</p>
+                <h1 className="section-title text-5xl font-bold tracking-tight text-white xl:text-6xl">
+                  EventOS AI
+                </h1>
+              </div>
+            </div>
 
-            <h1 className="text-5xl font-black tracking-tight mb-3">EventPass</h1>
-            <p className="text-lg text-white/60 font-medium mb-12">Smart OD Letter Management System</p>
+            <p className="mt-8 max-w-xl text-lg leading-8 text-slate-300">
+              A polished digital workspace for OD letters, event intelligence, approvals, and student engagement built for an AI & Data Science department.
+            </p>
 
-            <div className="space-y-5 text-left">
-              {[
-                { icon: '🚀', title: 'Quick OD Requests', desc: 'Submit for hackathons, symposiums, workshops & more' },
-                { icon: '🤖', title: 'AI Verification', desc: 'Instant event authenticity check for faster approvals' },
-                { icon: '📍', title: 'Live Tracking', desc: 'Real-time location check-ins during events' },
-                { icon: '📄', title: 'Digital OD Letters', desc: 'Auto-generated formal letters with e-signatures' },
-              ].map((f, i) => (
-                <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 + i * 0.15 }}
-                  className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-colors"
+            <div className="mt-12 grid gap-4">
+              {highlights.map((item, index) => (
+                <motion.div
+                  key={item.title}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.15 + index * 0.1 }}
+                  className="data-glow rounded-3xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm"
                 >
-                  <span className="text-2xl">{f.icon}</span>
-                  <div>
-                    <h3 className="font-bold text-white/90">{f.title}</h3>
-                    <p className="text-sm text-white/50 mt-0.5">{f.desc}</p>
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400/20 to-emerald-300/10 text-cyan-200">
+                      <item.icon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">{item.title}</h3>
+                      <p className="mt-1 text-sm leading-6 text-slate-400">{item.desc}</p>
+                    </div>
                   </div>
                 </motion.div>
               ))}
             </div>
+          </motion.div>
 
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }}
-              className="mt-12 flex items-center justify-center gap-2 text-white/30 text-xs"
-            >
-              <span className="w-8 h-px bg-white/20" />
-              Sri Manakula Vinayagar Engineering College
-              <span className="w-8 h-px bg-white/20" />
-            </motion.div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.45 }}
+            className="grid max-w-xl grid-cols-3 gap-4"
+          >
+            {[
+              { label: 'Automation', value: 'AI workflows' },
+              { label: 'Analytics', value: 'Live metrics' },
+              { label: 'Experience', value: 'Modern portal' },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-4 backdrop-blur-md">
+                <p className="text-xs uppercase tracking-[0.25em] text-slate-500">{stat.label}</p>
+                <p className="mt-2 text-sm font-semibold text-slate-100">{stat.value}</p>
+              </div>
+            ))}
           </motion.div>
         </div>
       </div>
 
-      {/* Right side - Form */}
-      <div className={`w-full lg:w-1/2 flex items-center justify-center p-8 relative ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        {/* Theme toggle */}
+      <div className={`relative flex w-full items-center justify-center p-6 sm:p-8 lg:w-[44%] ${isDark ? 'bg-slate-950' : 'bg-slate-50 text-slate-900'}`}>
+        <div className={`absolute inset-0 ${isDark ? 'bg-[radial-gradient(circle_at_top_right,_rgba(34,211,238,0.12),_transparent_22%),linear-gradient(180deg,_rgba(2,6,23,0.95),_rgba(8,15,32,0.98))]' : 'bg-[radial-gradient(circle_at_top_right,_rgba(34,211,238,0.1),_transparent_22%),linear-gradient(180deg,_#f4fbff,_#edf7ff)]'}`} />
         <button
           onClick={toggleTheme}
-          className={`absolute top-4 right-4 p-2.5 rounded-xl transition-all ${
-            isDark ? 'hover:bg-gray-800 text-yellow-400' : 'hover:bg-gray-200 text-gray-600'
-          }`}
+          className={`absolute right-5 top-5 z-20 rounded-2xl border px-3 py-3 transition-all ${isDark ? 'border-white/10 bg-white/5 text-amber-300 hover:bg-white/10' : 'border-slate-200 bg-white/80 text-slate-600 hover:bg-white shadow-sm'}`}
         >
-          {isDark ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
+          {isDark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
         </button>
 
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
+        <motion.div
+          initial={{ opacity: 0, x: 24 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
+          transition={{ duration: 0.55 }}
+          className="relative z-10 w-full max-w-md"
         >
           <Outlet />
         </motion.div>

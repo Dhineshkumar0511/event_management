@@ -1,22 +1,34 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { studentAPI, leaveAPI, featuresAPI } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 import { useTheme } from '../../context/ThemeContext'
 import {
-  DocumentPlusIcon, ClockIcon, CheckCircleIcon, XCircleIcon,
-  CalendarIcon, MapPinIcon, ArrowRightIcon, DocumentTextIcon,
-  TrophyIcon, BoltIcon, SignalIcon, ExclamationTriangleIcon, InboxIcon,
+  DocumentPlusIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  CalendarIcon,
+  MapPinIcon,
+  ArrowRightIcon,
+  DocumentTextIcon,
+  TrophyIcon,
+  BoltIcon,
+  SignalIcon,
+  ExclamationTriangleIcon,
+  InboxIcon,
+  CpuChipIcon,
+  ChartBarSquareIcon,
 } from '@heroicons/react/24/outline'
 
 const STATUS = {
-  pending:        { label: 'Pending',      dot: 'bg-amber-400',   badge: 'bg-amber-100 text-amber-800',    darkBadge: 'bg-amber-900/30 text-amber-300' },
-  staff_review:   { label: 'Staff Review', dot: 'bg-blue-400',    badge: 'bg-blue-100 text-blue-800',      darkBadge: 'bg-blue-900/30 text-blue-300' },
-  hod_review:     { label: 'HOD Review',   dot: 'bg-indigo-400',  badge: 'bg-indigo-100 text-indigo-800',  darkBadge: 'bg-indigo-900/30 text-indigo-300' },
-  approved:       { label: 'Approved',     dot: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-800',darkBadge: 'bg-emerald-900/30 text-emerald-300' },
-  rejected:       { label: 'Rejected',     dot: 'bg-red-400',     badge: 'bg-red-100 text-red-800',        darkBadge: 'bg-red-900/30 text-red-300' },
-  staff_rejected: { label: 'Rejected',     dot: 'bg-red-400',     badge: 'bg-red-100 text-red-800',        darkBadge: 'bg-red-900/30 text-red-300' },
+  pending: { label: 'Pending', dot: 'bg-amber-400', badge: 'bg-amber-100 text-amber-800', darkBadge: 'bg-amber-900/30 text-amber-300' },
+  staff_review: { label: 'Staff Review', dot: 'bg-cyan-400', badge: 'bg-cyan-100 text-cyan-800', darkBadge: 'bg-cyan-900/30 text-cyan-300' },
+  hod_review: { label: 'HOD Review', dot: 'bg-sky-400', badge: 'bg-sky-100 text-sky-800', darkBadge: 'bg-sky-900/30 text-sky-300' },
+  approved: { label: 'Approved', dot: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-800', darkBadge: 'bg-emerald-900/30 text-emerald-300' },
+  rejected: { label: 'Rejected', dot: 'bg-rose-400', badge: 'bg-rose-100 text-rose-800', darkBadge: 'bg-rose-900/30 text-rose-300' },
+  staff_rejected: { label: 'Rejected', dot: 'bg-rose-400', badge: 'bg-rose-100 text-rose-800', darkBadge: 'bg-rose-900/30 text-rose-300' },
 }
 
 export default function StudentDashboard() {
@@ -44,330 +56,396 @@ export default function StudentDashboard() {
           total: leaves.length,
           pending: leaves.filter(l => l.status === 'pending').length,
           approved: leaves.filter(l => l.status === 'approved').length,
-          rejected: leaves.filter(l => ['staff_rejected','rejected'].includes(l.status)).length,
+          rejected: leaves.filter(l => ['staff_rejected', 'rejected'].includes(l.status)).length,
           days: leaves.filter(l => l.status === 'approved').reduce((s, l) => s + (l.days_count || 0), 0),
           recent: leaves.slice(0, 3),
         })
       }
-    } catch (e) { console.error(e) } finally { setLoading(false) }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const hour = new Date().getHours()
-  const greeting = hour < 12 ? '🌤️ Good morning' : hour < 17 ? '☀️ Good afternoon' : '🌙 Good evening'
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
   const stats = data?.stats || {}
   const statCards = [
-    { label: 'Total Requests', value: stats.total || 0,    icon: DocumentTextIcon, gradient: 'from-violet-500 to-purple-600', shadow: 'shadow-purple-500/30', link: '/student/my-requests' },
-    { label: 'Pending',        value: stats.pending || 0,  icon: ClockIcon,         gradient: 'from-amber-400 to-orange-500', shadow: 'shadow-amber-500/30',  link: '/student/my-requests' },
-    { label: 'Approved',       value: stats.approved || 0, icon: CheckCircleIcon,   gradient: 'from-emerald-400 to-green-600',shadow: 'shadow-green-500/30',  link: '/student/my-requests' },
-    { label: 'Rejected',       value: stats.rejected || 0, icon: XCircleIcon,       gradient: 'from-rose-400 to-red-600',     shadow: 'shadow-rose-500/30' },
+    { label: 'Total Requests', value: stats.total || 0, icon: DocumentTextIcon, gradient: 'from-cyan-400 via-sky-400 to-blue-500', link: '/student/my-requests' },
+    { label: 'Pending', value: stats.pending || 0, icon: ClockIcon, gradient: 'from-amber-300 via-amber-400 to-orange-500', link: '/student/my-requests' },
+    { label: 'Approved', value: stats.approved || 0, icon: CheckCircleIcon, gradient: 'from-emerald-300 via-teal-400 to-cyan-500', link: '/student/my-requests' },
+    { label: 'Rejected', value: stats.rejected || 0, icon: XCircleIcon, gradient: 'from-rose-300 via-rose-400 to-red-500' },
   ]
 
-  if (loading) return (
-    <div className="space-y-6">
-      <div className="h-28 rounded-2xl skeleton" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[...Array(4)].map((_,i) => <div key={i} className="h-32 rounded-2xl skeleton" />)}
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-40 rounded-[28px] skeleton" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-36 rounded-[24px] skeleton" />)}
+        </div>
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="h-72 rounded-[28px] skeleton" />
+          <div className="h-72 rounded-[28px] skeleton" />
+        </div>
       </div>
-      <div className="grid lg:grid-cols-2 gap-6"><div className="h-64 rounded-2xl skeleton" /><div className="h-64 rounded-2xl skeleton" /></div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
-      <motion.div initial={{ opacity:0, y:-10 }} animate={{ opacity:1, y:0 }}
-        className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 shadow-xl shadow-purple-500/25"
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-[32px] border border-cyan-300/10 bg-[linear-gradient(135deg,_rgba(8,28,45,0.98)_0%,_rgba(9,39,54,0.96)_48%,_rgba(10,67,62,0.9)_100%)] p-7 shadow-[0_32px_90px_rgba(2,8,23,0.34)]"
       >
-        <div className="absolute inset-0 bg-black/5" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20" />
-        <div className="absolute bottom-0 left-40 w-40 h-40 bg-white/5 rounded-full -mb-12" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <p className="text-white/70 text-sm mb-1">{greeting}</p>
-            <h1 className="text-2xl font-bold text-white">{user?.name || 'Student'}</h1>
-            <p className="text-white/55 text-xs mt-1">{new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p>
+        <div className="absolute inset-0 panel-grid opacity-40" />
+        <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-32 w-32 rounded-full bg-emerald-400/10 blur-3xl" />
+
+        <div className="relative z-10 flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-white/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-200">
+              <CpuChipIcon className="h-4 w-4" />
+              AI and Data Science Student Hub
+            </div>
+            <p className="mt-5 text-sm text-cyan-100/80">{greeting}</p>
+            <h1 className="section-title mt-2 text-3xl font-bold text-white lg:text-4xl">
+              {user?.name || 'Student'}
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 lg:text-base">
+              Track OD requests, monitor approvals, submit outcomes, and stay connected to department events through a more modern academic workspace.
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link to="/student/new-request" className="btn btn-primary">
+                <DocumentPlusIcon className="h-4 w-4" />
+                Create New Request
+              </Link>
+              <Link to="/student/calendar" className="btn btn-secondary">
+                <CalendarIcon className="h-4 w-4" />
+                View Event Calendar
+              </Link>
+            </div>
           </div>
-          <Link to="/student/new-request" className="inline-flex items-center gap-2 bg-white text-purple-700 font-bold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all text-sm w-fit">
-            <DocumentPlusIcon className="w-4 h-4" /> New OD Request
-          </Link>
+
+          <div className="grid grid-cols-2 gap-4 xl:min-w-[320px]">
+            {[
+              { label: 'Today', value: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) },
+              { label: 'Portal', value: 'Realtime' },
+              { label: 'Focus', value: 'Approvals' },
+              { label: 'Experience', value: 'Professional' },
+            ].map((item) => (
+              <div key={item.label} className="rounded-3xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur-sm">
+                <p className="text-[11px] uppercase tracking-[0.26em] text-slate-500">{item.label}</p>
+                <p className="mt-2 text-sm font-semibold text-white">{item.value}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </motion.div>
 
-      {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card, i) => {
-          const W = card.link ? Link : 'div'
+          const Wrapper = card.link ? Link : 'div'
           return (
-            <motion.div key={card.label} initial={{ opacity:0, scale:0.9 }} animate={{ opacity:1, scale:1 }} transition={{ delay: i*0.08 }}>
-              <W to={card.link || undefined}
-                className={`relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br ${card.gradient} shadow-lg ${card.shadow} block ${ card.link ? 'hover:scale-[1.03] active:scale-[0.98]' : ''} transition-transform`}
+            <motion.div key={card.label} initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.08 }}>
+              <Wrapper
+                to={card.link || undefined}
+                className={`group relative block overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br ${card.gradient} p-5 text-slate-950 shadow-[0_22px_60px_rgba(15,23,42,0.22)] transition-all hover:-translate-y-1`}
               >
-                <div className="absolute right-2 top-1 text-white/15 pointer-events-none"><card.icon className="w-16 h-16" /></div>
-                <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-white/10 rounded-full" />
-                <div className="relative z-10">
-                  <p className="text-white/70 text-[11px] font-semibold uppercase tracking-wider">{card.label}</p>
-                  <p className="text-4xl font-black text-white mt-1.5">{card.value}</p>
+                <div className="absolute -right-5 -top-5 h-24 w-24 rounded-full bg-white/20 blur-2xl" />
+                <div className="relative z-10 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-900/65">{card.label}</p>
+                    <p className="mt-3 text-4xl font-black">{card.value}</p>
+                  </div>
+                  <div className="rounded-2xl bg-white/25 p-3">
+                    <card.icon className="h-6 w-6" />
+                  </div>
                 </div>
-              </W>
+              </Wrapper>
             </motion.div>
           )
         })}
       </div>
 
-      {/* Leave Balance */}
       {leaveBalance && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <div className={`rounded-2xl p-5 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow`}>
-            <h3 className={`text-sm font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Leave Balance</h3>
-            <div className="grid grid-cols-3 gap-4">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <div className={`card p-5 ${!isDark ? '!bg-white !border-slate-200 !shadow-[0_18px_50px_rgba(148,163,184,0.18)]' : ''}`}>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Leave Balance</p>
+                <h3 className={`section-title mt-2 text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Academic Leave Overview</h3>
+              </div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200">
+                <ChartBarSquareIcon className="h-6 w-6" />
+              </div>
+            </div>
+            <div className="mt-5 grid grid-cols-3 gap-4">
               {[
-                { label: 'Total', value: leaveBalance.total_allowed || 15, color: 'text-blue-500' },
-                { label: 'Used', value: leaveBalance.used || 0, color: 'text-orange-500' },
-                { label: 'Remaining', value: (leaveBalance.total_allowed || 15) - (leaveBalance.used || 0), color: 'text-green-500' },
-              ].map(b => (
-                <div key={b.label} className="text-center">
-                  <div className={`text-2xl font-black ${b.color}`}>{b.value}</div>
-                  <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{b.label}</div>
+                { label: 'Total', value: leaveBalance.total_allowed || 15, tone: 'text-cyan-300' },
+                { label: 'Used', value: leaveBalance.used || 0, tone: 'text-amber-300' },
+                { label: 'Remaining', value: (leaveBalance.total_allowed || 15) - (leaveBalance.used || 0), tone: 'text-emerald-300' },
+              ].map((b) => (
+                <div key={b.label} className={`rounded-3xl border p-4 text-center ${isDark ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-slate-50'}`}>
+                  <div className={`text-3xl font-black ${b.tone}`}>{b.value}</div>
+                  <div className={`mt-1 text-xs uppercase tracking-[0.24em] ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{b.label}</div>
                 </div>
               ))}
             </div>
-            <div className="mt-3">
-              <div className={`w-full h-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all"
-                  style={{ width: `${Math.min(100, ((leaveBalance.used || 0) / (leaveBalance.total_allowed || 15)) * 100)}%` }}
-                />
-              </div>
+            <div className={`mt-5 h-3 w-full rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-cyan-400 to-sky-500 transition-all"
+                style={{ width: `${Math.min(100, ((leaveBalance.used || 0) / (leaveBalance.total_allowed || 15)) * 100)}%` }}
+              />
             </div>
           </div>
         </motion.div>
       )}
 
-      {/* Active Events Alert */}
       {data?.activeEvents?.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <div className="space-y-3">
-            {data.activeEvents.map(evt => {
-              const lastCheckin = evt.last_checkin ? new Date(evt.last_checkin) : null
-              const minutesSince = lastCheckin ? (Date.now() - lastCheckin.getTime()) / (1000 * 60) : null
-              const interval = evt.checkin_interval_minutes || 180
-              const isOverdue = minutesSince != null && minutesSince > interval
-              return (
-                <Link key={evt.id} to="/student/active-event"
-                  className={`flex items-center gap-4 p-4 rounded-2xl shadow-lg transition-all hover:scale-[1.01] ${
-                    isOverdue
-                      ? 'bg-gradient-to-r from-red-500 to-rose-600 shadow-red-500/30'
-                      : 'bg-gradient-to-r from-emerald-500 to-teal-600 shadow-emerald-500/30'
-                  } text-white`}
-                >
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    <SignalIcon className="w-5 h-5" />
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+          {data.activeEvents.map(evt => {
+            const lastCheckin = evt.last_checkin ? new Date(evt.last_checkin) : null
+            const minutesSince = lastCheckin ? (Date.now() - lastCheckin.getTime()) / (1000 * 60) : null
+            const interval = evt.checkin_interval_minutes || 180
+            const isOverdue = minutesSince != null && minutesSince > interval
+            return (
+              <Link
+                key={evt.id}
+                to="/student/active-event"
+                className={`block rounded-[28px] border p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,0.22)] transition-all hover:-translate-y-1 ${isOverdue ? 'border-rose-300/20 bg-gradient-to-r from-rose-500 to-red-500' : 'border-emerald-300/20 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-500'}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
+                    <SignalIcon className="h-6 w-6" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm truncate">{evt.event_name}</p>
-                    <p className="text-xs text-white/80">
-                      {isOverdue ? `Check-in overdue — last was ${Math.round(minutesSince / 60)}h ago`
-                       : lastCheckin ? `Last check-in ${Math.round(minutesSince)}m ago`
-                       : 'No check-ins yet — check in now!'}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold uppercase tracking-[0.24em] text-white/70">Live Event Tracking</p>
+                    <p className="mt-1 text-lg font-semibold truncate">{evt.event_name}</p>
+                    <p className="mt-1 text-sm text-white/80">
+                      {isOverdue
+                        ? `Check-in overdue. Last update was ${Math.round(minutesSince / 60)} hour(s) ago.`
+                        : lastCheckin
+                        ? `Last check-in ${Math.round(minutesSince)} minute(s) ago.`
+                        : 'No check-in logged yet. Open the tracker now.'}
                     </p>
                   </div>
-                  <span className="px-3 py-1.5 bg-white/20 rounded-xl text-xs font-bold flex-shrink-0">
-                    {isOverdue ? 'Check In Now' : 'Track'}
+                  <span className="rounded-full bg-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]">
+                    {isOverdue ? 'Check In' : 'Track'}
                   </span>
-                </Link>
-              )
-            })}
-          </div>
+                </div>
+              </Link>
+            )
+          })}
         </motion.div>
       )}
 
-      {/* Pending Results Alert */}
       {data?.pendingResults?.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-          <div className="space-y-3">
-            {data.pendingResults.map(pr => {
-              const days = pr.days_until_deadline
-              const isOverdue = days != null && days < 0
-              const isUrgent = days != null && days >= 0 && days <= 3
-              return (
-                <Link key={pr.id} to="/student/submit-result"
-                  className={`flex items-center gap-4 p-4 rounded-2xl shadow-lg transition-all hover:scale-[1.01] ${
-                    isOverdue ? 'bg-gradient-to-r from-red-500 to-rose-600 shadow-red-500/30'
-                    : isUrgent ? 'bg-gradient-to-r from-amber-400 to-orange-500 shadow-amber-500/30'
-                    : 'bg-gradient-to-r from-purple-500 to-indigo-600 shadow-purple-500/30'
-                  } text-white`}
-                >
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    {isOverdue ? <ExclamationTriangleIcon className="w-5 h-5" /> : <TrophyIcon className="w-5 h-5" />}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+          {data.pendingResults.map(pr => {
+            const days = pr.days_until_deadline
+            const isOverdue = days != null && days < 0
+            const isUrgent = days != null && days >= 0 && days <= 3
+            return (
+              <Link
+                key={pr.id}
+                to="/student/submit-result"
+                className={`block rounded-[28px] border p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,0.22)] transition-all hover:-translate-y-1 ${isOverdue ? 'border-rose-300/20 bg-gradient-to-r from-rose-500 to-red-500' : isUrgent ? 'border-amber-300/20 bg-gradient-to-r from-amber-300 to-orange-500 text-slate-950' : 'border-cyan-300/20 bg-gradient-to-r from-cyan-400 to-blue-500'}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${isUrgent ? 'bg-slate-950/10' : 'bg-white/15'}`}>
+                    {isOverdue ? <ExclamationTriangleIcon className="h-6 w-6" /> : <TrophyIcon className="h-6 w-6" />}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm truncate">{pr.event_name}</p>
-                    <p className="text-xs text-white/80">
-                      {isOverdue ? `Result ${Math.abs(days)} day${Math.abs(days) !== 1 ? 's' : ''} overdue!`
-                       : days != null ? `Submit result within ${days} day${days !== 1 ? 's' : ''}`
-                       : 'Post-event result pending'}
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm font-bold uppercase tracking-[0.24em] ${isUrgent ? 'text-slate-900/70' : 'text-white/70'}`}>Result Submission</p>
+                    <p className="mt-1 text-lg font-semibold truncate">{pr.event_name}</p>
+                    <p className={`mt-1 text-sm ${isUrgent ? 'text-slate-900/75' : 'text-white/80'}`}>
+                      {isOverdue
+                        ? `Submission is overdue by ${Math.abs(days)} day(s).`
+                        : days != null
+                        ? `Submit the result within ${days} day(s).`
+                        : 'Post-event result is still pending.'}
                     </p>
                   </div>
-                  <span className="px-3 py-1.5 bg-white/20 rounded-xl text-xs font-bold flex-shrink-0">
-                    Submit Result
+                  <span className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] ${isUrgent ? 'bg-slate-950/10' : 'bg-white/15'}`}>
+                    Submit
                   </span>
-                </Link>
-              )
-            })}
-          </div>
+                </div>
+              </Link>
+            )
+          })}
         </motion.div>
       )}
 
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent Requests */}
-        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.25 }}
-          className={`rounded-2xl shadow-sm border overflow-hidden ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}
-        >
-          <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-            <h2 className={`font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              <ClockIcon className="w-4 h-4 text-purple-500" /> Recent Requests
+        <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className={`card ${!isDark ? '!bg-white !border-slate-200 !shadow-[0_18px_50px_rgba(148,163,184,0.18)]' : ''}`}>
+          <div className={`flex items-center justify-between border-b px-5 py-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+            <h2 className={`section-title flex items-center gap-2 text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <ClockIcon className="h-5 w-5 text-cyan-300" />
+              Recent Requests
             </h2>
-            <Link to="/student/my-requests" className="text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1 font-semibold">
-              View all <ArrowRightIcon className="w-3 h-3" />
+            <Link to="/student/my-requests" className="text-sm font-semibold text-cyan-300 hover:text-cyan-200">
+              View all
             </Link>
           </div>
-          <div className={`divide-y ${isDark ? 'divide-gray-700/50' : 'divide-gray-50'}`}>
+          <div className={`divide-y ${isDark ? 'divide-white/10' : 'divide-slate-200'}`}>
             {data?.recentRequests?.length > 0 ? data.recentRequests.map(req => {
               const s = STATUS[req.status] || STATUS.pending
               return (
-                <Link key={req.id} to={`/student/request/${req.id}`}
-                  className={`flex items-center gap-3 px-5 py-3 transition-colors ${isDark ? 'hover:bg-gray-700/40' : 'hover:bg-gray-50/80'}`}
+                <Link
+                  key={req.id}
+                  to={`/student/request/${req.id}`}
+                  className={`flex items-center gap-3 px-5 py-4 transition-colors ${isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-slate-50'}`}
                 >
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-semibold truncate text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{req.event_name}</p>
-                    <p className={`text-xs flex items-center gap-1 mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                      <CalendarIcon className="w-3 h-3" />{new Date(req.event_start_date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}
+                  <span className={`h-2.5 w-2.5 rounded-full ${s.dot}`} />
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{req.event_name}</p>
+                    <p className={`mt-1 flex items-center gap-1 text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+                      <CalendarIcon className="h-3 w-3" />
+                      {new Date(req.event_start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                     </p>
                   </div>
-                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold flex-shrink-0 ${isDark ? s.darkBadge : s.badge}`}>{s.label}</span>
+                  <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${isDark ? s.darkBadge : s.badge}`}>
+                    {s.label}
+                  </span>
                 </Link>
               )
             }) : (
-              <div className="py-12 text-center">
-                <DocumentPlusIcon className={`w-10 h-10 mx-auto mb-2 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No requests yet</p>
-                <Link to="/student/new-request" className="text-purple-600 hover:underline text-xs mt-1 inline-block">Create your first</Link>
+              <div className="py-14 text-center">
+                <DocumentPlusIcon className={`mx-auto mb-3 h-10 w-10 ${isDark ? 'text-slate-600' : 'text-slate-300'}`} />
+                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>No requests yet</p>
+                <Link to="/student/new-request" className="mt-2 inline-block text-sm font-semibold text-cyan-300 hover:text-cyan-200">
+                  Create your first request
+                </Link>
               </div>
             )}
           </div>
         </motion.div>
 
-        {/* Upcoming Events */}
-        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.35 }}
-          className={`rounded-2xl shadow-sm border overflow-hidden ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}
-        >
-          <div className={`px-5 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-            <h2 className={`font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              <CalendarIcon className="w-4 h-4 text-indigo-500" /> Upcoming Events
+        <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className={`card ${!isDark ? '!bg-white !border-slate-200 !shadow-[0_18px_50px_rgba(148,163,184,0.18)]' : ''}`}>
+          <div className={`border-b px-5 py-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+            <h2 className={`section-title flex items-center gap-2 text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <CalendarIcon className="h-5 w-5 text-emerald-300" />
+              Upcoming Events
             </h2>
           </div>
-          <div className={`divide-y ${isDark ? 'divide-gray-700/50' : 'divide-gray-50'}`}>
+          <div className={`divide-y ${isDark ? 'divide-white/10' : 'divide-slate-200'}`}>
             {data?.upcomingEvents?.length > 0 ? data.upcomingEvents.map(event => {
               const d = new Date(event.event_start_date)
               return (
-                <div key={event.id} className={`flex items-center gap-4 px-5 py-3 ${isDark ? 'hover:bg-gray-700/30' : 'hover:bg-gray-50'} transition-colors`}>
-                  <div className="w-11 h-11 rounded-xl flex flex-col items-center justify-center flex-shrink-0 text-white bg-gradient-to-br from-indigo-500 to-purple-600 shadow">
-                    <span className="text-[9px] font-black uppercase opacity-80">{d.toLocaleDateString('en',{month:'short'})}</span>
+                <div key={event.id} className={`flex items-center gap-4 px-5 py-4 ${isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-slate-50'} transition-colors`}>
+                  <div className="flex h-14 w-14 flex-col items-center justify-center rounded-3xl bg-gradient-to-br from-cyan-400 to-emerald-400 text-slate-950 shadow-[0_18px_45px_rgba(45,212,191,0.22)]">
+                    <span className="text-[10px] font-black uppercase">{d.toLocaleDateString('en', { month: 'short' })}</span>
                     <span className="text-lg font-black leading-none">{d.getDate()}</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-semibold truncate text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{event.event_name}</p>
-                    {event.venue && <p className={`text-xs flex items-center gap-1 mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}><MapPinIcon className="w-3 h-3" />{event.venue}</p>}
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{event.event_name}</p>
+                    {event.venue && (
+                      <p className={`mt-1 flex items-center gap-1 text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+                        <MapPinIcon className="h-3 w-3" />
+                        {event.venue}
+                      </p>
+                    )}
                   </div>
                 </div>
               )
             }) : (
-              <div className="py-12 text-center">
-                <CalendarIcon className={`w-10 h-10 mx-auto mb-2 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No upcoming events</p>
+              <div className="py-14 text-center">
+                <CalendarIcon className={`mx-auto mb-3 h-10 w-10 ${isDark ? 'text-slate-600' : 'text-slate-300'}`} />
+                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>No upcoming events</p>
               </div>
             )}
           </div>
         </motion.div>
       </div>
 
-      {/* Quick Actions */}
-      <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.45 }}>
-        <h2 className={`font-bold mb-3 flex items-center gap-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-          <BoltIcon className="w-4 h-4 text-yellow-500" /> QUICK ACTIONS
-        </h2>
+      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}>
+        <div className="mb-3 flex items-center gap-2">
+          <BoltIcon className="h-5 w-5 text-amber-300" />
+          <h2 className={`text-sm font-semibold uppercase tracking-[0.28em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Quick Actions</h2>
+        </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'New OD Request',  path:'/student/new-request',   icon: DocumentPlusIcon, from:'from-violet-500', to:'to-purple-600'  },
-            { label: 'My Requests',     path:'/student/my-requests',   icon: DocumentTextIcon, from:'from-blue-500',   to:'to-indigo-600'  },
-            { label: 'Event Calendar',  path:'/student/calendar',      icon: CalendarIcon,     from:'from-teal-500',   to:'to-cyan-600'    },
-            { label: 'Submit Result',   path:'/student/submit-result', icon: TrophyIcon,       from:'from-amber-400',  to:'to-orange-500'  },
+            { label: 'New OD Request', path: '/student/new-request', icon: DocumentPlusIcon, from: 'from-cyan-400', to: 'to-sky-500' },
+            { label: 'My Requests', path: '/student/my-requests', icon: DocumentTextIcon, from: 'from-sky-400', to: 'to-blue-500' },
+            { label: 'Event Calendar', path: '/student/calendar', icon: CalendarIcon, from: 'from-emerald-300', to: 'to-teal-500' },
+            { label: 'Submit Result', path: '/student/submit-result', icon: TrophyIcon, from: 'from-amber-300', to: 'to-orange-500' },
           ].map(a => (
-            <Link key={a.path} to={a.path}
-              className={`flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br ${a.from} ${a.to} text-white hover:scale-[1.03] hover:shadow-lg active:scale-[0.97] transition-all shadow-md`}
+            <Link
+              key={a.path}
+              to={a.path}
+              className={`flex items-center gap-3 rounded-[24px] bg-gradient-to-br ${a.from} ${a.to} px-4 py-4 text-slate-950 shadow-[0_18px_50px_rgba(15,23,42,0.16)] transition-all hover:-translate-y-1`}
             >
-              <a.icon className="w-5 h-5 flex-shrink-0" />
-              <span className="font-bold text-sm leading-tight">{a.label}</span>
+              <div className="rounded-2xl bg-white/30 p-2">
+                <a.icon className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-bold leading-tight">{a.label}</span>
             </Link>
           ))}
         </div>
       </motion.div>
 
-      {/* Leave Overview */}
       {leaveStats !== null && (
-        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.55 }}
-          className={`rounded-2xl shadow-sm border overflow-hidden ${isDark?'bg-gray-800 border-gray-700':'bg-white border-gray-100'}`}
-        >
-          <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark?'border-gray-700':'border-gray-100'}`}>
-            <h2 className={`font-bold flex items-center gap-2 ${isDark?'text-white':'text-gray-900'}`}>
-              <InboxIcon className="w-4 h-4 text-indigo-500" /> My Leave Summary
+        <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }} className={`card ${!isDark ? '!bg-white !border-slate-200 !shadow-[0_18px_50px_rgba(148,163,184,0.18)]' : ''}`}>
+          <div className={`flex items-center justify-between border-b px-5 py-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+            <h2 className={`section-title flex items-center gap-2 text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <InboxIcon className="h-5 w-5 text-cyan-300" />
+              My Leave Summary
             </h2>
-            <Link to="/student/leaves" className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1 font-semibold">
-              View All <ArrowRightIcon className="w-3 h-3" />
+            <Link to="/student/leaves" className="flex items-center gap-1 text-sm font-semibold text-cyan-300 hover:text-cyan-200">
+              View all
+              <ArrowRightIcon className="h-4 w-4" />
             </Link>
           </div>
           <div className="p-5">
-            <div className="grid grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 mb-4">
               {[
-                { label:'Total', value: leaveStats.total,    color:'from-indigo-400 to-purple-500' },
-                { label:'Pending', value: leaveStats.pending,  color:'from-amber-400 to-orange-500' },
-                { label:'Approved', value: leaveStats.approved, color:'from-emerald-400 to-green-500' },
-                { label:'Days Off', value: leaveStats.days,     color:'from-sky-400 to-blue-500' },
+                { label: 'Total', value: leaveStats.total, color: 'from-sky-400 to-cyan-500' },
+                { label: 'Pending', value: leaveStats.pending, color: 'from-amber-300 to-orange-500' },
+                { label: 'Approved', value: leaveStats.approved, color: 'from-emerald-300 to-teal-500' },
+                { label: 'Days Off', value: leaveStats.days, color: 'from-lime-300 to-emerald-500' },
               ].map(s => (
-                <div key={s.label} className={`rounded-xl bg-gradient-to-br ${s.color} p-3 text-center shadow`}>
-                  <p className="text-2xl font-black text-white">{s.value}</p>
-                  <p className="text-white/70 text-[10px] font-semibold uppercase tracking-wide mt-0.5">{s.label}</p>
+                <div key={s.label} className={`rounded-[24px] bg-gradient-to-br ${s.color} p-4 text-slate-950 shadow-[0_14px_35px_rgba(15,23,42,0.16)]`}>
+                  <p className="text-3xl font-black">{s.value}</p>
+                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-900/70">{s.label}</p>
                 </div>
               ))}
             </div>
             {leaveStats.recent.length > 0 ? (
-              <div className={`divide-y ${isDark?'divide-gray-700':'divide-gray-50'} rounded-xl overflow-hidden border ${isDark?'border-gray-700':'border-gray-100'}`}>
-                {leaveStats.recent.map(l => (
-                  <Link key={l.id} to={`/student/leave-letter/${l.id}`}
-                    className={`flex items-center gap-3 px-4 py-2.5 ${isDark?'hover:bg-gray-700/40':'hover:bg-gray-50'} transition-colors`}
-                  >
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                      l.status==='approved'?'bg-emerald-400':l.status==='pending'?'bg-amber-400':'bg-red-400'
-                    }`} />
-                    <span className={`flex-1 text-sm font-medium capitalize truncate ${isDark?'text-gray-200':'text-gray-800'}`}>
-                      {l.leave_type} — {l.days_count}d
-                    </span>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
-                      l.status==='approved'?'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300':
-                      l.status==='pending'?'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300':
-                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                    }`}>{l.status.replace(/_/g,' ')}</span>
-                  </Link>
-                ))}
+              <div className={`overflow-hidden rounded-[24px] border ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+                <div className={`divide-y ${isDark ? 'divide-white/10' : 'divide-slate-200'}`}>
+                  {leaveStats.recent.map(l => (
+                    <Link
+                      key={l.id}
+                      to={`/student/leave-letter/${l.id}`}
+                      className={`flex items-center gap-3 px-4 py-3 ${isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-slate-50'} transition-colors`}
+                    >
+                      <span className={`h-2.5 w-2.5 rounded-full ${l.status === 'approved' ? 'bg-emerald-400' : l.status === 'pending' ? 'bg-amber-400' : 'bg-rose-400'}`} />
+                      <span className={`flex-1 truncate text-sm font-medium capitalize ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+                        {l.leave_type} - {l.days_count} day(s)
+                      </span>
+                      <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+                        l.status === 'approved'
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                          : l.status === 'pending'
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                          : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
+                      }`}>
+                        {l.status.replace(/_/g, ' ')}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="text-center py-4">
-                <Link to="/student/leaves/new"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
-                >
-                  <DocumentPlusIcon className="w-4 h-4" /> Apply for Leave
+                <Link to="/student/leaves/new" className="btn btn-primary">
+                  <DocumentPlusIcon className="h-4 w-4" />
+                  Apply for Leave
                 </Link>
               </div>
             )}
@@ -376,31 +454,4 @@ export default function StudentDashboard() {
       )}
     </div>
   )
-}
-
-const StatCard = ({ icon: Icon, title, value, color, bgColor }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="card p-6"
-  >
-    <div className="flex items-center gap-4">
-      <div className={`p-3 rounded-xl ${bgColor}`}>
-        <Icon className={`w-6 h-6 ${color}`} />
-      </div>
-      <div>
-        <p className="text-sm text-gray-500">{title}</p>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-      </div>
-    </div>
-  </motion.div>
-)
-
-const statusColors = {
-  pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' },
-  staff_review: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Staff Review' },
-  hod_review: { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'HOD Review' },
-  approved: { bg: 'bg-green-100', text: 'text-green-800', label: 'Approved' },
-  rejected: { bg: 'bg-red-100', text: 'text-red-800', label: 'Rejected' },
-  staff_rejected: { bg: 'bg-red-100', text: 'text-red-800', label: 'Rejected' }
 }
