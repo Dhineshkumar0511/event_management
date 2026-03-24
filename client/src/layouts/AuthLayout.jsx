@@ -102,23 +102,71 @@ const features = [
   { icon: '🔒', text: 'Multi-Role Access', color: 'from-emerald-400 to-teal-500', border: 'border-emerald-400/20', glow: 'shadow-emerald-500/10' },
 ]
 
+/* ── Golden Badge Component ── */
+const GoldenBadge = () => (
+  <motion.div
+    initial={{ scale: 0.8, opacity: 0 }}
+    animate={{ scale: 1, opacity: 1 }}
+    transition={{ duration: 1, ease: "easeOut" }}
+    className="relative group cursor-pointer"
+  >
+    <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/30 via-yellow-500/40 to-amber-500/30 blur-2xl opacity-50 group-hover:opacity-100 transition-opacity animate-pulse" />
+    <div className="relative flex items-center justify-center">
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-400 via-yellow-200 to-amber-600 rounded-2xl rotate-45 scale-90 opacity-20 group-hover:rotate-90 transition-transform duration-1000" />
+      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-yellow-200 to-amber-600 p-[2px] shadow-[0_0_30px_rgba(251,191,36,0.4)]">
+        <div className="w-full h-full bg-[#0c0d28] rounded-[14px] flex items-center justify-center overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-t from-amber-500/10 to-transparent" />
+          <span className="text-3xl filter drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]">🏆</span>
+        </div>
+      </div>
+    </div>
+  </motion.div>
+)
+
 export default function AuthLayout() {
   const { isDark, toggleTheme } = useTheme()
 
   return (
     <div className="fixed inset-0 flex bg-[#050510] text-white overflow-hidden">
-      {/* ── Left Panel: Neural Network Visual ── */}
+      {/* ── Left Panel: Ultra-Premium Neural Network ── */}
       <section className="hidden lg:flex lg:w-[55%] relative overflow-hidden">
-        {/* Rich gradient layers */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#050510] via-[#0a0b25] to-[#050510]" />
-        <div className="absolute top-[5%] left-[0%] w-[400px] h-[400px] rounded-full bg-purple-600/10 blur-[120px] animate-breathe" />
-        <div className="absolute bottom-[10%] right-[5%] w-[350px] h-[350px] rounded-full bg-cyan-500/10 blur-[120px] animate-breathe" style={{ animationDelay: '1.5s' }} />
-        <div className="absolute top-[50%] left-[30%] w-[300px] h-[300px] rounded-full bg-pink-500/8 blur-[100px] animate-breathe" style={{ animationDelay: '3s' }} />
-        <div className="absolute top-[25%] right-[15%] w-[200px] h-[200px] rounded-full bg-amber-500/6 blur-[80px] animate-breathe" style={{ animationDelay: '2s' }} />
+        {/* Multidimensional Gradient Layers */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#02020a] via-[#0a0b25] to-[#02020a]" />
+        
+        {/* Animated Orbs with Perspective */}
+        <div className="absolute top-[-10%] left-[-10%] w-[700px] h-[700px] rounded-full bg-blue-600/10 blur-[150px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-purple-600/10 blur-[150px] animate-pulse" style={{ animationDelay: '2s' }} />
+        
+        {/* Neural Grid with Viewport Scaling */}
+        <div className="absolute inset-0 opacity-[0.05] [perspective:2000px]">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,229,255,1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,255,1)_1px,transparent_1px)] bg-[size:80px_80px] [transform:rotateX(65deg)_translateY(-100px)] [transform-origin:top] animate-data-stream" />
+        </div>
 
-        {/* Neural network SVG — brighter */}
-        <div className="absolute inset-0 opacity-80">
-          <NeuralNetwork />
+        {/* Dynamic Data Stream Overlay */}
+        <div className="absolute inset-0 opacity-40">
+           <NeuralNetwork />
+        </div>
+
+        {/* Floating AI Particles */}
+        <div className="absolute inset-0">
+           {Array.from({ length: 15 }).map((_, i) => (
+             <motion.div
+               key={i}
+               initial={{ opacity: 0, scale: 0 }}
+               animate={{ 
+                 opacity: [0, 0.6, 0],
+                 scale: [0, 1.5, 0],
+                 x: [Math.floor(Math.random() * 80) + '%', Math.floor(Math.random() * 80) + '%'],
+                 y: [Math.floor(Math.random() * 80) + '%', Math.floor(Math.random() * 80) + '%']
+               }}
+               transition={{ 
+                 duration: 15 + Math.random() * 10, 
+                 repeat: Infinity, 
+                 delay: Math.random() * 5 
+               }}
+               className="absolute w-1.5 h-1.5 bg-cyan-400 rounded-full shadow-[0_0_15px_#00e5ff]"
+             />
+           ))}
         </div>
 
         {/* Content overlay */}
@@ -137,20 +185,24 @@ export default function AuthLayout() {
             </div>
           </motion.div>
 
-          {/* Center: Hero */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="max-w-lg"
           >
-            <h1 className="font-display text-5xl xl:text-[3.8rem] font-black leading-[1.05] tracking-tight">
-              <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-500 bg-clip-text text-transparent">EventOS</span>
-              <br />
-              <span className="bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">Neural</span>
-              <br />
-              <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-transparent">Platform</span>
-            </h1>
+            <div className="mb-6 flex items-center gap-6">
+               <GoldenBadge />
+               <div>
+                  <h1 className="font-display text-5xl xl:text-[4rem] font-black leading-[1.05] tracking-tight">
+                    <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-500 bg-clip-text text-transparent">EventOS</span>
+                    <br />
+                    <span className="bg-gradient-to-r from-white via-white/90 to-amber-200 bg-clip-text text-transparent">Neural</span>
+                    <br />
+                    <span className="bg-gradient-to-r from-amber-400 via-yellow-500 to-orange-500 bg-clip-text text-transparent">Elite Access</span>
+                  </h1>
+               </div>
+            </div>
             <p className="mt-6 text-[15px] text-slate-400 leading-relaxed max-w-md">
               Next-generation event management built for the Department of <span className="text-cyan-400 font-medium">Artificial Intelligence</span> & <span className="text-purple-400 font-medium">Data Science</span>.
             </p>

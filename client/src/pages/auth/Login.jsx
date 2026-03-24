@@ -32,24 +32,29 @@ export default function Login() {
   return (
     <div className="space-y-5">
       {/* Header with animated icon */}
-      <div className="text-center">
+      <div className="text-center mb-8">
         <motion.div
-          initial={{ scale: 0, rotate: -180 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
-          className="mx-auto mb-5 relative"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="mx-auto mb-6 relative w-20 h-20"
         >
-          {/* Glowing ring */}
-          <div className="absolute inset-0 w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 blur-xl animate-breathe" />
-          <div className="relative mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/15 to-purple-500/15 border border-cyan-400/20 flex items-center justify-center shadow-xl shadow-cyan-500/10">
-            <span className="text-3xl">🧠</span>
+          {/* Pulsing Core */}
+          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-accent-cyan/20 to-accent-purple/20 blur-2xl animate-pulse" />
+          <div className="relative w-full h-full rounded-3xl bg-[#0a0c1f]/60 backdrop-blur-xl border border-white/10 flex items-center justify-center shadow-2xl overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-t from-accent-cyan/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <span className="text-4xl filter drop-shadow-[0_0_15px_rgba(0,229,255,0.5)]">🧠</span>
+            {/* Scanning line */}
+            <div className="absolute inset-x-0 h-[2px] bg-accent-cyan/50 top-0 animate-scanline shadow-[0_0_10px_#00e5ff]" />
           </div>
         </motion.div>
-        <h2 className="font-display text-[1.65rem] font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-          Access Portal
+        
+        <h2 className="font-display text-5xl font-black tracking-tight leading-none italic">
+          <span className="bg-gradient-to-r from-white via-white/90 to-white/40 bg-clip-text text-transparent">ACCESS</span><br/>
+          <span className="bg-gradient-to-r from-accent-cyan via-accent-purple to-accent-magenta bg-clip-text text-transparent">PORTAL VR.4</span>
         </h2>
-        <p className="mt-2 text-sm text-slate-400">
-          Sign in to the <span className="text-cyan-400/80 font-medium">AI & Data Science</span> Platform
+        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.4em] text-white/20">
+          SYSTEM AUTHENTICATION PROTOCOL // <span className="text-accent-cyan">LEVEL 01</span>
         </p>
       </div>
 
@@ -133,32 +138,35 @@ export default function Login() {
         </Link>
       </p>
 
-      {/* Quick Access — colorful cards */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 backdrop-blur-sm">
-        <div className="flex items-center justify-between mb-3">
+      {/* Quick Access — High Fidelity Cards */}
+      <div className="neural-card rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-3xl relative overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent-cyan/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+        
+        <div className="flex items-center justify-between mb-5 relative z-10">
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-glow-pulse" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.25em] bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">Quick Access</span>
+            <div className="w-2 h-2 rounded-full bg-accent-amber animate-pulse shadow-[0_0_10px_#ffbe0b]" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Neural Quick-Link</span>
           </div>
-          <span className="font-mono text-[10px] px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-slate-500">password123</span>
+          <span className="font-mono text-[9px] px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-white/30 tracking-widest">PWD: 123</span>
         </div>
-        <div className="grid grid-cols-3 gap-2">
+
+        <div className="grid grid-cols-3 gap-3 relative z-10">
           {demoAccounts.map((account) => (
             <motion.button
               key={account.role}
               type="button"
-              whileHover={{ y: -3, scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ y: -5, scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setFormData({ email: account.email, password: 'password123' })}
-              className={`group relative flex flex-col items-center gap-2 rounded-2xl border ${account.border} bg-white/[0.02] px-3 py-4 transition-all hover:bg-white/[0.05] shadow-lg ${account.shadow}`}
+              className={`group relative flex flex-col items-center gap-3 rounded-[1.25rem] border border-white/5 bg-white/[0.02] px-2 py-5 transition-all hover:bg-white/[0.08] hover:border-white/20`}
             >
-              {/* Icon with gradient bg */}
-              <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${account.color} shadow-lg text-lg`}>
-                {account.icon}
+              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${account.color} shadow-xl text-xl relative`}>
+                 <div className="absolute inset-0 bg-white/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                 <span className="relative z-10">{account.icon}</span>
               </div>
               <div className="text-center">
-                <span className="block text-xs font-bold text-white/80">{account.role}</span>
-                <span className="block text-[9px] text-slate-500 mt-0.5">{account.label}</span>
+                <span className="block text-xs font-black text-white uppercase tracking-tighter">{account.role}</span>
+                <span className="block text-[8px] font-bold text-white/25 mt-1 uppercase tracking-widest">{account.label?.split(' ')[0]}</span>
               </div>
             </motion.button>
           ))}

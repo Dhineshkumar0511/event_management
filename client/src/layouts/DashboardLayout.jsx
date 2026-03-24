@@ -134,7 +134,62 @@ export default function DashboardLayout() {
   const currentPage = navItems.find(item => location.pathname === item.path)?.name || 'Dashboard'
 
   return (
-    <div className="min-h-screen bg-neural-void text-white">
+    <div className="min-h-screen bg-[#05060f] text-white relative overflow-hidden">
+      {/* ── Ultra-Premium Neural Background System ── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        {/* Animated Perspective Grid (Moving Floor) */}
+        <div className="absolute bottom-0 left-0 right-0 h-[60vh] opacity-20"
+             style={{
+               perspective: '800px',
+               perspectiveOrigin: '50% 0%',
+             }}>
+          <div className="absolute inset-0"
+               style={{
+                 backgroundImage: `
+                   linear-gradient(to right, rgba(0, 229, 255, 0.2) 1px, transparent 1px),
+                   linear-gradient(to bottom, rgba(0, 229, 255, 0.2) 1px, transparent 1px)
+                 `,
+                 backgroundSize: '60px 60px',
+                 transform: 'rotateX(60deg) translateY(-20%)',
+                 transformOrigin: 'top center',
+                 maskImage: 'linear-gradient(to bottom, transparent, black 40%, black 80%, transparent)',
+               }}>
+            <motion.div 
+              animate={{ backgroundPosition: ['0px 0px', '0px 60px'] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+              className="absolute inset-0"
+            />
+          </div>
+        </div>
+
+        {/* Ambient Neural auras */}
+        <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[70%] bg-cyan-500/10 rounded-full blur-[140px] animate-pulse" />
+        <div className="absolute -bottom-[20%] -right-[10%] w-[60%] h-[70%] bg-purple-600/10 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: '2s' }} />
+        
+        {/* Floating AI Particles */}
+        {Array.from({ length: 15 }).map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-cyan-400/40 rounded-full"
+            initial={{ 
+              x: Math.random() * 100 + '%', 
+              y: Math.random() * 100 + '%',
+              opacity: Math.random() * 0.5
+            }}
+            animate={{ 
+              y: [null, '-20%', '120%'],
+              opacity: [0, 0.8, 0]
+            }}
+            transition={{ 
+              duration: 15 + Math.random() * 20, 
+              repeat: Infinity, 
+              delay: Math.random() * 10,
+              ease: 'linear' 
+            }}
+          />
+        ))}
+      </div>
+
       {/* Mobile overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -150,23 +205,20 @@ export default function DashboardLayout() {
 
       {/* ── Sidebar ── */}
       <aside className={`fixed left-0 top-0 z-50 h-full w-[280px] transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        {/* Sidebar background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-neural-deep via-neural-surface to-neural-deep border-r border-white/[0.04]" />
+        {/* Sidebar background - High Glassmorphism */}
+        <div className="absolute inset-0 bg-[#0a0b1e]/80 backdrop-blur-2xl border-r border-white/10 shadow-[20px_0_40px_-15px_rgba(0,0,0,0.5)]" />
 
-        {/* Subtle grid pattern */}
-        <div className="absolute inset-0 opacity-20" style={{
-          backgroundImage: 'radial-gradient(circle, rgba(0,229,255,0.03) 1px, transparent 1px)',
-          backgroundSize: '24px 24px',
-        }} />
-
+        {/* Neural Scanning vertical line */}
+        <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-cyan-500/50 to-transparent" />
+        
         <div className="relative h-full flex flex-col">
           {/* Logo area */}
-          <div className="p-5 border-b border-white/[0.04]">
+          <div className="p-6 border-b border-white/5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 group">
                 <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-accent-cyan/20 to-accent-purple/20 border border-accent-cyan/15 flex items-center justify-center">
                   <span className="text-lg">🧠</span>
-                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent-green border-2 border-neural-deep animate-glow-pulse" />
+                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent-green border-2 border-[#0a0c1a] animate-glow-pulse" />
                 </div>
                 <div>
                   <h1 className="font-display text-base font-bold gradient-text leading-tight">EventOS</h1>
@@ -245,7 +297,7 @@ export default function DashboardLayout() {
       {/* ── Main Content ── */}
       <div className="lg:pl-[280px]">
         {/* Header */}
-        <header className="sticky top-0 z-30 border-b border-white/[0.04] bg-neural-void/80 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-white/[0.04] bg-[#05060b]/80 backdrop-blur-xl">
           <div className="flex items-center justify-between gap-4 px-4 py-3.5 lg:px-6">
             <div className="flex items-center gap-3">
               <button

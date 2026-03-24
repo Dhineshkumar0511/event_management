@@ -230,20 +230,25 @@ export default function Leaderboard() {
       {tab === 'achievement-wall' && <Confetti />}
 
       {/* Tab selector */}
-      <div className="flex justify-center">
-        <div className={`inline-flex rounded-xl p-1 ${isDark ? 'bg-gray-800' : 'bg-gray-200/70'}`}>
+      <div className="flex justify-center mb-8">
+        <div className="neural-card p-1.5 inline-flex gap-1 bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] shadow-2xl">
           {[
             { id: 'leaderboard', label: 'Leaderboard', icon: TrophySolid },
             { id: 'achievement-wall', label: 'Achievement Wall', icon: GiftIcon },
           ].map(t => (
             <button key={t.id} onClick={() => { setTab(t.id); setFilterType(''); }}
-              className={`relative flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`relative flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-500 overflow-hidden group ${
                 tab === t.id
-                  ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-lg shadow-yellow-500/20'
-                  : isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                  ? 'text-white'
+                  : 'text-white/40 hover:text-white/70'
               }`}>
-              <t.icon className="h-4 w-4" />
-              {t.label}
+              {tab === t.id && (
+                <motion.div layoutId="activeLeaderTab" className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 shadow-[0_5px_20px_rgba(0,229,255,0.3)]" />
+              )}
+              <div className="relative z-10 flex items-center gap-2">
+                 <t.icon className={`h-4.5 w-4.5 ${tab === t.id ? 'text-white shadow-[0_0_10px_white]' : 'text-white/40'}`} />
+                 <span className="hidden sm:inline">{t.label}</span>
+              </div>
             </button>
           ))}
         </div>
@@ -252,23 +257,17 @@ export default function Leaderboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <h1 className="font-display text-4xl font-black tracking-tight leading-none mb-2">
             {tab === 'achievement-wall' ? (
-              <>
-                <GiftIcon className="w-7 h-7 text-purple-500" />
-                Achievement Wall
-              </>
+              <span className="bg-gradient-to-r from-purple-400 via-magenta-500 to-accent-pink bg-clip-text text-transparent italic">ACHIEVEMENT WALL</span>
             ) : (
-              <>
-                <TrophySolid className="w-7 h-7 text-yellow-500" />
-                Leaderboard
-              </>
+              <span className="bg-gradient-to-r from-white via-white/80 to-white/40 bg-clip-text text-transparent italic">GLOBAL LEADERBOARD</span>
             )}
           </h1>
-          <p className={`text-sm mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/20">
             {tab === 'achievement-wall' 
-              ? (total > 0 ? `${total} featured achievement${total !== 1 ? 's' : ''} · 🌸 celebration mode` : 'No achievements yet')
-              : (`${total} result${total !== 1 ? 's' : ''} · sorted by achievement & prize`)}
+              ? (total > 0 ? `NEURAL PROTOCOL: ${total} FEATURED ACHIEVEMENTS` : 'INITIALIZING ARCHIVE...')
+              : (`SYNAPSE RANKING: ${total} ACTIVE RESULTS FOUND`)}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -370,19 +369,21 @@ export default function Leaderboard() {
         })
         const topTypes = ['winner', 'runner_up', 'special_mention'].filter(t => counts[t])
         return (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {topTypes.map(t => (
-              <div key={t} className={`rounded-xl p-3 border ${cardBase} text-center`}>
-                <div className="text-2xl mb-1">{TYPE_CONFIG[t].icon}</div>
-                <div className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{counts[t]}</div>
-                <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{TYPE_CONFIG[t].label}</div>
+              <div key={t} className="neural-card rounded-[1.25rem] p-5 border border-white/5 bg-white/[0.03] text-center group hover:bg-white/[0.06] transition-all overflow-hidden relative">
+                <div className={`absolute -right-4 -top-4 w-12 h-12 rounded-full opacity-10 blur-xl ${TYPE_CONFIG[t].rankBg}`} />
+                <div className="text-3xl mb-2 filter drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">{TYPE_CONFIG[t].icon}</div>
+                <div className="text-2xl font-black text-white leading-none">{counts[t]}</div>
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mt-2">{TYPE_CONFIG[t].label}S</div>
               </div>
             ))}
             {totalPrize > 0 && (
-              <div className={`rounded-xl p-3 border ${cardBase} text-center`}>
-                <div className="text-2xl mb-1">💰</div>
-                <div className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>₹{totalPrize.toLocaleString('en-IN')}</div>
-                <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Total Prizes</div>
+              <div className="neural-card rounded-[1.25rem] p-5 border border-white/5 bg-white/[0.03] text-center group hover:bg-white/[0.06] transition-all overflow-hidden relative">
+                <div className="absolute -right-4 -top-4 w-12 h-12 rounded-full bg-accent-amber opacity-10 blur-xl" />
+                <div className="text-3xl mb-2 filter drop-shadow-[0_0_8px_rgba(255,190,11,0.3)]">💰</div>
+                <div className="text-2xl font-black text-white leading-none">₹{totalPrize.toLocaleString('en-IN')}</div>
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mt-2">TOTAL REWARDS</div>
               </div>
             )}
           </div>
@@ -406,47 +407,52 @@ export default function Leaderboard() {
               return (
                 <motion.div
                   key={entry.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className={`rounded-xl border p-5 ${cardBase} hover:shadow-lg transition-shadow`}
+                  className="neural-card scanline relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#0a0c1f]/40 backdrop-blur-3xl p-6 shadow-[0_10px_30px_rgba(0,0,0,0.5)] group hover:-translate-y-2 transition-all duration-500"
                 >
+                  {/* Aura pulse in corner */}
+                  <div className={`absolute -right-10 -top-10 w-32 h-32 rounded-full opacity-10 blur-[40px] animate-pulse ${cfg.rankBg}`} />
+                  
                   {/* Rank badge */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold ${cfg.rankBg} text-white`}>
+                  <div className="flex items-start justify-between mb-5">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl font-bold ${cfg.rankBg} text-white shadow-xl group-hover:scale-110 transition-transform`}>
                       {cfg.icon}
                     </div>
                     {entry.prize_amount && (
-                      <span className={`text-sm font-bold px-2 py-1 rounded-lg ${isDark ? 'bg-amber-900/30 text-amber-300' : 'bg-amber-100 text-amber-700'}`}>
+                      <span className="text-sm font-black italic px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-accent-amber glow-text-amber">
                         ₹{parseFloat(entry.prize_amount).toLocaleString('en-IN')}
                       </span>
                     )}
                   </div>
+
                   {/* Student info */}
-                  <h3 className={`font-semibold text-base ${isDark ? 'text-white' : 'text-gray-900'} mb-1`}>{entry.student_name}</h3>
-                  <p className={`text-xs mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{entry.student_department} • {entry.register_number}</p>
-                  {entry.year_of_study && (
-                    <p className={`text-xs mb-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Year {entry.year_of_study}</p>
-                  )}
+                  <h3 className="font-display text-xl font-black text-white mb-1 group-hover:text-accent-cyan transition-colors">{entry.student_name}</h3>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-4">{entry.student_department} • {entry.register_number}</p>
+                  
                   {/* Event name */}
-                  <div className={`rounded-lg p-2.5 mb-3 ${isDark ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
-                    <p className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Event</p>
-                    <p className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{entry.event_name}</p>
+                  <div className="rounded-2xl p-4 mb-4 bg-white/[0.03] border border-white/5 group-hover:bg-white/[0.06] transition-colors">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20 mb-1">Authenticated Event</p>
+                    <p className="text-sm font-bold text-white/70 line-clamp-1">{entry.event_name}</p>
                   </div>
+
                   {/* Achievement description */}
                   {entry.achievement_description && (
-                    <div className={`rounded-lg p-2.5 mb-3 ${isDark ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
-                      <p className={`text-xs italic ${isDark ? 'text-blue-300' : 'text-blue-600'}`}>{entry.achievement_description}</p>
+                    <div className="mb-4">
+                       <p className="text-xs text-white/50 italic leading-relaxed">"{entry.achievement_description}"</p>
                     </div>
                   )}
+
                   {/* Footer */}
-                  <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}>
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.bg}`}>
+                  <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${cfg.bg}`}>
+                      <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
                       {cfg.label}
                     </span>
                     {entry.is_verified && (
-                      <span className="flex items-center gap-0.5 text-xs text-green-600">
-                        <CheckCircleIcon className="w-3 h-3" /> Verified
+                      <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-accent-green">
+                        <CheckCircleIcon className="w-3.5 h-3.5" /> VERIFIED
                       </span>
                     )}
                   </div>

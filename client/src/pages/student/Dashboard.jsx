@@ -8,7 +8,7 @@ import {
   DocumentPlusIcon, ClockIcon, CheckCircleIcon, XCircleIcon,
   CalendarIcon, MapPinIcon, DocumentTextIcon, TrophyIcon,
   BoltIcon, SignalIcon, ExclamationTriangleIcon, InboxIcon,
-  ChartBarSquareIcon,
+  ChartBarSquareIcon, ArrowRightIcon,
 } from '@heroicons/react/24/outline'
 
 const STATUS = {
@@ -87,30 +87,27 @@ export default function StudentDashboard() {
 
       {/* ── Hero Banner ── */}
       <motion.div variants={fadeUp}
-        className="neural-grid scanline relative overflow-hidden rounded-2xl border border-accent-cyan/8 bg-gradient-to-br from-neural-surface via-neural-elevated/50 to-neural-surface p-6 lg:p-7"
+        className="neural-card relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#080912]/80 backdrop-blur-[60px] p-10 lg:p-14 shadow-[0_40px_100px_rgba(0,0,0,0.7)]"
       >
-        <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent-purple/8 blur-[80px]" />
-        <div className="absolute bottom-0 left-1/4 w-48 h-48 rounded-full bg-accent-cyan/6 blur-[60px]" />
+        <div className="absolute -top-[40%] -right-[20%] w-[70%] h-[120%] bg-accent-purple/10 rounded-full blur-[160px] animate-pulse" />
+        <div className="absolute -bottom-[40%] -left-[20%] w-[70%] h-[120%] bg-accent-cyan/10 rounded-full blur-[160px] animate-pulse" style={{ animationDelay: '2.5s' }} />
 
-        <div className="relative z-10 flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-accent-cyan/15 bg-accent-cyan/[0.04] px-3 py-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan animate-glow-pulse" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-accent-cyan/60">Student Neural Hub</span>
+        <div className="relative z-10 flex flex-col gap-10 xl:flex-row xl:items-center xl:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-5 py-2.5 backdrop-blur-md">
+              <div className="w-2.5 h-2.5 rounded-full bg-accent-cyan shadow-[0_0_15px_#38bdf8] animate-glow-pulse" />
+              <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/60">NEURAL CONSOLE — <span className="text-accent-cyan">VERIFIED PLATINUM</span></span>
             </div>
-            <p className="mt-4 text-sm text-white/30">{greeting}</p>
-            <h1 className="font-display text-3xl lg:text-4xl font-black gradient-text mt-1">
-              {user?.name || 'Student'}
+            <p className="mt-8 text-[11px] font-black uppercase tracking-[0.3em] text-white/20">{greeting}</p>
+            <h1 className="font-display text-5xl lg:text-7xl font-black mt-3 leading-[1.1] tracking-tighter italic">
+               <span className="bg-gradient-to-r from-white via-white/80 to-white/40 bg-clip-text text-transparent">{user?.name || 'STUDENT'}</span>
             </h1>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/35">
-              Track OD requests, monitor approvals, submit outcomes, and stay connected through the AI & Data Science workspace.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Link to="/student/new-request" className="btn btn-primary text-sm">
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link to="/student/new-request" className="btn bg-accent-cyan text-neural-void border-none text-xs font-black uppercase tracking-widest px-6 py-3.5 rounded-xl shadow-[0_10px_20px_rgba(0,229,255,0.3)] hover:shadow-[0_15px_30px_rgba(0,229,255,0.4)] hover:-translate-y-1 transition-all">
                 <DocumentPlusIcon className="h-4 w-4" /> New Request
               </Link>
-              <Link to="/student/calendar" className="btn btn-secondary text-sm">
-                <CalendarIcon className="h-4 w-4" /> Calendar
+              <Link to="/student/calendar" className="btn bg-white/5 text-white/70 border border-white/10 text-xs font-black uppercase tracking-widest px-6 py-3.5 rounded-xl hover:bg-white/10 hover:text-white transition-all">
+                <CalendarIcon className="h-4 w-4" /> System Calendar
               </Link>
             </div>
           </div>
@@ -131,25 +128,28 @@ export default function StudentDashboard() {
         </div>
       </motion.div>
 
-      {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* ── Stat Cards (Premium SaaS Elite) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((card, i) => {
           const Wrapper = card.link ? Link : 'div'
           return (
             <motion.div key={card.label} variants={fadeUp}>
               <Wrapper
                 to={card.link || undefined}
-                className={`group relative block overflow-hidden rounded-2xl border ${card.border} bg-gradient-to-br ${card.gradient} p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-neural`}
+                className={`group relative block overflow-hidden rounded-[2rem] border border-white/[0.06] bg-white/[0.02] backdrop-blur-3xl p-7 transition-all duration-700 hover:-translate-y-3 hover:bg-white/[0.06] hover:border-white/20 shadow-2xl`}
               >
-                <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-white/[0.03] blur-xl" />
+                {/* Status Indicator ambient glow */}
+                <div className={`absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br ${card.gradient} blur-3xl opacity-20 group-hover:opacity-60 transition-opacity duration-700`} />
+                
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.04] ${card.accent}`}>
-                      <card.icon className="h-4 w-4" />
+                  <div className="flex items-center justify-between mb-6">
+                    <span className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.04] ${card.accent} shadow-2xl border border-white/5`}>
+                      <card.icon className="h-6 w-6" />
                     </span>
+                    <ArrowRightIcon className="w-4 h-4 text-white/10 group-hover:text-white/40 transition-colors translate-x-3 group-hover:translate-x-0 group-hover:opacity-100 opacity-0" />
                   </div>
-                  <p className="font-mono text-3xl font-black text-white/90">{card.value}</p>
-                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/25">{card.label}</p>
+                  <p className="font-display text-4xl font-black text-white tracking-tighter leading-none">{card.value}</p>
+                  <p className="mt-2 text-[10px] font-black uppercase tracking-[0.3em] text-white/25">{card.label}</p>
                 </div>
               </Wrapper>
             </motion.div>
@@ -231,31 +231,32 @@ export default function StudentDashboard() {
 
       {/* ── Pending Results ── */}
       {data?.pendingResults?.length > 0 && (
-        <motion.div variants={fadeUp} className="space-y-2">
+        <motion.div variants={fadeUp} className="space-y-3">
           {data.pendingResults.map(pr => {
             const days = pr.days_until_deadline
             const isOverdue = days != null && days < 0
             const isUrgent = days != null && days >= 0 && days <= 3
             return (
               <Link key={pr.id} to="/student/submit-result"
-                className={`block rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1 ${
-                  isOverdue ? 'border-danger-500/15 bg-gradient-to-r from-danger-500/10 to-accent-magenta/5'
-                  : isUrgent ? 'border-accent-amber/15 bg-gradient-to-r from-accent-amber/8 to-accent-amber/3'
-                  : 'border-accent-purple/12 bg-gradient-to-r from-accent-purple/8 to-accent-cyan/5'
+                className={`neural-card block rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 group relative overflow-hidden ${
+                  isOverdue ? 'border-danger-500/20 bg-danger-500/[0.05]'
+                  : isUrgent ? 'border-accent-amber/20 bg-accent-amber/[0.03]'
+                  : 'border-white/10 bg-white/[0.03]'
                 }`}
               >
-                <div className="flex items-center gap-4">
-                  <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${isOverdue ? 'bg-danger-500/15 text-danger-400' : 'bg-accent-amber/15 text-accent-amber'}`}>
-                    {isOverdue ? <ExclamationTriangleIcon className="h-5 w-5" /> : <TrophyIcon className="h-5 w-5" />}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <div className="flex items-center gap-5">
+                  <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${isOverdue ? 'bg-danger-500/20 text-danger-400' : 'bg-accent-amber/20 text-accent-amber'} shadow-lg`}>
+                    {isOverdue ? <ExclamationTriangleIcon className="h-6 w-6" /> : <TrophyIcon className="h-6 w-6" />}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/25">Result Submission</p>
-                    <p className="text-base font-semibold text-white/80 truncate mt-0.5">{pr.event_name}</p>
-                    <p className="text-sm text-white/35 mt-0.5">
-                      {isOverdue ? `Overdue by ${Math.abs(days)} day(s).` : days != null ? `Submit within ${days} day(s).` : 'Result pending.'}
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">PENDING OUTCOME VERIFICATION</p>
+                    <p className="text-lg font-bold text-white/80 truncate mt-1">{pr.event_name}</p>
+                    <p className="text-xs text-white/40 mt-1 font-medium">
+                      {isOverdue ? <span className="text-danger-400 font-bold tracking-tight">OVERDUE BY {Math.abs(days)} DAYS</span> : days != null ? `DEADLINE: ${days} DAYS REMAINING` : 'SUBMISSION REQUIRED'}
                     </p>
                   </div>
-                  <span className="rounded-lg bg-accent-amber/10 px-3 py-1.5 text-[11px] font-semibold text-accent-amber">Submit</span>
+                  <span className="rounded-xl bg-accent-amber text-neutral-void px-4 py-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-accent-amber/20 hover:shadow-accent-amber/40 transition-all">Submit Now</span>
                 </div>
               </Link>
             )
