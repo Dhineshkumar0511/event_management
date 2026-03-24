@@ -63,17 +63,18 @@ function MonthBanner({ student, month, year, onDownload, bannerRef }) {
       <div className="absolute -bottom-10 -right-10 w-[300px] h-[300px] bg-purple-600/5 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
       
       {/* The Banner Container - Reduced rounding */}
-      <div ref={bannerRef} className="relative w-full rounded-[2rem] overflow-hidden border border-white/10 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.8)]"
-        style={{ background: 'linear-gradient(165deg, #05060f 0%, #0a0b1e 50%, #151a3a 100%)' }}>
+      <div ref={bannerRef} className="relative w-full rounded-[2.5rem] overflow-hidden border border-white/10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)]"
+        style={{ background: 'linear-gradient(165deg, #05060b 0%, #0a0c1a 60%, #11142b 100%)' }}>
         
         {/* Futuristic Neural Backdrop */}
-        <div className="absolute inset-0 opacity-40">
+        <div className="absolute inset-0 opacity-20">
+           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(56,189,248,0.1),transparent_70%)]" />
            <svg className="w-full h-full" viewBox="0 0 1000 400" preserveAspectRatio="none">
               <defs>
                  <linearGradient id="neuralGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#00e5ff" stopOpacity="0" />
-                    <stop offset="50%" stopColor="#00e5ff" stopOpacity="0.2" />
-                    <stop offset="100%" stopColor="#00e5ff" stopOpacity="0" />
+                    <stop offset="0%" stopColor="#38bdf8" stopOpacity="0" />
+                    <stop offset="50%" stopColor="#818cf8" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#fb7185" stopOpacity="0" />
                  </linearGradient>
               </defs>
               {/* Animated Horizontal Scanning Lines */}
@@ -99,48 +100,47 @@ function MonthBanner({ student, month, year, onDownload, bannerRef }) {
            
            {/* Left: Metadata & Titles */}
            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                 <motion.div 
-                   animate={{ rotate: 360 }}
-                   transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                   className="w-10 h-10 rounded-full border border-cyan-500/30 flex items-center justify-center bg-cyan-500/5 backdrop-blur-md"
-                 >
-                    <StarIcon className="h-5 w-5 text-cyan-400" />
-                 </motion.div>
-                 <div>
-                    <span className="text-cyan-400 font-black tracking-[0.4em] uppercase text-[9px] block">Neural Identity Verified</span>
-                    <span className="text-white/40 font-mono text-[9px] tracking-widest">{new Date().toISOString().split('T')[0]} // SEC_ACK_V4</span>
-                 </div>
-              </div>
+                  <motion.div 
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                    className="w-12 h-12 rounded-2xl border border-white/10 flex items-center justify-center bg-white/[0.03] backdrop-blur-xl shadow-2xl relative group"
+                  >
+                     <div className="absolute inset-0 bg-accent-cyan/10 rounded-2xl blur-lg animate-pulse" />
+                     <StarIcon className="h-6 w-6 text-accent-cyan relative z-10" />
+                  </motion.div>
+                  <div>
+                     <span className="text-accent-cyan font-black tracking-[0.5em] uppercase text-[9px] block glow-text-cyan">NEURAL IDENTITY VERIFIED</span>
+                     <span className="text-white/20 font-mono text-[8px] tracking-[0.3em] block mt-1 uppercase">ARCHIVE_{year} // UNIT_{month}</span>
+                  </div>
 
-              <div className="space-y-3">
-                 <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-[0.9] flex flex-col">
-                    <span className="bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">THE OUTSTANDING</span>
-                    <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent italic">ACHIEVER</span>
-                 </h2>
-                 <div className="h-1.5 w-24 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full" />
-              </div>
+               <div className="space-y-4">
+                  <h2 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter leading-none flex flex-col">
+                    <span className="bg-gradient-to-r from-white via-white/80 to-white/40 bg-clip-text text-transparent">THE PREMIER</span>
+                    <span className="bg-gradient-to-r from-accent-cyan via-accent-purple to-accent-magenta bg-clip-text text-transparent">EXCELLENCE</span>
+                  </h2>
+                  <div className="h-[3px] w-32 bg-gradient-to-r from-accent-cyan via-accent-purple to-accent-magenta rounded-full opacity-60" />
+               </div>
 
-              <div className="space-y-2">
-                 <p className="text-3xl md:text-4xl font-black text-white tracking-tighter leading-none glow-text-cyan">
+               <div className="space-y-4">
+                  <p className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-none glow-text-cyan">
                     {student.name}
-                 </p>
-                 <div className="flex gap-4 items-center">
-                    <span className="px-4 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-bold text-[11px] tracking-[0.1em] uppercase italic backdrop-blur-md">
+                  </p>
+                  <div className="flex gap-5 items-center">
+                    <span className="px-5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-accent-cyan font-black text-[11px] tracking-[0.2em] uppercase italic backdrop-blur-xl">
                        {student.department}
                     </span>
-                    <span className="text-white/30 font-bold uppercase tracking-[0.2em] text-[9px] font-mono">
-                       // CLS_{year} // SC_{student.section || 'A'}
+                    <span className="text-white/20 font-black uppercase tracking-[0.3em] text-[9px]">
+                       // NODE_{year} // SEC_{student.section || 'A'}
                     </span>
-                 </div>
-              </div>
+                  </div>
+               </div>
 
-              <div className="relative max-w-md">
-                 <div className="absolute left-0 top-0 w-0.5 h-full bg-gradient-to-b from-cyan-500 to-transparent" />
-                 <p className="pl-5 text-lg md:text-xl font-medium text-white/70 leading-relaxed italic">
-                    "{student.achievement || "Setting new benchmarks in excellence and academic leadership."}"
-                 </p>
-              </div>
+               <div className="relative max-w-lg mt-4">
+                  <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-[4px] h-[80%] bg-gradient-to-b from-accent-cyan via-accent-purple to-transparent rounded-full opacity-40" />
+                  <p className="text-xl md:text-2xl font-medium text-white/50 leading-relaxed italic tracking-tight">
+                    "{student.achievement || "Defining the future through technical mastery and academic leadership."}"
+                  </p>
+               </div>
 
               <div className="flex gap-4 pt-2">
                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">

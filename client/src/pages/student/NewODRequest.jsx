@@ -325,9 +325,9 @@ export default function NewODRequest() {
 
       {/* Progress Steps */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-        className={cardCls + ' p-4 sm:p-5 mb-6'}
+        className="neural-card p-6 mb-8 bg-[#0a0c1f]/40 backdrop-blur-2xl border border-white/10 rounded-[1.5rem]"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-4">
           {steps.map((step, index) => {
             const isComplete = currentStep > step.id
             const isCurrent = currentStep === step.id
@@ -337,35 +337,37 @@ export default function NewODRequest() {
                   <button
                     onClick={() => { if (isComplete || isCurrent) setCurrentStep(step.id) }}
                     className={[
-                      'w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300',
+                      'w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 overflow-hidden relative group',
                       isComplete
-                        ? 'step-dot-complete'
+                        ? 'bg-accent-green/20 border border-accent-green/30 text-accent-green'
                         : isCurrent
-                        ? 'step-dot-active bg-gradient-to-br ' + step.color
-                        : 'step-dot'
+                        ? 'bg-accent-cyan shadow-[0_0_20px_rgba(0,229,255,0.4)] text-white'
+                        : 'bg-white/5 border border-white/10 text-white/20'
                     ].join(' ')}
                   >
+                    {isCurrent && <div className="absolute inset-0 bg-white/20 animate-pulse" />}
                     {isComplete ? (
-                      <CheckIcon className="w-5 h-5" />
+                      <CheckIcon className="w-6 h-6" />
                     ) : (
-                      <step.icon className="w-5 h-5" />
+                      <step.icon className={`w-6 h-6 ${isCurrent ? 'animate-pulse' : ''}`} />
                     )}
                   </button>
                   <span className={[
-                    'text-[10px] sm:text-xs mt-1.5 font-medium text-center leading-tight w-14 sm:w-20',
-                    isCurrent ? (isDark ? 'text-purple-400' : 'text-purple-600')
-                    : isComplete ? (isDark ? 'text-green-400' : 'text-green-600')
-                    : textMuted
+                    'text-[9px] font-black uppercase tracking-[0.2em] mt-3 leading-tight w-16 text-center transition-all',
+                    isCurrent ? 'text-accent-cyan glow-text-cyan'
+                    : isComplete ? 'text-accent-green'
+                    : 'text-white/20'
                   ].join(' ')}>
-                    <span className="hidden sm:inline">{step.name}</span>
-                    <span className="sm:hidden">{step.shortName}</span>
+                    {step.shortName}
                   </span>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={[
-                    'step-connector mb-5',
-                    isComplete ? 'step-connector-active' : ''
-                  ].join(' ')} />
+                  <div className="flex-1 px-2 mb-8">
+                    <div className={[
+                      'h-[2px] w-full rounded-full transition-all duration-700',
+                      isComplete ? 'bg-gradient-to-r from-accent-green to-accent-cyan' : 'bg-white/5'
+                    ].join(' ')} />
+                  </div>
                 )}
               </div>
             )
@@ -406,11 +408,11 @@ export default function NewODRequest() {
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -30 }}
-          transition={{ duration: 0.25 }}
-          className={cardCls + ' p-6 sm:p-8'}
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ duration: 0.4 }}
+          className="neural-card scanline relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#0a0c1f]/40 backdrop-blur-3xl p-8 lg:p-12 shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
         >
           {/* Step 1: Event Details */}
           {currentStep === 1 && (
@@ -442,22 +444,21 @@ export default function NewODRequest() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className={labelCls}>Event Type <span className="text-red-400">*</span></label>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-3 block">Event Classification</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                     {eventTypes.map(t => (
                       <button key={t.value} type="button"
                         onClick={() => setFormData({ ...formData, event_type: t.value })}
                         className={[
-                          'px-3 py-2.5 rounded-xl border-2 text-sm font-medium transition-all text-center',
+                          'relative px-2 py-4 rounded-2xl border transition-all duration-500 overflow-hidden group',
                           formData.event_type === t.value
-                            ? 'border-purple-500 bg-purple-500/10 text-purple-500 shadow-sm'
-                            : isDark
-                            ? 'border-gray-700 text-gray-400 hover:border-gray-600'
-                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                            ? 'bg-accent-cyan/10 border-accent-cyan/40 scale-[1.05] shadow-[0_0_20px_rgba(0,229,255,0.15)]'
+                            : 'bg-white/[0.03] border-white/10 hover:border-white/20 hover:bg-white/[0.05]'
                         ].join(' ')}
                       >
-                        <span className="text-lg block mb-0.5">{t.emoji}</span>
-                        <span className="text-xs">{t.label}</span>
+                        <span className="text-2xl block mb-2">{t.emoji}</span>
+                        <span className={`text-[10px] font-black uppercase tracking-wider block ${formData.event_type === t.value ? 'text-accent-cyan' : 'text-white/40'}`}>{t.label}</span>
+                        {formData.event_type === t.value && <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent-cyan" />}
                       </button>
                     ))}
                   </div>

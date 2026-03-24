@@ -70,35 +70,42 @@ export default function StaffDashboard() {
 
       {/* ── Hero ── */}
       <motion.section variants={fadeUp}
-        className="neural-grid scanline relative overflow-hidden rounded-2xl border border-accent-purple/8 bg-gradient-to-br from-neural-surface via-[#140a25]/50 to-neural-surface p-6 lg:p-7"
+        className="neural-card relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#080912]/80 backdrop-blur-[60px] p-10 lg:p-14 shadow-[0_40px_100px_rgba(0,0,0,0.7)]"
       >
-        <div className="absolute top-0 right-[15%] w-64 h-64 rounded-full bg-accent-purple/6 blur-[80px]" />
-        <div className="absolute bottom-0 left-[5%] w-48 h-48 rounded-full bg-accent-cyan/4 blur-[60px]" />
+        <div className="absolute -top-[40%] -right-[20%] w-[70%] h-[120%] bg-accent-purple/10 rounded-full blur-[160px] animate-pulse" />
+        <div className="absolute -bottom-[40%] -left-[20%] w-[70%] h-[120%] bg-accent-cyan/10 rounded-full blur-[160px] animate-pulse" style={{ animationDelay: '2.5s' }} />
 
-        <div className="relative z-10 grid gap-6 xl:grid-cols-[1.6fr_1fr] xl:items-end">
+        <div className="relative z-10 grid gap-10 xl:grid-cols-[1.6fr_1fr] xl:items-end">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-accent-purple/15 bg-accent-purple/[0.04] px-3 py-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-accent-purple animate-glow-pulse" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-accent-purple/60">Faculty Intelligence</span>
+            <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-5 py-2.5 backdrop-blur-md">
+              <div className="w-2.5 h-2.5 rounded-full bg-accent-purple shadow-[0_0_15px_#818cf8] animate-glow-pulse" />
+              <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/60">FACULTY COMMAND — <span className="text-accent-purple">ELITE TIER</span></span>
             </div>
-            <h1 className="font-display mt-4 text-3xl lg:text-4xl font-black text-white/90">Staff Review Hub</h1>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/35">
-              Review requests, validate submissions, and monitor workflow performance inside the AI & Data Science faculty console.
+            <h1 className="font-display mt-8 text-5xl lg:text-6xl font-black italic tracking-tighter leading-[1.1]">
+               <span className="bg-gradient-to-r from-white via-white/80 to-white/40 bg-clip-text text-transparent">PROFESSIONAL</span><br/>
+               <span className="bg-gradient-to-r from-accent-purple via-accent-cyan to-accent-green bg-clip-text text-transparent">REVIEW CONSOLE</span>
+            </h1>
+            <p className="mt-8 max-w-xl text-lg leading-relaxed text-white/40 font-medium">
+              Administrative oversight and event verification protocols. Manage departmental excellence through the verified faculty interface.
             </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Link to="/staff/requests" className="btn btn-primary"><ClockIcon className="h-4 w-4" /> Review Requests</Link>
-              <Link to="/staff/history" className="btn btn-secondary"><CommandLineIcon className="h-4 w-4" /> History</Link>
+            <div className="mt-10 flex flex-wrap gap-4">
+              <Link to="/staff/requests" className="btn bg-accent-purple text-white border-none text-xs font-black uppercase tracking-widest px-8 py-4 rounded-xl shadow-[0_15px_30px_rgba(129,140,248,0.3)] hover:shadow-[0_20px_40px_rgba(129,140,248,0.4)] hover:-translate-y-1 transition-all">
+                <ClockIcon className="h-5 w-5" /> Review Queue
+              </Link>
+              <Link to="/staff/history" className="btn bg-white/5 text-white/70 border border-white/10 text-xs font-black uppercase tracking-widest px-8 py-4 rounded-xl hover:bg-white/10 hover:text-white transition-all backdrop-blur-md">
+                <CommandLineIcon className="h-5 w-5" /> Terminal History
+              </Link>
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+          <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
             {[
-              { label: 'Faculty', value: user?.name || 'Staff' },
-              { label: 'Queue', value: stats.pending > 0 ? `${stats.pending} pending` : 'Synced' },
-              { label: 'Rate', value: `${analytics.approvalRate}%` },
+              { label: 'AUTHENTICATED', value: user?.name?.toUpperCase() || 'STAFF' },
+              { label: 'QUEUE DELTA', value: stats.pending > 0 ? `+${stats.pending} UNITS` : 'SYNCED' },
+              { label: 'EFFICIENCY', value: `${analytics.approvalRate}%` },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl border border-white/[0.04] bg-white/[0.02] px-4 py-3">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-white/20">{item.label}</p>
-                <p className="mt-1 font-mono text-sm font-semibold text-white/70">{item.value}</p>
+              <div key={item.label} className="rounded-2xl border border-white/5 bg-white/[0.03] px-6 py-5 backdrop-blur-3xl">
+                <p className="text-[9px] font-black uppercase tracking-[0.4em] text-white/20">{item.label}</p>
+                <p className="mt-1 font-display text-sm font-black text-white/70 tracking-tight">{item.value}</p>
               </div>
             ))}
           </div>
@@ -106,20 +113,20 @@ export default function StaffDashboard() {
       </motion.section>
 
       {/* ── Stat Cards ── */}
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {quickStats.map((item, i) => {
           const Wrapper = item.path ? Link : 'div'
           return (
             <motion.div key={item.label} variants={fadeUp}>
               <Wrapper to={item.path || undefined}
-                className={`group relative block overflow-hidden rounded-2xl border ${item.border} bg-gradient-to-br ${item.bg} p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-neural`}>
-                <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-white/[0.03] blur-xl" />
+                className={`group relative block overflow-hidden rounded-[2.25rem] border border-white/[0.06] bg-white/[0.02] backdrop-blur-3xl p-7 transition-all duration-700 hover:-translate-y-3 hover:bg-white/[0.06] hover:border-white/20 shadow-2xl`}>
+                <div className={`absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br ${item.bg} blur-3xl opacity-10 group-hover:opacity-40 transition-opacity duration-700`} />
                 <div className="relative z-10">
-                  <span className={`flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.04] ${item.accent} mb-3`}>
-                    <item.icon className="h-4 w-4" />
+                  <span className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.04] ${item.accent} mb-5 shadow-2xl border border-white/5`}>
+                    <item.icon className="h-6 w-6" />
                   </span>
-                  <p className="font-mono text-3xl font-black text-white/90">{item.value}</p>
-                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/25">{item.label}</p>
+                  <p className="font-display text-4xl font-black text-white tracking-tighter leading-none">{item.value}</p>
+                  <p className="mt-2 text-[10px] font-black uppercase tracking-[0.3em] text-white/25">{item.label}</p>
                 </div>
               </Wrapper>
             </motion.div>
