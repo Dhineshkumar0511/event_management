@@ -36,7 +36,7 @@
   /* ── Fonts ── */
   font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   line-height: 1.6;
-  font-weight: 400;
+  font-weight: 500; /* Bolder base weight */
   color: var(--text-primary);
   background: var(--bg-void);
   font-synthesis: none;
@@ -130,21 +130,21 @@ body::after {
   .card {
     @apply rounded-2xl;
     background: linear-gradient(175deg, rgba(16, 18, 42, 0.95) 0%, rgba(10, 11, 30, 0.98) 100%);
-    border: 1px solid var(--border-default);
+    border: 1px solid rgba(255, 255, 255, 0.12); /* Brighter border */
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.02) inset,
-      0 20px 60px rgba(0, 0, 0, 0.4);
+      0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+      0 30px 60px -12px rgba(0, 0, 0, 0.6); /* Bolder shadow */
     backdrop-filter: blur(20px);
-    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .card:hover {
-    border-color: rgba(0, 229, 255, 0.12);
+    border-color: rgba(0, 229, 255, 0.4);
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.04) inset,
-      0 28px 80px rgba(0, 0, 0, 0.5),
-      0 0 40px rgba(0, 229, 255, 0.03);
-    transform: translateY(-2px);
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+      0 40px 90px -15px rgba(0, 0, 0, 0.7),
+      0 0 40px rgba(0, 229, 255, 0.08); /* Bolder glow */
+    transform: translateY(-4px) scale(1.01);
   }
 
   /* ── Glass Panel ── */
@@ -193,13 +193,15 @@ body::after {
 
   .btn-primary {
     color: #fff;
-    background: linear-gradient(135deg, #00e5ff 0%, #8b5cf6 100%);
-    box-shadow: 0 8px 30px rgba(0, 229, 255, 0.2), 0 2px 8px rgba(139, 92, 246, 0.2);
+    background: linear-gradient(135deg, #00e5ff 0%, #8b5cf6 50%, #f43f8a 100%); /* Triple gradient */
+    box-shadow: 0 8px 30px rgba(0, 229, 255, 0.3), 0 0 15px rgba(139, 92, 246, 0.3);
+    font-weight: 800; /* Extremely bold */
+    letter-spacing: 0.02em;
   }
 
   .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 40px rgba(0, 229, 255, 0.3), 0 4px 12px rgba(139, 92, 246, 0.3);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 18px 50px rgba(0, 229, 255, 0.4), 0 0 25px rgba(244, 63, 138, 0.3);
   }
 
   .btn-primary:active {
@@ -1051,4 +1053,85 @@ html:not(.dark) .card-light {
 html:not(.dark) .card-light:hover {
   border-color: rgba(139, 92, 246, 0.15);
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.1);
+}
+
+/* ═══════════════════════════════════════════════════
+   PREMIUM ANIMATIONS
+   ═══════════════════════════════════════════════════ */
+
+@keyframes bold-entry {
+  0% { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(10px); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+.animate-bold-entry {
+  animation: bold-entry 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spin-slow-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 12s linear infinite !important;
+}
+
+.animate-spin-slow-reverse {
+  animation: spin-slow-reverse 15s linear infinite !important;
+}
+
+@keyframes data-stream {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+.animate-data-stream {
+  background-size: 200% 200%;
+  animation: data-stream 4s linear infinite !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   ULTRA-PREMIUM AI UTILITIES
+   ═══════════════════════════════════════════════════ */
+
+.neural-card {
+  position: relative;
+  background: rgba(13, 14, 38, 0.7) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.05) !important;
+  border-radius: 2rem;
+  overflow: hidden;
+}
+
+.neural-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.3), transparent);
+}
+
+.glow-text-cyan {
+  text-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+}
+
+.glow-text-purple {
+  text-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+}
+
+.glow-text-gold {
+  text-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
+}
+
+.font-black-display {
+  font-weight: 950 !important;
+  letter-spacing: -0.04em !important;
 }

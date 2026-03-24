@@ -45,11 +45,11 @@ export default function Login() {
             <span className="text-3xl">🧠</span>
           </div>
         </motion.div>
-        <h2 className="font-display text-[1.65rem] font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+        <h2 className="font-display text-4xl font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-amber-400 bg-clip-text text-transparent tracking-tight">
           Access Portal
         </h2>
-        <p className="mt-2 text-sm text-slate-400">
-          Sign in to the <span className="text-cyan-400/80 font-medium">AI & Data Science</span> Platform
+        <p className="mt-3 text-[15px] text-slate-400 font-bold uppercase tracking-widest">
+          Sign in to the <span className="text-cyan-400">Elite Neural Hub</span>
         </p>
       </div>
 

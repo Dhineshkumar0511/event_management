@@ -47,83 +47,178 @@ function Sparkles() {
   )
 }
 
-/* ═══════ Student of the Month Banner (downloadable — compact) ═══════ */
+/* ═══════ Student of the Month Banner (Ultra-Premium AI Edition) ═══════ */
 function MonthBanner({ student, month, year, onDownload, bannerRef }) {
   const displayMonth = monthNames[(month || 1) - 1]
 
   return (
-    <div ref={bannerRef} className="relative w-full max-w-2xl mx-auto rounded-2xl overflow-hidden shadow-2xl"
-      style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #533483 100%)' }}>
-      <Sparkles />
-      {/* Header row: ribbon + college on same line */}
-      <div className="relative z-10 flex flex-col items-center pt-4 pb-1">
-        <div className="inline-block px-5 py-1 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 text-[10px] font-bold tracking-widest uppercase text-gray-900 shadow-lg">
-          ⭐ Student of the Month ⭐
+    <motion.div 
+      initial={{ scale: 0.9, opacity: 0, y: 40 }}
+      animate={{ scale: 1, opacity: 1, y: 0 }}
+      transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+      className="relative w-full max-w-4xl mx-auto group"
+    >
+      {/* Dynamic Animated Peripheral Glows - Smaller */}
+      <div className="absolute -top-10 -left-10 w-[300px] h-[300px] bg-cyan-500/5 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute -bottom-10 -right-10 w-[300px] h-[300px] bg-purple-600/5 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      
+      {/* The Banner Container - Reduced rounding */}
+      <div ref={bannerRef} className="relative w-full rounded-[2rem] overflow-hidden border border-white/10 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.8)]"
+        style={{ background: 'linear-gradient(165deg, #05060f 0%, #0a0b1e 50%, #151a3a 100%)' }}>
+        
+        {/* Futuristic Neural Backdrop */}
+        <div className="absolute inset-0 opacity-40">
+           <svg className="w-full h-full" viewBox="0 0 1000 400" preserveAspectRatio="none">
+              <defs>
+                 <linearGradient id="neuralGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#00e5ff" stopOpacity="0" />
+                    <stop offset="50%" stopColor="#00e5ff" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="#00e5ff" stopOpacity="0" />
+                 </linearGradient>
+              </defs>
+              {/* Animated Horizontal Scanning Lines */}
+              {Array.from({ length: 15 }).map((_, i) => (
+                <motion.line 
+                  key={i} x1="0" y1={i * 30} x2="1000" y2={i * 30} 
+                  stroke="url(#neuralGrad)" strokeWidth="1"
+                  animate={{ opacity: [0, 1, 0], x: [-1000, 1000] }}
+                  transition={{ duration: 4 + i % 5, repeat: Infinity, ease: "linear", delay: i * 0.2 }}
+                />
+              ))}
+              {/* Connecting Nodes */}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <circle key={i} cx={150 + i * 120} cy={100 + (i % 3) * 100} r="1.5" fill="#00e5ff" opacity="0.4">
+                   <animate attributeName="opacity" values="0.1;0.8;0.1" dur="3s" repeatCount="indefinite" />
+                </circle>
+              ))}
+           </svg>
         </div>
-        <h2 className="text-sm md:text-base font-extrabold text-yellow-300 tracking-wide mt-1.5 drop-shadow-lg" style={{ textShadow: '0 2px 8px rgba(251,191,36,0.4)' }}>
-          {COLLEGE_NAME}
-        </h2>
-        <p className="text-yellow-100/60 text-[10px] tracking-wider">{displayMonth} {year}</p>
-      </div>
-      {/* Main content: Trophy + Photo + Info in a horizontal layout */}
-      <div className="relative z-10 flex items-center gap-5 px-6 py-4">
-        {/* Left: Trophy */}
-        <div className="flex-shrink-0">
-          <motion.div
-            animate={{ rotate: [0, -5, 5, -5, 0], y: [0, -3, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            className="text-5xl drop-shadow-xl"
-          >
-            🏆
-          </motion.div>
-        </div>
-        {/* Center: Photo with glowing ring */}
-        <div className="relative flex-shrink-0">
-          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 animate-spin" style={{ animationDuration: '6s' }} />
-          <div className="relative w-24 h-24 rounded-full overflow-hidden border-3 border-white/20 shadow-xl">
-            {student.profile_image ? (
-              <img src={student.profile_image} alt={student.name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold">
-                {student.name?.charAt(0)}
+
+        {/* Content Layer - Tightened Padding */}
+        <div className="relative z-10 grid lg:grid-cols-[1.1fr_1fr] gap-8 p-8 md:p-12 items-center">
+           
+           {/* Left: Metadata & Titles */}
+           <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                 <motion.div 
+                   animate={{ rotate: 360 }}
+                   transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                   className="w-10 h-10 rounded-full border border-cyan-500/30 flex items-center justify-center bg-cyan-500/5 backdrop-blur-md"
+                 >
+                    <StarIcon className="h-5 w-5 text-cyan-400" />
+                 </motion.div>
+                 <div>
+                    <span className="text-cyan-400 font-black tracking-[0.4em] uppercase text-[9px] block">Neural Identity Verified</span>
+                    <span className="text-white/40 font-mono text-[9px] tracking-widest">{new Date().toISOString().split('T')[0]} // SEC_ACK_V4</span>
+                 </div>
               </div>
-            )}
-          </div>
+
+              <div className="space-y-3">
+                 <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-[0.9] flex flex-col">
+                    <span className="bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">THE OUTSTANDING</span>
+                    <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent italic">ACHIEVER</span>
+                 </h2>
+                 <div className="h-1.5 w-24 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full" />
+              </div>
+
+              <div className="space-y-2">
+                 <p className="text-3xl md:text-4xl font-black text-white tracking-tighter leading-none glow-text-cyan">
+                    {student.name}
+                 </p>
+                 <div className="flex gap-4 items-center">
+                    <span className="px-4 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-bold text-[11px] tracking-[0.1em] uppercase italic backdrop-blur-md">
+                       {student.department}
+                    </span>
+                    <span className="text-white/30 font-bold uppercase tracking-[0.2em] text-[9px] font-mono">
+                       // CLS_{year} // SC_{student.section || 'A'}
+                    </span>
+                 </div>
+              </div>
+
+              <div className="relative max-w-md">
+                 <div className="absolute left-0 top-0 w-0.5 h-full bg-gradient-to-b from-cyan-500 to-transparent" />
+                 <p className="pl-5 text-lg md:text-xl font-medium text-white/70 leading-relaxed italic">
+                    "{student.achievement || "Setting new benchmarks in excellence and academic leadership."}"
+                 </p>
+              </div>
+
+              <div className="flex gap-4 pt-2">
+                 <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
+                    <div className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-1">Status</div>
+                    <div className="text-emerald-400 font-bold text-[11px] uppercase tracking-tighter flex items-center gap-1.5">
+                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]" /> Platform Elite
+                    </div>
+                 </div>
+                 <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
+                    <div className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-1">Ranking</div>
+                    <div className="text-cyan-400 font-bold text-[11px] uppercase tracking-tighter flex items-center gap-1.5">
+                       🥇 #1 DEPARTMENT
+                    </div>
+                 </div>
+              </div>
+           </div>
+
+           {/* Right: The Holographic Portrait - Refined */}
+           <div className="relative flex justify-center items-center scale-90 md:scale-100">
+              {/* Complex Geometric Background */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                   className="w-[320px] h-[320px] border border-white/5 rounded-[4rem] rotate-45 opacity-20" />
+                 <motion.div animate={{ rotate: -360 }} transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
+                   className="w-[280px] h-[280px] border border-cyan-500/10 rounded-[3rem] -rotate-12 opacity-30" />
+                 <div className="w-[220px] h-[220px] bg-gradient-to-br from-cyan-500/5 via-purple-600/5 to-transparent rounded-full blur-3xl opacity-50" />
+              </div>
+
+              {/* Portrait Container */}
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                className="relative z-10 w-52 h-52 md:w-64 md:h-64"
+              >
+                 {/* Glowing Outlines */}
+                 <div className="absolute -inset-2 rounded-full border border-cyan-400/20 animate-pulse" />
+                 <div className="absolute -inset-4 rounded-full border border-white/5" />
+                 
+                 {/* Animated Scanning Line */}
+                 <motion.div 
+                   animate={{ top: ['0%', '100%', '0%'] }}
+                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                   className="absolute left-0 right-0 h-px bg-cyan-400/60 z-20 shadow-[0_0_10px_#00e5ff] opacity-60"
+                 />
+
+                 <div className="w-full h-full rounded-full p-1.5 bg-gradient-to-br from-white/10 via-white/5 to-white/0 backdrop-blur-sm shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] border border-white/20 overflow-hidden relative">
+                    {student.profile_image ? (
+                      <img src={student.profile_image} alt={student.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    ) : (
+                      <div className="w-full h-full bg-[#05060f] flex items-center justify-center text-5xl font-black text-white/90">
+                         {student.name?.charAt(0)}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#05060f]/60 via-transparent to-transparent" />
+                 </div>
+
+                 {/* Corner Badges */}
+                 <div className="absolute top-2 -left-2 bg-white text-black font-black px-2.5 py-0.5 rounded-md text-[9px] tracking-tighter shadow-xl uppercase">
+                    Elite_Tier
+                 </div>
+                 <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-gradient-to-br from-yellow-400 via-amber-200 to-yellow-600 rounded-2xl flex items-center justify-center shadow-2xl rotate-6 border-4 border-[#0a0b1e] text-2xl">
+                    👑
+                 </div>
+              </motion.div>
+           </div>
         </div>
-        {/* Right: Name + Details */}
-        <div className="flex-1 min-w-0">
-          <motion.h3
-            className="text-xl md:text-2xl font-extrabold text-white tracking-wide truncate"
-            style={{ textShadow: '0 2px 12px rgba(255,255,255,0.3)' }}
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            {student.name}
-          </motion.h3>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-sm">
-            <span className="text-yellow-200/90 font-medium">{student.department}</span>
-            {student.year_of_study && <span className="text-yellow-100/60 text-xs">Year {student.year_of_study}</span>}
-            {student.section && <span className="text-yellow-100/60 text-xs">Sec {student.section}</span>}
-          </div>
-          <p className="text-yellow-100/50 text-xs mt-0.5">{student.employee_id}</p>
-          {student.achievement && (
-            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10">
-              <SparklesIcon className="h-3.5 w-3.5 text-yellow-400 flex-shrink-0" />
-              <span className="text-yellow-100 text-xs">{student.achievement}</span>
-            </div>
-          )}
+
+        {/* Dynamic Data Stream Footer - Subtle */}
+        <div className="absolute bottom-0 left-0 right-0 h-3 bg-white/5 flex items-center overflow-hidden px-10">
+           <div className="flex gap-20 whitespace-nowrap animate-data-stream">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <span key={i} className="text-[7px] font-mono text-cyan-400/30 uppercase tracking-[0.5em]">
+                  [ LINK_NOMINAL ] [ CORE_SYNAPSE_ID: {student.employee_id?.slice(-6) || 'N/A'} ] [ PROTOCOL_V4 ] [ SIGNATURE_VERIFIED ]
+                </span>
+              ))}
+           </div>
         </div>
       </div>
-      {/* Bottom decorative line */}
-      <div className="relative z-10 flex items-center justify-center gap-3 pb-3 text-yellow-400/40 text-lg">
-        <span>🏅</span>
-        <div className="w-16 h-px bg-gradient-to-r from-transparent via-yellow-400/40 to-transparent" />
-        <StarIcon className="h-4 w-4 text-yellow-400" />
-        <div className="w-16 h-px bg-gradient-to-r from-transparent via-yellow-400/40 to-transparent" />
-        <span>🏅</span>
-      </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -297,66 +392,66 @@ function Certificate({ student, month, year, certRef, dark, userRole }) {
 
   return (
     <div className="space-y-4">
-      <div ref={certRef} className="relative w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden" style={{ aspectRatio: '1.414/1' }}>
-        {/* Ornate gold border */}
-        <div className="absolute inset-3 border-4 border-yellow-500 rounded-xl pointer-events-none" />
-        <div className="absolute inset-5 border border-yellow-300 rounded-lg pointer-events-none" />
+      <div ref={certRef} className="relative w-full max-w-xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden" style={{ aspectRatio: '1.414/1' }}>
+        {/* Ornate gold border - Tighter */}
+        <div className="absolute inset-2 border-2 border-yellow-500 rounded-lg pointer-events-none" />
+        <div className="absolute inset-4 border border-yellow-300 rounded-md pointer-events-none" />
         {/* Corner ornaments */}
-        {['top-4 left-4','top-4 right-4','bottom-4 left-4','bottom-4 right-4'].map((pos, i) => (
-          <div key={i} className={`absolute ${pos} w-10 h-10 border-yellow-600 ${i < 2 ? 'border-t-2' : 'border-b-2'} ${i % 2 === 0 ? 'border-l-2' : 'border-r-2'} rounded-sm`} />
+        {['top-3.5 left-3.5','top-3.5 right-3.5','bottom-3.5 left-3.5','bottom-3.5 right-3.5'].map((pos, i) => (
+          <div key={i} className={`absolute ${pos} w-8 h-8 border-yellow-600 ${i < 2 ? 'border-t-2' : 'border-b-2'} ${i % 2 === 0 ? 'border-l-2' : 'border-r-2'} rounded-sm`} />
         ))}
         {/* Content */}
-        <div className="relative flex flex-col items-center justify-center h-full px-8 py-6 text-center">
+        <div className="relative flex flex-col items-center justify-center h-full px-6 py-4 text-center">
           <div className="mb-0.5">
-            <span className="text-xs tracking-[0.3em] uppercase text-yellow-700 font-semibold">{COLLEGE_NAME}</span>
+            <span className="text-[10px] tracking-[0.3em] uppercase text-yellow-700 font-bold">{COLLEGE_NAME}</span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-yellow-700 mt-1.5" style={{ fontFamily: 'Georgia, serif' }}>
+          <h2 className="text-2xl md:text-3xl font-serif font-bold text-yellow-700 mt-1" style={{ fontFamily: 'Georgia, serif' }}>
             Certificate of Recognition
           </h2>
-          <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-yellow-500 to-transparent mt-2.5 mb-3" />
-          <p className="text-gray-500 text-sm italic">This is proudly presented to</p>
-          <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mt-2.5 underline decoration-yellow-400 decoration-2 underline-offset-4" style={{ fontFamily: 'Georgia, serif' }}>
+          <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-yellow-500 to-transparent mt-2 mb-2" />
+          <p className="text-gray-500 text-[11px] italic">This is proudly presented to</p>
+          <h3 className="text-xl md:text-2xl font-bold text-gray-800 mt-2 underline decoration-yellow-400 decoration-2 underline-offset-4" style={{ fontFamily: 'Georgia, serif' }}>
             {student.name}
           </h3>
-          <p className="text-gray-500 text-sm mt-1.5">
+          <p className="text-gray-500 text-[11px] mt-1">
             {student.department}{student.year_of_study ? ` • Year ${student.year_of_study}` : ''}{student.section ? ` • Section ${student.section}` : ''}
           </p>
-          <p className="text-gray-600 text-sm mt-3 max-w-md leading-relaxed">
+          <p className="text-gray-600 text-[11px] mt-2.5 max-w-sm leading-relaxed">
             In recognition of outstanding performance and being awarded the title of
           </p>
-          <div className="mt-1.5 inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 rounded-lg">
-            <span className="text-xl">🏆</span>
-            <span className="text-base font-bold text-yellow-700">Student of the Month</span>
+          <div className="mt-1 inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 rounded-lg">
+            <span className="text-lg">🏆</span>
+            <span className="text-sm font-bold text-yellow-700">Student of the Month</span>
           </div>
-          <p className="text-gray-600 text-sm mt-1.5">
+          <p className="text-gray-600 text-[11px] mt-1">
             for the month of <strong className="text-gray-800">{displayMonth} {year}</strong>
           </p>
           {student.achievement && (
-            <p className="text-gray-500 text-xs mt-2 italic max-w-sm">"{student.achievement}"</p>
+            <p className="text-gray-500 text-[10px] mt-2 italic max-w-xs">"{student.achievement}"</p>
           )}
-          {/* Two signature lines: Staff Advisor + HOD (properly aligned) */}
-          <div className="flex items-end justify-around w-full mt-auto pt-4 px-4">
+          {/* Two signature lines */}
+          <div className="flex items-end justify-around w-full mt-auto pt-3 px-4">
             <div className="text-center flex-1">
               {staffSig ? (
-                <img src={staffSig} alt="Staff Advisor" className="h-8 mx-auto mb-0.5 object-contain" />
+                <img src={staffSig} alt="Staff Advisor" className="h-6 mx-auto mb-0.5 object-contain" />
               ) : (
-                <div className="h-8 mb-0.5" />
+                <div className="h-6 mb-0.5" />
               )}
-              <div className="w-24 border-b-2 border-gray-600 mx-auto mb-0.5" />
-              <span className="text-xs text-gray-600 font-medium">Staff Advisor</span>
+              <div className="w-16 border-b-2 border-gray-600 mx-auto mb-0.5" />
+              <span className="text-[10px] text-gray-600 font-medium">Staff Advisor</span>
             </div>
             <div className="text-center flex-[0.8]">
-              <div className="text-2xl mb-1">🎓</div>
-              <span className="text-[9px] text-gray-400 uppercase tracking-wider">SMVEC</span>
+              <div className="text-xl mb-0.5">🎓</div>
+              <span className="text-[8px] text-gray-400 uppercase tracking-wider">SMVEC</span>
             </div>
             <div className="text-center flex-1">
               {hodSig ? (
-                <img src={hodSig} alt="HOD" className="h-8 mx-auto mb-0.5 object-contain" />
+                <img src={hodSig} alt="HOD" className="h-6 mx-auto mb-0.5 object-contain" />
               ) : (
-                <div className="h-8 mb-0.5" />
+                <div className="h-6 mb-0.5" />
               )}
-              <div className="w-24 border-b-2 border-gray-600 mx-auto mb-0.5" />
-              <span className="text-xs text-gray-600 font-medium">Head of Department</span>
+              <div className="w-16 border-b-2 border-gray-600 mx-auto mb-0.5" />
+              <span className="text-[10px] text-gray-600 font-medium">Head of Department</span>
             </div>
           </div>
         </div>
@@ -644,35 +739,57 @@ export default function HallOfFame() {
     <div className={`min-h-screen ${dark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <div className="max-w-6xl mx-auto p-4 md:p-6">
         {/* ──── Header ──── */}
-        <motion.div className="text-center mb-6"
-          initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <div className="relative inline-block">
+        <motion.div className="text-center mb-16 relative"
+          initial={{ opacity: 0, y: -40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: "easeOut" }}>
+          
+          {/* Decorative background glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan-500/5 blur-[120px] -z-10" />
+
+          <div className="relative inline-block group">
             <motion.div
-              animate={{ rotate: [0, -8, 8, -8, 0] }}
+              animate={{ rotate: [0, -8, 8, -8, 0], scale: [1, 1.1, 1] }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              className="w-16 h-16 bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-xl shadow-yellow-500/30"
+              className="w-32 h-32 bg-gradient-to-br from-cyan-400 via-blue-600 to-purple-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-[0_0_50px_rgba(0,229,255,0.3)] relative z-10"
             >
-              <TrophyIcon className="h-9 w-9 text-white" />
+              <TrophyIcon className="h-16 w-16 text-white filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+              {/* Spinning outer rings */}
+              <div className="absolute -inset-4 border-2 border-dashed border-cyan-500/20 rounded-[3rem] animate-spin-slow" />
+              <div className="absolute -inset-8 border border-white/5 rounded-[3.5rem] animate-spin-slow-reverse" />
             </motion.div>
           </div>
-          <h1 className={`text-2xl md:text-3xl font-extrabold ${dark ? 'text-white' : 'text-gray-900'}`}>
-            Hall of Fame
+          
+          <h1 className="font-display text-4xl md:text-7xl font-black mb-6 tracking-tighter leading-none">
+            <span className="bg-gradient-to-r from-white via-white/80 to-white/40 bg-clip-text text-transparent glow-text-cyan">HALL OF</span>
+            <br />
+            <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent italic font-black-display">EXCELLENCE</span>
           </h1>
-          <p className="text-gray-500 mt-1 text-sm">Celebrating our top achievers and department excellence</p>
+          <p className="text-gray-400 mt-4 text-xl max-w-2xl mx-auto font-medium leading-relaxed tracking-wide">
+            Automated ranking of the <span className="text-cyan-400 font-black italic glow-text-cyan underline decoration-cyan-500/30 underline-offset-8">Neural 1%</span>. 
+            Powered by EventOS AI Recognition Engine.
+          </p>
+          
+          <div className="mt-12 h-px w-48 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent mx-auto relative">
+             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_10px_#00e5ff]" />
+          </div>
         </motion.div>
 
         {/* ──── Tabs ──── */}
-        <div className="flex justify-center mb-6">
-          <div className={`inline-flex rounded-xl p-1 ${dark ? 'bg-gray-800' : 'bg-gray-200/70'}`}>
+        <div className="flex justify-center mb-16">
+          <div className="neural-card p-2 inline-flex gap-2 bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2.5rem]">
             {tabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`relative flex items-center gap-2.5 px-6 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-500 overflow-hidden group ${
                   tab === t.id
-                    ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-lg shadow-yellow-500/20'
-                    : dark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                    ? 'text-white'
+                    : 'text-white/40 hover:text-white/70'
                 }`}>
-                <t.icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{t.label}</span>
+                {tab === t.id && (
+                  <motion.div layoutId="activeTab" className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 shadow-[0_5px_20px_rgba(0,229,255,0.3)]" />
+                )}
+                <div className="relative z-10 flex items-center gap-2">
+                   <t.icon className={`h-4 w-4 ${tab === t.id ? 'text-white' : 'text-white/40'}`} />
+                   <span className="hidden sm:inline">{t.label}</span>
+                </div>
               </button>
             ))}
           </div>
@@ -716,8 +833,8 @@ export default function HallOfFame() {
                     <div className="flex justify-center gap-3">
                       <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                         onClick={() => downloadImage(bannerRef, `student-of-month-${currentSOTM.name?.replace(/\s+/g, '-')}.png`)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-white rounded-xl font-medium text-sm shadow-lg shadow-yellow-500/25 hover:shadow-yellow-500/40 transition-shadow">
-                        <ArrowDownTrayIcon className="h-4 w-4" /> Download Banner
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 text-white rounded-lg font-bold text-xs shadow-lg shadow-yellow-500/20 transition-all uppercase tracking-wider">
+                        <ArrowDownTrayIcon className="h-3.5 w-3.5" /> Download Banner
                       </motion.button>
                       {user?.role === 'hod' && (
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
