@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -288,20 +288,13 @@ export default function NewODRequest() {
     }
   }
 
-  // --- Styling helpers ---
-  const cardCls = isDark
-    ? 'bg-gray-800/80 backdrop-blur-sm border border-gray-700/60 rounded-2xl shadow-xl'
-    : 'bg-white border border-gray-100 rounded-2xl shadow-lg shadow-gray-200/50'
-  const inputCls = [
-    'w-full px-4 py-3 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-purple-500/30',
-    isDark
-      ? 'bg-gray-700/60 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
-      : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 hover:border-gray-300'
-  ].join(' ')
-  const labelCls = 'block text-sm font-semibold mb-1.5 ' + (isDark ? 'text-gray-300' : 'text-gray-700')
-  const textMain = isDark ? 'text-white' : 'text-gray-900'
-  const textSub = isDark ? 'text-gray-400' : 'text-gray-500'
-  const textMuted = isDark ? 'text-gray-500' : 'text-gray-400'
+  // --- Neural Styling helpers ---
+  const cardCls = 'form-card'
+  const inputCls = 'input'
+  const labelCls = 'label'
+  const textMain = 'text-white/90'
+  const textSub = 'text-white/35'
+  const textMuted = 'text-white/20'
 
   if (loadingEdit) {
     return (
@@ -315,15 +308,15 @@ export default function NewODRequest() {
     <div className="max-w-4xl mx-auto pb-8">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
+        <div className="page-header">
+          <div className="page-header-icon bg-gradient-to-br from-accent-purple to-accent-cyan shadow-accent-purple/30">
             <DocumentTextIcon className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className={'text-2xl font-bold ' + textMain}>
+            <h1 className="page-header-title">
               {isEditMode ? 'Edit OD Request' : 'New OD Request'}
             </h1>
-            <p className={textSub + ' text-sm'}>
+            <p className="page-header-sub">
               {isEditMode ? 'Update and resubmit your request' : 'Submit a request for On-Duty leave'}
             </p>
           </div>
@@ -346,12 +339,10 @@ export default function NewODRequest() {
                     className={[
                       'w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300',
                       isComplete
-                        ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/30'
+                        ? 'step-dot-complete'
                         : isCurrent
-                        ? 'bg-gradient-to-br ' + step.color + ' text-white shadow-lg shadow-purple-500/30 ring-4 ' + (isDark ? 'ring-purple-500/20' : 'ring-purple-200')
-                        : isDark
-                        ? 'bg-gray-700 text-gray-500'
-                        : 'bg-gray-100 text-gray-400'
+                        ? 'step-dot-active bg-gradient-to-br ' + step.color
+                        : 'step-dot'
                     ].join(' ')}
                   >
                     {isComplete ? (
@@ -372,10 +363,8 @@ export default function NewODRequest() {
                 </div>
                 {index < steps.length - 1 && (
                   <div className={[
-                    'flex-1 h-0.5 mx-1.5 sm:mx-3 mb-5 rounded-full transition-all duration-500',
-                    isComplete
-                      ? 'bg-gradient-to-r from-green-400 to-emerald-400'
-                      : isDark ? 'bg-gray-700' : 'bg-gray-200'
+                    'step-connector mb-5',
+                    isComplete ? 'step-connector-active' : ''
                   ].join(' ')} />
                 )}
               </div>
@@ -995,23 +984,23 @@ export default function NewODRequest() {
           })()}
 
           {/* Navigation Buttons */}
-          <div className={'flex justify-between mt-8 pt-6 border-t ' + (isDark ? 'border-gray-700' : 'border-gray-200')}>
+          <div className="flex justify-between mt-8 pt-6 border-t border-white/[0.06]">
             <button type="button" onClick={handleBack} disabled={currentStep === 1}
-              className={'flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed ' + (isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200')}
+              className="btn btn-secondary disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ArrowLeftIcon className="w-4 h-4" /> Back
             </button>
 
             {currentStep < 5 ? (
               <button type="button" onClick={handleNext}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="btn btn-primary"
               >
                 {currentStep === 4 ? 'Preview OD Letter' : 'Next'}
                 <ArrowRightIcon className="w-4 h-4" />
               </button>
             ) : (
               <button type="button" onClick={handleSubmit} disabled={isSubmitting}
-                className="flex items-center gap-2 px-7 py-2.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-lg shadow-green-500/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                className="btn text-white bg-gradient-to-r from-accent-green to-accent-cyan shadow-lg shadow-accent-green/20 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60"
               >
                 {isSubmitting ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

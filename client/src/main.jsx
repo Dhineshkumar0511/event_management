@@ -9,39 +9,41 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <App />
-      <Toaster 
+      <Toaster
         position="top-right"
         toastOptions={{
           duration: 4000,
           style: {
-            borderRadius: '20px',
-            padding: '16px 18px',
-            background: 'rgba(8, 20, 36, 0.92)',
-            color: '#e2e8f0',
-            border: '1px solid rgba(148, 163, 184, 0.16)',
-            boxShadow: '0 22px 60px rgba(2, 8, 23, 0.32)',
-            backdropFilter: 'blur(18px)',
+            borderRadius: '14px',
+            padding: '14px 18px',
+            background: 'rgba(10, 11, 30, 0.96)',
+            color: '#eef0ff',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: '0 24px 60px rgba(0, 0, 0, 0.45)',
+            backdropFilter: 'blur(20px)',
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: '14px',
           },
           success: {
             style: {
-              background: 'rgba(6, 78, 59, 0.92)',
-              border: '1px solid rgba(52, 211, 153, 0.18)',
-              color: '#d1fae5',
+              background: 'rgba(10, 11, 30, 0.96)',
+              border: '1px solid rgba(0, 245, 160, 0.2)',
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.45), 0 0 30px rgba(0, 245, 160, 0.04)',
             },
             iconTheme: {
-              primary: '#34d399',
-              secondary: '#052e2b',
+              primary: '#00f5a0',
+              secondary: '#060612',
             },
           },
           error: {
             style: {
-              background: 'rgba(127, 29, 29, 0.94)',
-              border: '1px solid rgba(251, 113, 133, 0.18)',
-              color: '#ffe4e6',
+              background: 'rgba(10, 11, 30, 0.96)',
+              border: '1px solid rgba(244, 63, 138, 0.2)',
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.45), 0 0 30px rgba(244, 63, 138, 0.04)',
             },
             iconTheme: {
-              primary: '#fb7185',
-              secondary: '#4c0519',
+              primary: '#f43f8a',
+              secondary: '#060612',
             },
           },
         }}

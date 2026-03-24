@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../store/authStore'
 import { useTheme } from '../context/ThemeContext'
@@ -11,7 +11,7 @@ import {
   HomeIcon, DocumentPlusIcon, DocumentTextIcon, ClockIcon, CheckCircleIcon, UsersIcon, MapPinIcon,
   Bars3Icon, XMarkIcon, BellIcon, ArrowRightOnRectangleIcon, MoonIcon, SunIcon, Cog6ToothIcon,
   ChartPieIcon, CalendarDaysIcon, ClipboardDocumentListIcon, ChatBubbleLeftRightIcon, MegaphoneIcon,
-  StarIcon, FolderIcon, BoltIcon, CpuChipIcon
+  StarIcon, FolderIcon, BoltIcon
 } from '@heroicons/react/24/outline'
 
 const getNavItems = (role) => ({
@@ -44,7 +44,7 @@ const getNavItems = (role) => ({
   hod: [
     { name: 'Overview', path: '/hod/dashboard', icon: HomeIcon },
     { name: 'Approvals', path: '/hod/requests', icon: ClockIcon },
-    { name: 'Leave Management', path: '/hod/leaves', icon: ClipboardDocumentListIcon },
+    { name: 'Leave Mgmt', path: '/hod/leaves', icon: ClipboardDocumentListIcon },
     { name: 'WA Report', path: '/hod/whatsapp-report', icon: ChatBubbleLeftRightIcon },
     { name: 'All Requests', path: '/hod/all-requests', icon: DocumentTextIcon },
     { name: 'Announcements', path: '/hod/announcements', icon: MegaphoneIcon },
@@ -65,8 +65,14 @@ const getNavItems = (role) => ({
 
 const roleLabels = {
   student: 'Student Neural Hub',
-  staff: 'Faculty Review Hub',
-  hod: 'Department Command Hub'
+  staff: 'Faculty Command Hub',
+  hod: 'HOD Command Center'
+}
+
+const roleGradients = {
+  student: 'from-accent-cyan to-accent-purple',
+  staff: 'from-accent-purple to-accent-magenta',
+  hod: 'from-accent-green to-accent-cyan'
 }
 
 export default function DashboardLayout() {
@@ -77,6 +83,7 @@ export default function DashboardLayout() {
   const { user, token, logout } = useAuthStore()
   const { isDark, toggleTheme } = useTheme()
   const navigate = useNavigate()
+  const location = useLocation()
   const navItems = getNavItems(user?.role)
 
   useEffect(() => {
@@ -123,150 +130,200 @@ export default function DashboardLayout() {
     navigate('/login')
   }
 
+  // Get current page name
+  const currentPage = navItems.find(item => location.pathname === item.path)?.name || 'Dashboard'
+
   return (
-    <div className="min-h-screen bg-[#130a3d] text-white">
+    <div className="min-h-screen bg-neural-void text-white">
+      {/* Mobile overlay */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
       </AnimatePresence>
 
-      <aside className={`fixed left-0 top-0 z-50 h-full w-[300px] border-r border-white/10 bg-[linear-gradient(180deg,_rgba(33,18,94,0.96)_0%,_rgba(20,10,61,0.98)_100%)] backdrop-blur-xl transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex h-full flex-col">
-          <div className="border-b border-white/10 p-6">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-4">
-                <div className="signal-ring flex h-14 w-14 items-center justify-center rounded-[22px] bg-white/8">
-                  <CpuChipIcon className="h-7 w-7 text-cyan-300" />
+      {/* ── Sidebar ── */}
+      <aside className={`fixed left-0 top-0 z-50 h-full w-[280px] transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {/* Sidebar background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-neural-deep via-neural-surface to-neural-deep border-r border-white/[0.04]" />
+
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 opacity-20" style={{
+          backgroundImage: 'radial-gradient(circle, rgba(0,229,255,0.03) 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+        }} />
+
+        <div className="relative h-full flex flex-col">
+          {/* Logo area */}
+          <div className="p-5 border-b border-white/[0.04]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-accent-cyan/20 to-accent-purple/20 border border-accent-cyan/15 flex items-center justify-center">
+                  <span className="text-lg">🧠</span>
+                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent-green border-2 border-neural-deep animate-glow-pulse" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-slate-400">AI & Data Science</p>
-                  <h1 className="section-title text-2xl font-bold gradient-text">EventOS AI</h1>
-                  <p className="mt-1 text-xs text-slate-500">{roleLabels[user?.role]}</p>
+                  <h1 className="font-display text-base font-bold gradient-text leading-tight">EventOS</h1>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-white/25 mt-0.5">{roleLabels[user?.role]?.split(' ')[0]}</p>
                 </div>
               </div>
-              <button className="rounded-2xl p-2 text-slate-500 hover:bg-white/8 hover:text-white lg:hidden" onClick={() => setSidebarOpen(false)}>
+              <button
+                className="rounded-lg p-1.5 text-white/30 hover:bg-white/[0.04] hover:text-white/60 lg:hidden"
+                onClick={() => setSidebarOpen(false)}
+              >
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
           </div>
 
-          <div className="px-4 pt-4">
-            <div className="neon-panel rounded-[24px] px-4 py-4">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">AI Layer</p>
-              <p className="mt-2 text-sm leading-6 text-slate-200">A futuristic workspace for approvals, event workflows, and departmental intelligence.</p>
-            </div>
-          </div>
-
-          <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-4">
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
-                className={({ isActive }) => `flex items-center gap-3 rounded-2xl px-4 py-3 transition-all ${
+                className={({ isActive }) => `group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 ${
                   isActive
-                    ? 'bg-gradient-to-r from-fuchsia-500/20 via-violet-500/18 to-cyan-400/18 text-white border border-fuchsia-300/20 shadow-[0_10px_30px_rgba(255,60,199,0.12)]'
-                    : 'text-slate-300 hover:bg-white/[0.05] hover:text-white'
+                    ? 'bg-accent-cyan/[0.08] text-accent-cyan border border-accent-cyan/10'
+                    : 'text-white/40 hover:bg-white/[0.03] hover:text-white/70 border border-transparent'
                 }`}
               >
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.06]">
-                  <item.icon className="h-5 w-5" />
-                </span>
-                <span className="text-sm font-medium">{item.name}</span>
+                {({ isActive }) => (
+                  <>
+                    <span className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+                      isActive
+                        ? 'bg-accent-cyan/15 text-accent-cyan'
+                        : 'bg-white/[0.03] text-white/30 group-hover:text-white/50'
+                    }`}>
+                      <item.icon className="h-4 w-4" />
+                    </span>
+                    <span className="text-[13px] font-medium">{item.name}</span>
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeNav"
+                        className="ml-auto w-1.5 h-1.5 rounded-full bg-accent-cyan"
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                      />
+                    )}
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
 
-          <div className="border-t border-white/10 p-4">
-            <div className="neon-panel rounded-[24px] p-4">
+          {/* User card at bottom */}
+          <div className="p-3 border-t border-white/[0.04]">
+            <div className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-400 via-violet-400 to-cyan-300 text-white font-bold shadow-[0_0_24px_rgba(255,60,199,0.35)]">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${roleGradients[user?.role] || 'from-accent-cyan to-accent-purple'} flex items-center justify-center text-white font-bold text-sm shadow-lg`}>
                   {user?.name?.charAt(0)?.toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-white">{user?.name}</p>
-                  <p className="truncate text-xs text-slate-500">{user?.email}</p>
+                  <p className="truncate text-sm font-semibold text-white/80">{user?.name}</p>
+                  <p className="truncate text-[11px] text-white/25">{user?.email}</p>
                 </div>
               </div>
-              <button onClick={handleLogout} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-slate-100 transition-colors hover:bg-white/[0.1]">
-                <ArrowRightOnRectangleIcon className="h-5 w-5" />
-                Logout
+              <button
+                onClick={handleLogout}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-xs font-medium text-white/40 transition-all hover:border-danger-500/20 hover:bg-danger-500/[0.04] hover:text-danger-400"
+              >
+                <ArrowRightOnRectangleIcon className="h-4 w-4" />
+                Sign Out
               </button>
             </div>
           </div>
         </div>
       </aside>
 
-      <div className="lg:pl-[300px]">
-        <header className="sticky top-0 z-30 border-b border-white/10 bg-[#140b43]/85 backdrop-blur-xl">
-          <div className="flex items-center justify-between gap-4 px-4 py-4 lg:px-8">
-            <div className="flex items-center gap-4">
-              <button className="rounded-2xl border border-white/10 bg-white/[0.05] p-2.5 lg:hidden" onClick={() => setSidebarOpen(true)}>
-                <Bars3Icon className="h-6 w-6" />
+      {/* ── Main Content ── */}
+      <div className="lg:pl-[280px]">
+        {/* Header */}
+        <header className="sticky top-0 z-30 border-b border-white/[0.04] bg-neural-void/80 backdrop-blur-xl">
+          <div className="flex items-center justify-between gap-4 px-4 py-3.5 lg:px-6">
+            <div className="flex items-center gap-3">
+              <button
+                className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-2 text-white/40 hover:text-white/70 lg:hidden"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <Bars3Icon className="h-5 w-5" />
               </button>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">Control Core</p>
-                <h2 className="section-title text-2xl font-bold text-white">{roleLabels[user?.role]}</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-white/20">{roleLabels[user?.role]}</p>
+                <h2 className="font-display text-lg font-bold text-white/90">{currentPage}</h2>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {/* Real-time clock */}
+              <div className="hidden sm:flex items-center gap-2 rounded-lg border border-white/[0.04] bg-white/[0.02] px-3 py-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-accent-green animate-glow-pulse" />
+                <span className="font-mono text-xs text-white/30">
+                  {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+
+              {/* Theme toggle */}
               <button
                 onClick={toggleTheme}
-                className="rounded-2xl border border-white/10 bg-white/[0.05] p-3 text-slate-200 transition-colors hover:bg-white/[0.1] hover:text-white"
+                className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-2.5 text-white/40 transition-all hover:text-white/70"
               >
-                {isDark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+                {isDark ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
               </button>
 
+              {/* Notifications */}
               <div className="relative">
                 <button
-                  className="relative rounded-2xl border border-white/10 bg-white/[0.05] p-3 text-slate-200 transition-colors hover:bg-white/[0.1] hover:text-white"
+                  className="relative rounded-lg border border-white/[0.06] bg-white/[0.03] p-2.5 text-white/40 transition-all hover:text-white/70"
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
                 >
-                  <BellIcon className="h-5 w-5" />
+                  <BellIcon className="h-4 w-4" />
                   {unreadCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-400 to-cyan-300 px-1 text-[10px] font-bold text-[#140b43]">
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-gradient-to-r from-accent-cyan to-accent-purple px-1 text-[9px] font-bold text-neural-void"
+                    >
                       {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
+                    </motion.span>
                   )}
                 </button>
 
                 <AnimatePresence>
                   {notificationsOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute right-0 mt-3 w-80 rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,_rgba(31,18,88,0.96)_0%,_rgba(18,11,62,0.98)_100%)] shadow-[0_24px_70px_rgba(10,7,32,0.45)]"
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      className="absolute right-0 mt-2 w-80 rounded-xl border border-white/[0.06] bg-neural-surface/98 shadow-neural-lg backdrop-blur-xl overflow-hidden"
                     >
-                      <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+                      <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-3">
                         <div>
-                          <h3 className="font-semibold text-white">Notifications</h3>
-                          <p className="text-xs text-slate-500">Activity and request updates</p>
+                          <h3 className="text-sm font-semibold text-white/80">Notifications</h3>
+                          <p className="text-[11px] text-white/25">Activity updates</p>
                         </div>
                         {unreadCount > 0 && (
-                          <button onClick={markAllRead} className="text-xs font-semibold text-cyan-300 hover:text-white">
+                          <button onClick={markAllRead} className="text-[11px] font-semibold text-accent-cyan/70 hover:text-accent-cyan">
                             Mark all read
                           </button>
                         )}
                       </div>
-                      <div className="max-h-80 overflow-y-auto">
+                      <div className="max-h-72 overflow-y-auto">
                         {notifications.length > 0 ? notifications.map((notif) => (
-                          <div key={notif.id} className="border-b border-white/10 px-4 py-3 last:border-b-0">
-                            <p className="text-sm text-slate-200">{notif.message}</p>
-                            <p className="mt-1 text-xs text-slate-500">
+                          <div key={notif.id} className="border-b border-white/[0.03] px-4 py-3 last:border-b-0 hover:bg-white/[0.02] transition-colors">
+                            <p className="text-sm text-white/60">{notif.message}</p>
+                            <p className="mt-1 text-[11px] text-white/20">
                               {new Date(notif.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                         )) : (
-                          <div className="px-4 py-10 text-center text-sm text-slate-500">No notifications yet</div>
+                          <div className="px-4 py-10 text-center text-sm text-white/25">No notifications yet</div>
                         )}
                       </div>
                     </motion.div>
@@ -277,8 +334,15 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        <main className="p-4 lg:p-8">
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-7xl space-y-6">
+        {/* Page content with animation */}
+        <main className="p-4 lg:p-6">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="mx-auto max-w-7xl space-y-5"
+          >
             <AnnouncementBanner />
             <Outlet />
           </motion.div>
