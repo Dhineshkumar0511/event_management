@@ -73,10 +73,10 @@ export default function StudentDashboard() {
 
   const stats = data?.stats || {}
   const statCards = [
-    { label: 'Total Requests', value: stats.total || 0, icon: DocumentTextIcon, gradient: 'from-cyan-400 via-sky-400 to-blue-500', link: '/student/my-requests' },
-    { label: 'Pending', value: stats.pending || 0, icon: ClockIcon, gradient: 'from-amber-300 via-amber-400 to-orange-500', link: '/student/my-requests' },
-    { label: 'Approved', value: stats.approved || 0, icon: CheckCircleIcon, gradient: 'from-emerald-300 via-teal-400 to-cyan-500', link: '/student/my-requests' },
-    { label: 'Rejected', value: stats.rejected || 0, icon: XCircleIcon, gradient: 'from-rose-300 via-rose-400 to-red-500' },
+    { label: 'Total Requests', value: stats.total || 0, icon: DocumentTextIcon, gradient: 'from-fuchsia-500 via-violet-500 to-blue-500', link: '/student/my-requests' },
+    { label: 'Pending', value: stats.pending || 0, icon: ClockIcon, gradient: 'from-pink-500 via-fuchsia-500 to-violet-500', link: '/student/my-requests' },
+    { label: 'Approved', value: stats.approved || 0, icon: CheckCircleIcon, gradient: 'from-cyan-400 via-blue-500 to-violet-500', link: '/student/my-requests' },
+    { label: 'Rejected', value: stats.rejected || 0, icon: XCircleIcon, gradient: 'from-rose-400 via-pink-500 to-fuchsia-600' },
   ]
 
   if (loading) {
@@ -99,20 +99,20 @@ export default function StudentDashboard() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-[32px] border border-cyan-300/10 bg-[linear-gradient(135deg,_rgba(8,28,45,0.98)_0%,_rgba(9,39,54,0.96)_48%,_rgba(10,67,62,0.9)_100%)] p-7 shadow-[0_32px_90px_rgba(2,8,23,0.34)]"
+        className="ai-shell scanline relative overflow-hidden rounded-[34px] border border-violet-300/16 bg-[linear-gradient(135deg,_rgba(22,11,71,0.98)_0%,_rgba(42,16,108,0.95)_44%,_rgba(18,57,130,0.9)_100%)] p-7 shadow-[0_32px_90px_rgba(10,7,32,0.4)]"
       >
         <div className="absolute inset-0 panel-grid opacity-40" />
-        <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-32 w-32 rounded-full bg-emerald-400/10 blur-3xl" />
+        <div className="absolute right-0 top-0 h-52 w-52 rounded-full bg-pink-500/16 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-36 w-36 rounded-full bg-cyan-400/16 blur-3xl" />
 
         <div className="relative z-10 flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-white/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-200">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-200">
               <CpuChipIcon className="h-4 w-4" />
               AI and Data Science Student Hub
             </div>
-            <p className="mt-5 text-sm text-cyan-100/80">{greeting}</p>
-            <h1 className="section-title mt-2 text-3xl font-bold text-white lg:text-4xl">
+            <p className="mt-5 text-sm text-slate-200/80">{greeting}</p>
+            <h1 className="section-title mt-2 text-4xl font-bold gradient-text lg:text-5xl">
               {user?.name || 'Student'}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 lg:text-base">
@@ -138,7 +138,7 @@ export default function StudentDashboard() {
               { label: 'Focus', value: 'Approvals' },
               { label: 'Experience', value: 'Professional' },
             ].map((item) => (
-              <div key={item.label} className="rounded-3xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur-sm">
+              <div key={item.label} className="neon-panel rounded-3xl p-4 backdrop-blur-sm">
                 <p className="text-[11px] uppercase tracking-[0.26em] text-slate-500">{item.label}</p>
                 <p className="mt-2 text-sm font-semibold text-white">{item.value}</p>
               </div>
@@ -154,12 +154,12 @@ export default function StudentDashboard() {
             <motion.div key={card.label} initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.08 }}>
               <Wrapper
                 to={card.link || undefined}
-                className={`group relative block overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br ${card.gradient} p-5 text-slate-950 shadow-[0_22px_60px_rgba(15,23,42,0.22)] transition-all hover:-translate-y-1`}
+                className={`group relative block overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br ${card.gradient} p-5 text-white shadow-[0_22px_60px_rgba(18,11,71,0.36)] transition-all hover:-translate-y-1`}
               >
                 <div className="absolute -right-5 -top-5 h-24 w-24 rounded-full bg-white/20 blur-2xl" />
                 <div className="relative z-10 flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-900/65">{card.label}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70">{card.label}</p>
                     <p className="mt-3 text-4xl font-black">{card.value}</p>
                   </div>
                   <div className="rounded-2xl bg-white/25 p-3">
@@ -180,7 +180,7 @@ export default function StudentDashboard() {
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Leave Balance</p>
                 <h3 className={`section-title mt-2 text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Academic Leave Overview</h3>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fuchsia-400/10 text-fuchsia-200">
                 <ChartBarSquareIcon className="h-6 w-6" />
               </div>
             </div>
@@ -217,7 +217,7 @@ export default function StudentDashboard() {
               <Link
                 key={evt.id}
                 to="/student/active-event"
-                className={`block rounded-[28px] border p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,0.22)] transition-all hover:-translate-y-1 ${isOverdue ? 'border-rose-300/20 bg-gradient-to-r from-rose-500 to-red-500' : 'border-emerald-300/20 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-500'}`}
+                className={`block rounded-[28px] border p-5 text-white shadow-[0_20px_60px_rgba(18,11,71,0.34)] transition-all hover:-translate-y-1 ${isOverdue ? 'border-rose-300/20 bg-gradient-to-r from-rose-500 to-fuchsia-600' : 'border-cyan-300/20 bg-gradient-to-r from-cyan-500 via-blue-500 to-violet-600'}`}
               >
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
@@ -254,16 +254,16 @@ export default function StudentDashboard() {
               <Link
                 key={pr.id}
                 to="/student/submit-result"
-                className={`block rounded-[28px] border p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,0.22)] transition-all hover:-translate-y-1 ${isOverdue ? 'border-rose-300/20 bg-gradient-to-r from-rose-500 to-red-500' : isUrgent ? 'border-amber-300/20 bg-gradient-to-r from-amber-300 to-orange-500 text-slate-950' : 'border-cyan-300/20 bg-gradient-to-r from-cyan-400 to-blue-500'}`}
+                className={`block rounded-[28px] border p-5 text-white shadow-[0_20px_60px_rgba(18,11,71,0.34)] transition-all hover:-translate-y-1 ${isOverdue ? 'border-rose-300/20 bg-gradient-to-r from-rose-500 to-fuchsia-600' : isUrgent ? 'border-pink-300/20 bg-gradient-to-r from-pink-500 to-violet-600' : 'border-cyan-300/20 bg-gradient-to-r from-cyan-500 to-violet-600'}`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${isUrgent ? 'bg-slate-950/10' : 'bg-white/15'}`}>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
                     {isOverdue ? <ExclamationTriangleIcon className="h-6 w-6" /> : <TrophyIcon className="h-6 w-6" />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className={`text-sm font-bold uppercase tracking-[0.24em] ${isUrgent ? 'text-slate-900/70' : 'text-white/70'}`}>Result Submission</p>
+                    <p className="text-sm font-bold uppercase tracking-[0.24em] text-white/70">Result Submission</p>
                     <p className="mt-1 text-lg font-semibold truncate">{pr.event_name}</p>
-                    <p className={`mt-1 text-sm ${isUrgent ? 'text-slate-900/75' : 'text-white/80'}`}>
+                    <p className="mt-1 text-sm text-white/80">
                       {isOverdue
                         ? `Submission is overdue by ${Math.abs(days)} day(s).`
                         : days != null
@@ -271,7 +271,7 @@ export default function StudentDashboard() {
                         : 'Post-event result is still pending.'}
                     </p>
                   </div>
-                  <span className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] ${isUrgent ? 'bg-slate-950/10' : 'bg-white/15'}`}>
+                  <span className="rounded-full bg-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]">
                     Submit
                   </span>
                 </div>
@@ -370,15 +370,15 @@ export default function StudentDashboard() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'New OD Request', path: '/student/new-request', icon: DocumentPlusIcon, from: 'from-cyan-400', to: 'to-sky-500' },
-            { label: 'My Requests', path: '/student/my-requests', icon: DocumentTextIcon, from: 'from-sky-400', to: 'to-blue-500' },
-            { label: 'Event Calendar', path: '/student/calendar', icon: CalendarIcon, from: 'from-emerald-300', to: 'to-teal-500' },
-            { label: 'Submit Result', path: '/student/submit-result', icon: TrophyIcon, from: 'from-amber-300', to: 'to-orange-500' },
+            { label: 'New OD Request', path: '/student/new-request', icon: DocumentPlusIcon, from: 'from-fuchsia-500', to: 'to-violet-600' },
+            { label: 'My Requests', path: '/student/my-requests', icon: DocumentTextIcon, from: 'from-violet-500', to: 'to-blue-600' },
+            { label: 'Event Calendar', path: '/student/calendar', icon: CalendarIcon, from: 'from-cyan-500', to: 'to-blue-600' },
+            { label: 'Submit Result', path: '/student/submit-result', icon: TrophyIcon, from: 'from-pink-500', to: 'to-fuchsia-600' },
           ].map(a => (
             <Link
               key={a.path}
               to={a.path}
-              className={`flex items-center gap-3 rounded-[24px] bg-gradient-to-br ${a.from} ${a.to} px-4 py-4 text-slate-950 shadow-[0_18px_50px_rgba(15,23,42,0.16)] transition-all hover:-translate-y-1`}
+              className={`flex items-center gap-3 rounded-[24px] bg-gradient-to-br ${a.from} ${a.to} px-4 py-4 text-white shadow-[0_18px_50px_rgba(18,11,71,0.28)] transition-all hover:-translate-y-1`}
             >
               <div className="rounded-2xl bg-white/30 p-2">
                 <a.icon className="h-5 w-5" />
