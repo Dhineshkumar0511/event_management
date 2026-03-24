@@ -91,6 +91,7 @@ const migrate = async () => {
         year_of_study INT,
         section VARCHAR(10),
         phone VARCHAR(20),
+        parent_contact VARCHAR(20),
         is_team_lead BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (od_request_id) REFERENCES od_requests(id) ON DELETE CASCADE,
@@ -245,6 +246,18 @@ const migrate = async () => {
       try { await pool.query(sql); } catch {}
     }
     console.log('✅ OD Letter signature columns added');
+
+    // Add parent_contact column to team_members (TiDB-safe: no IF NOT EXISTS)
+    try {
+      await pool.query('ALTER TABLE team_members ADD COLUMN parent_contact VARCHAR(20) AFTER phone');
+      console.log('✅ team_members parent_contact column added');
+    } catch (e) {
+      if (e.errno === 1060 || e.code === 'ER_DUP_FIELDNAME') {
+        console.log('✅ team_members parent_contact column already exists');
+      } else {
+        console.error('⚠️  Could not add parent_contact column:', e.message);
+      }
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // NEW: Automation, deadline enforcement & compliance tracking

@@ -3,151 +3,165 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../../store/authStore'
-import { useTheme } from '../../context/ThemeContext'
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
+import { EyeIcon, EyeSlashIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
+
+const demoAccounts = [
+  { role: 'HOD', email: 'hod@college.edu', icon: '🛡️', color: 'from-emerald-400 to-teal-500', border: 'border-emerald-400/25', shadow: 'shadow-emerald-500/10', label: 'Department Head' },
+  { role: 'Staff', email: 'staff1@college.edu', icon: '👨‍🏫', color: 'from-purple-400 to-violet-600', border: 'border-purple-400/25', shadow: 'shadow-purple-500/10', label: 'Faculty Member' },
+  { role: 'Student', email: 'student1@college.edu', icon: '🎓', color: 'from-cyan-400 to-blue-500', border: 'border-cyan-400/25', shadow: 'shadow-cyan-500/10', label: 'AI & DS Student' },
+]
 
 export default function Login() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  })
+  const [formData, setFormData] = useState({ email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
   const { login, isLoading, error } = useAuthStore()
-  const { isDark } = useTheme()
   const navigate = useNavigate()
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
     const result = await login(formData.email, formData.password)
-    
     if (result.success) {
-      toast.success('Welcome back!')
-      const dashboardRoutes = {
-        student: '/student/dashboard',
-        staff: '/staff/dashboard',
-        hod: '/hod/dashboard'
-      }
+      toast.success('Welcome back')
+      const dashboardRoutes = { student: '/student/dashboard', staff: '/staff/dashboard', hod: '/hod/dashboard' }
       navigate(dashboardRoutes[result.user.role])
     } else {
       toast.error(result.error || 'Login failed')
     }
   }
 
-  const fillDemo = (email) => {
-    setFormData({ email, password: 'password123' })
-  }
-
   return (
-    <div>
-      {/* Mobile logo */}
-      <div className="lg:hidden text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-2xl mb-4 shadow-lg shadow-violet-500/30">
-          <span className="text-2xl">📄</span>
-        </div>
-        <h1 className="text-2xl font-black bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">EventPass</h1>
-        <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Smart OD Management System</p>
+    <div className="space-y-5">
+      {/* Header with animated icon */}
+      <div className="text-center">
+        <motion.div
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
+          className="mx-auto mb-5 relative"
+        >
+          {/* Glowing ring */}
+          <div className="absolute inset-0 w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 blur-xl animate-breathe" />
+          <div className="relative mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/15 to-purple-500/15 border border-cyan-400/20 flex items-center justify-center shadow-xl shadow-cyan-500/10">
+            <span className="text-3xl">🧠</span>
+          </div>
+        </motion.div>
+        <h2 className="font-display text-[1.65rem] font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+          Access Portal
+        </h2>
+        <p className="mt-2 text-sm text-slate-400">
+          Sign in to the <span className="text-cyan-400/80 font-medium">AI & Data Science</span> Platform
+        </p>
       </div>
 
-      <div className={`rounded-2xl p-8 border shadow-xl ${isDark ? 'bg-gray-800/80 border-gray-700 shadow-black/30' : 'bg-white border-gray-200 shadow-gray-200/50'}`}>
-        {/* Card header */}
-        <div className="text-center mb-8">
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.1 }}
-            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 mb-4 shadow-lg shadow-violet-500/25"
-          >
-            <span className="text-2xl">👋</span>
-          </motion.div>
-          <h2 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-gray-900'}`}>Welcome back</h2>
-          <p className={`mt-1.5 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Sign in to your EventPass account</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className={`block text-sm font-semibold mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Email address</label>
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="mb-2 block text-[13px] font-bold uppercase tracking-[0.15em] text-slate-400">Email Address</label>
+          <div className="relative group">
             <input
               type="email"
               name="email"
               value={formData.email}
-              onChange={handleChange}
-              className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'}`}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full rounded-xl px-4 py-3.5 text-sm outline-none bg-white/[0.04] border border-white/[0.08] text-white placeholder-slate-500 transition-all focus:border-cyan-400/40 focus:shadow-[0_0_0_3px_rgba(0,229,255,0.08),0_0_20px_rgba(0,229,255,0.06)] focus:bg-white/[0.06]"
               placeholder="you@college.edu"
               required
             />
           </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 pr-12 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'}`}
-                placeholder="Enter your password"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg transition-colors ${isDark ? 'text-gray-400 hover:text-violet-400' : 'text-gray-400 hover:text-violet-600'}`}
-              >
-                {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <motion.div initial={{ opacity:0, y:-10 }} animate={{ opacity:1, y:0 }}
-              className="p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm flex items-center gap-2 font-medium"
-            >
-              <span className="w-4 h-4 flex-shrink-0">⚠️</span> {error}
-            </motion.div>
-          )}
-
-          <div className="text-right -mt-1">
-            <Link to="/forgot-password" className={`text-xs font-semibold ${isDark ? 'text-violet-400 hover:text-violet-300' : 'text-violet-600 hover:text-violet-700'}`}>
-              Forgot password?
-            </Link>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full h-12 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-lg shadow-violet-500/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Sign In →'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            Don't have an account?{' '}
-            <Link to="/register" className="text-violet-500 font-bold hover:underline">Register</Link>
-          </p>
         </div>
 
-        {/* Demo credentials - clickable */}
-        <div className={`mt-6 p-4 rounded-xl border ${isDark ? 'bg-gray-700/50 border-gray-600' : 'bg-gradient-to-br from-violet-50 to-indigo-50 border-violet-100'}`}>
-          <p className={`text-[11px] font-bold uppercase tracking-wider mb-3 ${isDark ? 'text-gray-400' : 'text-violet-400'}`}>Quick Login</p>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { role: 'HOD', email: 'hod@college.edu', icon: '👨‍💼', gradient: 'from-purple-500 to-violet-600' },
-              { role: 'Staff', email: 'staff1@college.edu', icon: '👩‍🏫', gradient: 'from-emerald-500 to-teal-600' },
-              { role: 'Student', email: 'student1@college.edu', icon: '🎓', gradient: 'from-blue-500 to-indigo-600' },
-            ].map(d => (
-              <button key={d.role} onClick={() => fillDemo(d.email)} type="button"
-                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-semibold transition-all hover:scale-[1.03] ${isDark ? 'bg-gray-700 border-gray-600 text-gray-300 hover:border-violet-500' : 'bg-white border-gray-200 text-gray-700 hover:border-violet-400 hover:shadow-md'}`}
-              >
-                <span className="text-lg">{d.icon}</span>
-                <span>{d.role}</span>
-              </button>
-            ))}
+        <div>
+          <label className="mb-2 block text-[13px] font-bold uppercase tracking-[0.15em] text-slate-400">Password</label>
+          <div className="relative group">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="w-full rounded-xl px-4 py-3.5 pr-12 text-sm outline-none bg-white/[0.04] border border-white/[0.08] text-white placeholder-slate-500 transition-all focus:border-cyan-400/40 focus:shadow-[0_0_0_3px_rgba(0,229,255,0.08),0_0_20px_rgba(0,229,255,0.06)] focus:bg-white/[0.06]"
+              placeholder="Enter your password"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 transition-all hover:bg-white/[0.06] hover:text-slate-300"
+            >
+              {showPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+            </button>
           </div>
+        </div>
+
+        {error && (
+          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-pink-500/20 bg-pink-500/[0.06] px-4 py-3 text-sm text-pink-300">
+            {error}
+          </motion.div>
+        )}
+
+        <div className="text-right">
+          <Link to="/forgot-password" className="text-xs font-semibold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent hover:from-cyan-300 hover:to-purple-300 transition-all">
+            Forgot password?
+          </Link>
+        </div>
+
+        {/* Gradient submit button */}
+        <motion.button
+          type="submit"
+          disabled={isLoading}
+          whileHover={{ y: -2, scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          className="relative w-full h-[52px] rounded-xl font-bold text-white overflow-hidden shadow-xl shadow-cyan-500/15 disabled:opacity-60 group"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 animate-data-stream" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+          <span className="relative z-10 flex items-center justify-center gap-2 text-[15px]">
+            {isLoading ? (
+              <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+            ) : (
+              <>Launch Platform <ArrowRightIcon className="h-4 w-4" /></>
+            )}
+          </span>
+        </motion.button>
+      </form>
+
+      {/* Sign up link */}
+      <p className="text-center text-sm text-slate-400">
+        Need an account?{' '}
+        <Link to="/register" className="font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent hover:from-cyan-300 hover:to-purple-300">
+          Create one
+        </Link>
+      </p>
+
+      {/* Quick Access — colorful cards */}
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 backdrop-blur-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-glow-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.25em] bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">Quick Access</span>
+          </div>
+          <span className="font-mono text-[10px] px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-slate-500">password123</span>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {demoAccounts.map((account) => (
+            <motion.button
+              key={account.role}
+              type="button"
+              whileHover={{ y: -3, scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setFormData({ email: account.email, password: 'password123' })}
+              className={`group relative flex flex-col items-center gap-2 rounded-2xl border ${account.border} bg-white/[0.02] px-3 py-4 transition-all hover:bg-white/[0.05] shadow-lg ${account.shadow}`}
+            >
+              {/* Icon with gradient bg */}
+              <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${account.color} shadow-lg text-lg`}>
+                {account.icon}
+              </div>
+              <div className="text-center">
+                <span className="block text-xs font-bold text-white/80">{account.role}</span>
+                <span className="block text-[9px] text-slate-500 mt-0.5">{account.label}</span>
+              </div>
+            </motion.button>
+          ))}
         </div>
       </div>
     </div>

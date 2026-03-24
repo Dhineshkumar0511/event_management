@@ -1,13 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { aiAPI } from '../services/api'
-import { useTheme } from '../context/ThemeContext'
 import {
-  ChatBubbleLeftRightIcon,
-  XMarkIcon,
-  PaperAirplaneIcon,
-  SparklesIcon,
-  UserCircleIcon
+  ChatBubbleLeftRightIcon, XMarkIcon, PaperAirplaneIcon,
+  SparklesIcon, UserCircleIcon,
 } from '@heroicons/react/24/outline'
 
 const suggestedQuestions = [
@@ -17,234 +13,189 @@ const suggestedQuestions = [
   'Can I edit my request?'
 ]
 
+const defaultGreeting = {
+  role: 'assistant',
+  content: 'Hello. I can help with OD requests, approvals, event policies, and platform guidance.'
+}
+
 export default function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState(() => {
     try {
       const saved = localStorage.getItem('ai_chat_history')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed
-      }
+      if (saved) { const parsed = JSON.parse(saved); if (Array.isArray(parsed) && parsed.length > 0) return parsed }
     } catch {}
-    return [{ role: 'assistant', content: 'Hi! I\'m your EventPass AI assistant. Ask me anything about OD requests, events, or policies!' }]
+    return [defaultGreeting]
   })
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
-  const { isDark } = useTheme()
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+  useEffect(() => { if (isOpen) inputRef.current?.focus() }, [isOpen])
+  useEffect(() => { try { localStorage.setItem('ai_chat_history', JSON.stringify(messages.slice(-50))) } catch {} }, [messages])
 
-  useEffect(() => {
-    if (isOpen) inputRef.current?.focus()
-  }, [isOpen])
-
-  // Persist chat history
-  useEffect(() => {
-    try { localStorage.setItem('ai_chat_history', JSON.stringify(messages.slice(-50))) } catch {}
-  }, [messages])
-
-  const clearHistory = () => {
-    setMessages([{ role: 'assistant', content: 'Hi! I\'m your EventPass AI assistant. Ask me anything about OD requests, events, or policies!' }])
-    localStorage.removeItem('ai_chat_history')
-  }
+  const clearHistory = () => { setMessages([defaultGreeting]); localStorage.removeItem('ai_chat_history') }
 
   const sendMessage = async (text) => {
     const userMessage = text || input.trim()
     if (!userMessage || loading) return
-
     setInput('')
     setMessages(prev => [...prev, { role: 'user', content: userMessage }])
     setLoading(true)
-
     try {
-      const response = await aiAPI.chat({
-        message: userMessage,
-        context: 'EventPass OD Letter Management System - help with OD requests, event registration, approval process, policies'
-      })
-      const reply = response.data.reply || response.data.data?.response || response.data.message || 'I understand your question. Let me help you with that.'
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: reply
-      }])
+      const response = await aiAPI.chat({ message: userMessage, context: 'EventPass OD Letter Management System' })
+      const reply = response.data.reply || response.data.data?.response || response.data.message || 'Let me help with that.'
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }])
     } catch {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'I\'m having trouble connecting right now. Please try again in a moment, or check the FAQ section for common questions.'
-      }])
-    } finally {
-      setLoading(false)
-    }
+      setMessages(prev => [...prev, { role: 'assistant', content: 'The assistant is temporarily unavailable. Please try again.' }])
+    } finally { setLoading(false) }
   }
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
-    }
-  }
+  const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Floating trigger button */}
       <AnimatePresence>
         {!isOpen && (
           <motion.button
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            initial={{ opacity: 0, y: 16, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.9 }}
+            whileHover={{ y: -3, scale: 1.02 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30 flex items-center justify-center"
+            className="fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-2xl border border-accent-cyan/15 bg-neural-deep/95 backdrop-blur-xl px-4 py-3 text-white shadow-neural-lg"
           >
-            <ChatBubbleLeftRightIcon className="w-7 h-7" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent-cyan/15 to-accent-purple/15">
+              <SparklesIcon className="h-5 w-5 text-accent-cyan" />
+            </div>
+            <div className="hidden text-left sm:block">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/25">Neural AI</p>
+              <p className="text-sm font-semibold text-white/70">Ask anything</p>
+            </div>
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* Chat Window */}
+      {/* Chat panel */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className={`fixed bottom-6 right-6 z-50 w-[380px] h-[520px] rounded-2xl shadow-2xl border flex flex-col overflow-hidden ${
-              isDark
-                ? 'bg-gray-800 border-gray-700'
-                : 'bg-white border-gray-200'
-            }`}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="fixed bottom-5 right-5 z-50 flex h-[520px] w-[380px] max-w-[calc(100vw-24px)] flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-neural-deep/98 backdrop-blur-xl shadow-neural-lg"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-                  <SparklesIcon className="w-5 h-5 text-white" />
+            <div className="border-b border-white/[0.04] p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-accent-cyan/15 to-accent-purple/15">
+                    <SparklesIcon className="h-4 w-4 text-accent-cyan" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white/80">Neural Assistant</h3>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-accent-green animate-glow-pulse" />
+                      <p className="text-[11px] text-white/25">Online</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-white font-semibold text-sm">AI Assistant</h3>
-                  <p className="text-white/70 text-xs">Ask me anything</p>
+                <div className="flex items-center gap-1">
+                  {messages.length > 1 && (
+                    <button onClick={clearHistory} className="rounded-lg px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/20 hover:bg-white/[0.04] hover:text-white/40">
+                      Clear
+                    </button>
+                  )}
+                  <button onClick={() => setIsOpen(false)} className="rounded-lg p-1.5 text-white/25 hover:bg-white/[0.04] hover:text-white/50">
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
-              <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white p-1">
-                <XMarkIcon className="w-5 h-5" />
-              </button>
             </div>
 
-            {/* Clear history bar */}
-            {messages.length > 1 && (
-              <div className={`px-3 py-1.5 flex justify-end border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-                <button onClick={clearHistory} className="text-[10px] text-gray-400 hover:text-red-400 transition-colors">
-                  Clear history
-                </button>
-              </div>
-            )}
-
             {/* Messages */}
-            <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>
+            <div className="flex-1 space-y-3 overflow-y-auto p-4 bg-neural-void/50">
               {messages.map((msg, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {msg.role === 'assistant' && (
-                    <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-1">
-                      <SparklesIcon className="w-4 h-4 text-purple-600" />
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-cyan/10">
+                      <SparklesIcon className="h-3.5 w-3.5 text-accent-cyan/70" />
                     </div>
                   )}
-                  <div className={`max-w-[80%] px-3 py-2 rounded-xl text-sm ${
+                  <div className={`max-w-[80%] rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
                     msg.role === 'user'
-                      ? 'bg-primary-600 text-white rounded-br-sm'
-                      : isDark
-                        ? 'bg-gray-700 text-gray-200 rounded-bl-sm'
-                        : 'bg-white text-gray-800 shadow-sm rounded-bl-sm'
+                      ? 'bg-gradient-to-br from-accent-cyan/15 to-accent-purple/15 text-white/80 border border-accent-cyan/10'
+                      : 'bg-white/[0.03] text-white/60 border border-white/[0.04]'
                   }`}>
                     <p className="whitespace-pre-wrap">{msg.content}</p>
                   </div>
                   {msg.role === 'user' && (
-                    <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 mt-1">
-                      <UserCircleIcon className="w-4 h-4 text-primary-600" />
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.04]">
+                      <UserCircleIcon className="h-3.5 w-3.5 text-white/30" />
                     </div>
                   )}
                 </motion.div>
               ))}
 
               {loading && (
-                <div className="flex gap-2">
-                  <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                    <SparklesIcon className="w-4 h-4 text-purple-600" />
+                <div className="flex gap-2.5">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-cyan/10">
+                    <SparklesIcon className="h-3.5 w-3.5 text-accent-cyan/70" />
                   </div>
-                  <div className={`px-4 py-3 rounded-xl ${isDark ? 'bg-gray-700' : 'bg-white shadow-sm'}`}>
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="rounded-xl bg-white/[0.03] border border-white/[0.04] px-4 py-3">
+                    <div className="flex gap-1.5">
+                      <div className="h-1.5 w-1.5 rounded-full bg-accent-cyan/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="h-1.5 w-1.5 rounded-full bg-accent-cyan/40 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="h-1.5 w-1.5 rounded-full bg-accent-cyan/40 animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Suggested Questions */}
               {messages.length === 1 && (
-                <div className="space-y-2 pt-2">
-                  <p className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Suggested questions:
-                  </p>
+                <div className="space-y-1.5 pt-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/20 mb-2">Suggestions</p>
                   {suggestedQuestions.map((q, i) => (
-                    <button
-                      key={i}
-                      onClick={() => sendMessage(q)}
-                      className={`block w-full text-left text-sm px-3 py-2 rounded-lg transition-colors ${
-                        isDark
-                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                          : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm'
-                      }`}
-                    >
+                    <button key={i} onClick={() => sendMessage(q)}
+                      className="block w-full rounded-xl border border-white/[0.04] bg-white/[0.02] px-3 py-2.5 text-left text-[13px] text-white/40 transition-all hover:bg-accent-cyan/[0.03] hover:border-accent-cyan/10 hover:text-white/60">
                       {q}
                     </button>
                   ))}
                 </div>
               )}
-
               <div ref={messagesEndRef} />
             </div>
 
             {/* Input */}
-            <div className={`p-3 border-t ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
-              <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${
-                isDark ? 'bg-gray-700' : 'bg-gray-100'
-              }`}>
+            <div className="border-t border-white/[0.04] p-3">
+              <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
                 <input
                   ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type a message..."
-                  className={`flex-1 bg-transparent text-sm outline-none ${
-                    isDark ? 'text-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
-                  }`}
+                  placeholder="Ask about OD, events, policies..."
+                  className="flex-1 bg-transparent text-sm text-white/80 outline-none placeholder:text-white/20"
                   disabled={loading}
                 />
                 <button
                   onClick={() => sendMessage()}
                   disabled={!input.trim() || loading}
-                  className="p-1.5 rounded-lg bg-primary-600 text-white disabled:opacity-40 hover:bg-primary-700 transition-colors"
+                  className="rounded-lg bg-gradient-to-r from-accent-cyan/80 to-accent-purple/80 p-2 text-white transition-opacity disabled:opacity-30"
                 >
-                  <PaperAirplaneIcon className="w-4 h-4" />
+                  <PaperAirplaneIcon className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <p className={`text-[10px] mt-1 text-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                Powered by AI • Responses may not be 100% accurate
-              </p>
             </div>
           </motion.div>
         )}

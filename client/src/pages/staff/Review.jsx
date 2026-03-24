@@ -79,7 +79,25 @@ export default function Review() {
         navigate('/staff/requests')
       }
     } catch (error) {
-      toast.error(`Failed to ${actionType} request`)
+      // Show the actual reason from the server
+      const serverMsg = error.response?.data?.message
+      const validationMsg = error.response?.data?.errors?.[0]?.msg
+      const status = error.response?.status
+
+      let msg
+      if (validationMsg) {
+        msg = validationMsg  // e.g. 'Please provide a reason for rejection'
+      } else if (serverMsg) {
+        msg = serverMsg      // e.g. 'Cannot reject request in current status'
+      } else if (!error.response) {
+        msg = 'Network error — check your connection'
+      } else if (status === 403) {
+        msg = 'You do not have permission to perform this action'
+      } else {
+        msg = `Failed to ${actionType} request`
+      }
+
+      toast.error(msg, { duration: 5000 })
       console.error('Submit error:', error)
     } finally {
       setSubmitting(false)
@@ -213,16 +231,37 @@ export default function Review() {
                 <UserGroupIcon className="w-5 h-5" />
                 Team Members ({request.team_members.length})
               </h2>
-              <div className="divide-y">
-                {request.team_members.map((member, index) => (
-                  <div key={index} className="py-3 flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{member.member_name}</p>
-                      <p className="text-sm text-gray-500">{member.member_email}</p>
-                    </div>
-                    <span className="text-sm text-gray-600">{member.member_roll_number}</span>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left">
+                      <th className="pb-2 pr-4 font-medium text-gray-500">Name</th>
+                      <th className="pb-2 pr-4 font-medium text-gray-500">Year</th>
+                      <th className="pb-2 pr-4 font-medium text-gray-500">Section</th>
+                      <th className="pb-2 pr-4 font-medium text-gray-500">Reg. Number</th>
+                      <th className="pb-2 pr-4 font-medium text-gray-500">Phone</th>
+                      <th className="pb-2 pr-4 font-medium text-gray-500">Parent Contact</th>
+                      <th className="pb-2 font-medium text-gray-500">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {request.team_members.map((member, index) => (
+                      <tr key={index} className="border-b last:border-0">
+                        <td className="py-2 pr-4 font-medium">{member.name || member.member_name}</td>
+                        <td className="py-2 pr-4 text-gray-600">{member.year_of_study || '—'}</td>
+                        <td className="py-2 pr-4 text-gray-600">{member.section || '—'}</td>
+                        <td className="py-2 pr-4 text-gray-600">{member.register_number || member.member_roll_number}</td>
+                        <td className="py-2 pr-4 text-gray-600">{member.phone || '—'}</td>
+                        <td className="py-2 pr-4 text-gray-600">{member.parent_contact || '—'}</td>
+                        <td className="py-2">
+                          {member.is_team_lead
+                            ? <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Team Lead</span>
+                            : <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">Member</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </motion.div>
           )}
@@ -243,11 +282,14 @@ export default function Review() {
                 <div className="space-y-2">
                   {request.supporting_documents.map((doc, index) => {
                     const docUrl = typeof doc === 'string' ? doc : doc.path || doc.url || doc.secure_url;
-                    const fileName = docUrl?.split('/').pop()?.split('?')[0] || `Document ${index + 1}`;
+                    const fileName = (typeof doc === 'object' && doc.name) || docUrl?.split('/').pop()?.split('?')[0] || `Document ${index + 1}`;
+                    const absoluteUrl = docUrl?.startsWith('/')
+                      ? `${window.location.protocol}//${window.location.hostname}:${import.meta.env.VITE_API_PORT || '3000'}${docUrl}`
+                      : docUrl;
                     return (
                       <a
                         key={index}
-                        href={docUrl}
+                        href={absoluteUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 p-3 rounded-lg bg-gray-50 hover:bg-blue-50 transition-colors"

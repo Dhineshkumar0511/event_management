@@ -17,17 +17,14 @@ export default function ResetPassword() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  const cardCls = `rounded-2xl p-8 border shadow-xl ${isDark ? 'bg-gray-800/80 border-gray-700 shadow-black/30' : 'bg-white border-gray-200 shadow-gray-200/50'}`
-  const inputCls = `w-full px-4 py-3 pr-12 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'}`
-  const labelCls = `block text-sm font-semibold mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`
-
   if (!token) {
     return (
-      <div className={cardCls}>
-        <div className="text-center py-4">
-          <p className="text-red-500 font-semibold mb-4">Invalid or missing reset token.</p>
-          <Link to="/forgot-password" className="text-violet-500 font-bold hover:underline">Request a new reset link</Link>
+      <div className="space-y-5 text-center">
+        <div className="mx-auto w-14 h-14 rounded-2xl bg-danger-500/10 border border-danger-500/20 flex items-center justify-center">
+          <LockClosedIcon className="w-7 h-7 text-danger-400" />
         </div>
+        <p className="text-danger-400 font-semibold">Invalid or missing reset token.</p>
+        <Link to="/forgot-password" className="text-accent-cyan hover:underline font-medium text-sm">Request a new reset link</Link>
       </div>
     )
   }
@@ -54,58 +51,54 @@ export default function ResetPassword() {
 
   const PasswordField = ({ label, field, show, toggleShow }) => (
     <div>
-      <label className={labelCls}>{label} *</label>
+      <label className="label">{label} *</label>
       <div className="relative">
         <input
           type={show ? 'text' : 'password'}
           value={formData[field]}
           onChange={e => setFormData({ ...formData, [field]: e.target.value })}
-          className={inputCls}
+          className="input pr-12"
           placeholder="Min 12 chars, A-Z, a-z, 0-9, @$!%*?&"
           required
         />
         <button type="button" onClick={toggleShow}
-          className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg transition-colors ${isDark ? 'text-gray-400 hover:text-violet-400' : 'text-gray-400 hover:text-violet-600'}`}
-        >
-          {show ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-white/30 hover:bg-white/[0.04] hover:text-white/60 transition-colors">
+          {show ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
         </button>
       </div>
     </div>
   )
 
   return (
-    <div>
-      <div className={cardCls}>
-        <div className="text-center mb-8">
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.1 }}
-            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 mb-4 shadow-lg shadow-violet-500/25"
-          >
-            <LockClosedIcon className="w-7 h-7 text-white" />
-          </motion.div>
-          <h2 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-gray-900'}`}>Set New Password</h2>
-          <p className={`mt-1.5 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Choose a strong new password</p>
+    <div className="space-y-5">
+      <div className="text-center">
+        <motion.div
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
+          className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-gradient-to-br from-accent-cyan/20 to-accent-green/20 border border-accent-cyan/20 flex items-center justify-center"
+        >
+          <LockClosedIcon className="w-7 h-7 text-accent-cyan" />
+        </motion.div>
+        <h2 className="font-display text-2xl font-bold gradient-text">New Password</h2>
+        <p className="mt-2 text-sm text-white/40">Choose a strong new password</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <PasswordField label="New Password" field="password" show={showPassword} toggleShow={() => setShowPassword(!showPassword)} />
+        <PasswordField label="Confirm Password" field="confirmPassword" show={showConfirm} toggleShow={() => setShowConfirm(!showConfirm)} />
+
+        <div className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3 text-xs text-white/30 leading-relaxed">
+          Password must: be ≥12 characters • have uppercase & lowercase • have a number • have a special char (@$!%*?&)
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <PasswordField label="New Password" field="password" show={showPassword} toggleShow={() => setShowPassword(!showPassword)} />
-          <PasswordField label="Confirm Password" field="confirmPassword" show={showConfirm} toggleShow={() => setShowConfirm(!showConfirm)} />
+        <button type="submit" disabled={isLoading} className="btn btn-primary w-full h-12 text-base font-bold">
+          {isLoading ? <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : 'Reset Password →'}
+        </button>
+      </form>
 
-          <div className={`p-3 rounded-xl text-xs ${isDark ? 'bg-gray-700/60 text-gray-400' : 'bg-violet-50 text-gray-600'}`}>
-            Password must: be ≥12 characters • have uppercase & lowercase • have a number • have a special char (@$!%*?&)
-          </div>
-
-          <button type="submit" disabled={isLoading}
-            className="w-full h-12 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-lg shadow-violet-500/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-70"
-          >
-            {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Reset Password →'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <Link to="/login" className={`text-sm ${isDark ? 'text-gray-400 hover:text-violet-400' : 'text-gray-500 hover:text-violet-600'}`}>
-            Back to Login
-          </Link>
-        </div>
+      <div className="text-center">
+        <Link to="/login" className="text-sm text-white/30 hover:text-accent-cyan transition-colors">Back to Login</Link>
       </div>
     </div>
   )

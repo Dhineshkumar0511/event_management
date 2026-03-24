@@ -43,6 +43,10 @@ const parseTeamMembers = (rawTeamMembers) => {
     .filter(hasAnyTeamMemberValue);
 };
 
+// Helper: resolve Cloudinary resource_type from URL
+const cloudinaryResourceType = (url) =>
+  (url && (url.includes('/raw/') || /\.pdf$/i.test(url))) ? 'raw' : 'image';
+
 // Helper function to delete files from Cloudinary
 // Accepts URL strings OR doc objects {name, path, size} / {url} / {secure_url}
 const deleteCloudinaryFiles = async (fileUrls = []) => {
@@ -53,14 +57,22 @@ const deleteCloudinaryFiles = async (fileUrls = []) => {
       // Coerce doc objects to URL strings
       const url = typeof entry === 'string' ? entry : (entry?.path || entry?.url || entry?.secure_url);
       if (!url || typeof url !== 'string') continue;
+      // Only attempt deletion for Cloudinary URLs (local paths won't match)
+      if (!url.includes('cloudinary.com')) {
+        console.log(`[Cloudinary] Skipping local file: ${url}`);
+        continue;
+      }
       const matches = url.match(/\/upload\/(?:v\d+\/)?(?:eventpass\/)?(.*?)(?:\.[^.]+)?$/);
       if (matches && matches[1]) {
         const publicId = `eventpass/${matches[1]}`;
-        await cloudinary.uploader.destroy(publicId, { resource_type: 'auto' });
-        console.log(`✓ Deleted from Cloudinary: ${publicId}`);
+        const resType = cloudinaryResourceType(url);
+        await cloudinary.uploader.destroy(publicId, { resource_type: resType });
+        console.log(`✓ Deleted from Cloudinary: ${publicId} (${resType})`);
+      } else {
+        console.warn(`[Cloudinary] Could not parse public_id from URL: ${url}`);
       }
     } catch (error) {
-      console.error(`Error deleting file from Cloudinary:`, error);
+      console.error(`Error deleting file from Cloudinary:`, error.message || error);
     }
   }
 };
@@ -171,24 +183,49 @@ router.post('/od-request', isStudent, uploadDocuments, [
     const odRequestId = result.insertId;
 
     // Add the student as team lead
-    await pool.query(
-      `INSERT INTO team_members 
-       (od_request_id, student_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [odRequestId, req.user.id, req.user.name, req.user.email, req.user.employee_id,
-       req.user.department, req.user.year_of_study, req.user.section, req.user.phone, true]
-    );
+    try {
+      await pool.query(
+        `INSERT INTO team_members 
+         (od_request_id, student_id, name, email, register_number, department, year_of_study, section, phone, parent_contact, is_team_lead)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [odRequestId, req.user.id, req.user.name, req.user.email, req.user.employee_id,
+         req.user.department, req.user.year_of_study, req.user.section, req.user.phone, null, true]
+      );
+    } catch (tmErr) {
+      if (tmErr.code === 'ER_BAD_FIELD_ERROR' && tmErr.message.includes('parent_contact')) {
+        // Column missing — fallback without parent_contact
+        await pool.query(
+          `INSERT INTO team_members 
+           (od_request_id, student_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [odRequestId, req.user.id, req.user.name, req.user.email, req.user.employee_id,
+           req.user.department, req.user.year_of_study, req.user.section, req.user.phone, true]
+        );
+      } else throw tmErr;
+    }
 
     // Add team members if provided
     if (parsedTeamMembers.length > 0) {
       for (const member of parsedTeamMembers) {
-        await pool.query(
-          `INSERT INTO team_members 
-           (od_request_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [odRequestId, member.name, member.email, member.register_number,
-           member.department, member.year_of_study, member.section, member.phone, false]
-        );
+        try {
+          await pool.query(
+            `INSERT INTO team_members 
+             (od_request_id, name, email, register_number, department, year_of_study, section, phone, parent_contact, is_team_lead)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [odRequestId, member.name, member.email, member.register_number,
+             member.department, member.year_of_study, member.section, member.phone, member.parent_contact || null, false]
+          );
+        } catch (tmErr) {
+          if (tmErr.code === 'ER_BAD_FIELD_ERROR' && tmErr.message.includes('parent_contact')) {
+            await pool.query(
+              `INSERT INTO team_members 
+               (od_request_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [odRequestId, member.name, member.email, member.register_number,
+               member.department, member.year_of_study, member.section, member.phone, false]
+            );
+          } else throw tmErr;
+        }
       }
     }
 
@@ -481,22 +518,48 @@ router.put('/od-request/:id', isStudent, uploadDocuments, async (req, res) => {
     );
 
     await pool.query('DELETE FROM team_members WHERE od_request_id = ?', [req.params.id]);
-    await pool.query(
-      `INSERT INTO team_members 
-       (od_request_id, student_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [req.params.id, req.user.id, req.user.name, req.user.email, req.user.employee_id,
-       req.user.department, req.user.year_of_study, req.user.section, req.user.phone, true]
-    );
 
-    for (const member of parsedTeamMembers) {
+    // Insert team lead — fallback if parent_contact column not yet migrated
+    try {
       await pool.query(
         `INSERT INTO team_members 
-         (od_request_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [req.params.id, member.name, member.email, member.register_number,
-         member.department, member.year_of_study, member.section, member.phone, false]
+         (od_request_id, student_id, name, email, register_number, department, year_of_study, section, phone, parent_contact, is_team_lead)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [req.params.id, req.user.id, req.user.name, req.user.email, req.user.employee_id,
+         req.user.department, req.user.year_of_study, req.user.section, req.user.phone, null, true]
       );
+    } catch (tmErr) {
+      if (tmErr.code === 'ER_BAD_FIELD_ERROR' && tmErr.message.includes('parent_contact')) {
+        await pool.query(
+          `INSERT INTO team_members 
+           (od_request_id, student_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [req.params.id, req.user.id, req.user.name, req.user.email, req.user.employee_id,
+           req.user.department, req.user.year_of_study, req.user.section, req.user.phone, true]
+        );
+      } else throw tmErr;
+    }
+
+    for (const member of parsedTeamMembers) {
+      try {
+        await pool.query(
+          `INSERT INTO team_members 
+           (od_request_id, name, email, register_number, department, year_of_study, section, phone, parent_contact, is_team_lead)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [req.params.id, member.name, member.email, member.register_number,
+           member.department, member.year_of_study, member.section, member.phone, member.parent_contact || null, false]
+        );
+      } catch (tmErr) {
+        if (tmErr.code === 'ER_BAD_FIELD_ERROR' && tmErr.message.includes('parent_contact')) {
+          await pool.query(
+            `INSERT INTO team_members 
+             (od_request_id, name, email, register_number, department, year_of_study, section, phone, is_team_lead)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [req.params.id, member.name, member.email, member.register_number,
+             member.department, member.year_of_study, member.section, member.phone, false]
+          );
+        } else throw tmErr;
+      }
     }
 
     res.json({
@@ -832,7 +895,8 @@ router.delete('/od-request/:id', isStudent, async (req, res) => {
     await pool.query('DELETE FROM team_members WHERE od_request_id = ?', [req.params.id]);
     await pool.query('DELETE FROM location_checkins WHERE od_request_id = ?', [req.params.id]);
     await pool.query('DELETE FROM event_results WHERE od_request_id = ?', [req.params.id]);
-    
+    await pool.query("DELETE FROM notifications WHERE related_to = 'od_request' AND related_id = ?", [req.params.id]);
+
     // Delete OD request
     await pool.query('DELETE FROM od_requests WHERE id = ?', [req.params.id]);
 
@@ -898,6 +962,7 @@ router.delete('/od-requests', isStudent, [
       await pool.query('DELETE FROM team_members WHERE od_request_id = ?', [id]);
       await pool.query('DELETE FROM location_checkins WHERE od_request_id = ?', [id]);
       await pool.query('DELETE FROM event_results WHERE od_request_id = ?', [id]);
+      await pool.query("DELETE FROM notifications WHERE related_to = 'od_request' AND related_id = ?", [id]);
     }
 
     // Delete requests

@@ -10,6 +10,10 @@ import { cloudinary } from '../middleware/upload.js';
 
 const router = express.Router();
 
+// Helper: resolve Cloudinary resource_type from URL
+const cloudinaryResourceType = (url) =>
+  (url && (url.includes('/raw/') || /\.pdf$/i.test(url))) ? 'raw' : 'image';
+
 // Helper function to delete files from Cloudinary
 // Accepts either an array of URL strings OR an array of doc objects {name, path, size} / {url} / {secure_url}
 const deleteCloudinaryFiles = async (fileUrls = []) => {
@@ -20,14 +24,22 @@ const deleteCloudinaryFiles = async (fileUrls = []) => {
       // Coerce doc objects to URL strings
       const url = typeof entry === 'string' ? entry : (entry?.path || entry?.url || entry?.secure_url);
       if (!url || typeof url !== 'string') continue;
+      // Only attempt deletion for Cloudinary URLs (local paths won't match)
+      if (!url.includes('cloudinary.com')) {
+        console.log(`[Cloudinary] Skipping local file: ${url}`);
+        continue;
+      }
       const matches = url.match(/\/upload\/(?:v\d+\/)?(?:eventpass\/)?(.*?)(?:\.[^.]+)?$/);
       if (matches && matches[1]) {
         const publicId = `eventpass/${matches[1]}`;
-        await cloudinary.uploader.destroy(publicId, { resource_type: 'auto' });
-        console.log(`✓ Deleted from Cloudinary: ${publicId}`);
+        const resType = cloudinaryResourceType(url);
+        await cloudinary.uploader.destroy(publicId, { resource_type: resType });
+        console.log(`✓ Deleted from Cloudinary: ${publicId} (${resType})`);
+      } else {
+        console.warn(`[Cloudinary] Could not parse public_id from URL: ${url}`);
       }
     } catch (error) {
-      console.error(`Error deleting file from Cloudinary:`, error);
+      console.error(`Error deleting file from Cloudinary:`, error.message || error);
     }
   }
 };
@@ -1038,6 +1050,7 @@ router.delete('/od-request/:id', isHOD, async (req, res) => {
     await pool.query('DELETE FROM team_members WHERE od_request_id = ?', [req.params.id]);
     await pool.query('DELETE FROM location_checkins WHERE od_request_id = ?', [req.params.id]);
     await pool.query('DELETE FROM event_results WHERE od_request_id = ?', [req.params.id]);
+    await pool.query("DELETE FROM notifications WHERE related_to = 'od_request' AND related_id = ?", [req.params.id]);
     await pool.query('DELETE FROM od_requests WHERE id = ?', [req.params.id]);
 
     // Log activity
@@ -1104,6 +1117,7 @@ router.delete('/od-requests', isHOD, [
       await pool.query('DELETE FROM team_members WHERE od_request_id = ?', [id]);
       await pool.query('DELETE FROM location_checkins WHERE od_request_id = ?', [id]);
       await pool.query('DELETE FROM event_results WHERE od_request_id = ?', [id]);
+      await pool.query("DELETE FROM notifications WHERE related_to = 'od_request' AND related_id = ?", [id]);
     }
 
     await pool.query(
@@ -1157,6 +1171,7 @@ router.delete('/od-requests/delete-all', isHOD, async (req, res) => {
       await pool.query('DELETE FROM team_members WHERE od_request_id = ?', [id]);
       await pool.query('DELETE FROM location_checkins WHERE od_request_id = ?', [id]);
       await pool.query('DELETE FROM event_results WHERE od_request_id = ?', [id]);
+      await pool.query("DELETE FROM notifications WHERE related_to = 'od_request' AND related_id = ?", [id]);
     }
     await pool.query(
       `DELETE FROM od_requests WHERE id IN (${ids.map(() => '?').join(',')})`,

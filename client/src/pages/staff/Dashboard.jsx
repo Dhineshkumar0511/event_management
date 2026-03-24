@@ -5,12 +5,15 @@ import { staffAPI, leaveAPI, whatsappAPI } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 import { useTheme } from '../../context/ThemeContext'
 import {
-  DocumentTextIcon, ClockIcon, CheckCircleIcon, XCircleIcon,
-  ArrowTrendingUpIcon, ChartBarIcon, ArrowRightIcon, InboxStackIcon,
+  ClockIcon, CheckCircleIcon, XCircleIcon, ArrowTrendingUpIcon,
+  ChartBarIcon, ArrowRightIcon, InboxStackIcon, SignalIcon, CommandLineIcon,
 } from '@heroicons/react/24/outline'
 
+const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0, transition: { duration: 0.4 } } }
+const stagger = { animate: { transition: { staggerChildren: 0.06 } } }
+
 export default function StaffDashboard() {
-  const [stats, setStats] = useState({ pending:0, reviewed_today:0, approved:0, rejected:0 })
+  const [stats, setStats] = useState({ pending: 0, reviewed_today: 0, approved: 0, rejected: 0 })
   const [pendingRequests, setPendingRequests] = useState([])
   const [leaveStats, setLeaveStats] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -20,286 +23,283 @@ export default function StaffDashboard() {
   const { isDark } = useTheme()
 
   useEffect(() => {
-    fetchDashboard()
-    fetchWAStatus()
+    fetchDashboard(); fetchWAStatus()
     waPollerRef.current = setInterval(fetchWAStatus, 5000)
     return () => clearInterval(waPollerRef.current)
   }, [])
 
-  const fetchWAStatus = async () => {
-    try {
-      const res = await whatsappAPI.getStatus()
-      setWaStatus(res.data.data)
-    } catch { /* ignore */ }
-  }
-
-  const handleWAConnect = async () => {
-    try { await whatsappAPI.connect() } catch { /* ignore */ }
-    setTimeout(fetchWAStatus, 2000)
-  }
+  const fetchWAStatus = async () => { try { const res = await whatsappAPI.getStatus(); setWaStatus(res.data.data) } catch {} }
+  const handleWAConnect = async () => { try { await whatsappAPI.connect() } catch {} setTimeout(fetchWAStatus, 2000) }
 
   const fetchDashboard = async () => {
     try {
       const [sRes, rRes, lRes] = await Promise.all([
-        staffAPI.getDashboard(),
-        staffAPI.getPendingRequests(),
+        staffAPI.getDashboard(), staffAPI.getPendingRequests(),
         leaveAPI.getStaffPending().catch(() => null),
       ])
       setStats(sRes.data.data || {})
-      setPendingRequests(rRes.data.data?.slice(0,5) || [])
-      if (lRes) {
-        const leaves = lRes.data.data || []
-        setLeaveStats({ pending: leaves.length, recent: leaves.slice(0, 4) })
-      }
-    } catch (e) { console.error(e) } finally { setLoading(false) }
+      setPendingRequests(rRes.data.data?.slice(0, 5) || [])
+      if (lRes) { const leaves = lRes.data.data || []; setLeaveStats({ pending: leaves.length, recent: leaves.slice(0, 4) }) }
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
   }
 
   const analytics = useMemo(() => {
-    const total = (stats.approved||0) + (stats.rejected||0)
-    return { total, approvalRate: total > 0 ? Math.round(((stats.approved||0)/total)*100) : 0 }
+    const total = (stats.approved || 0) + (stats.rejected || 0)
+    return { total, approvalRate: total > 0 ? Math.round(((stats.approved || 0) / total) * 100) : 0 }
   }, [stats])
 
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? '🌤️ Good morning' : hour < 17 ? '☀️ Good afternoon' : '🌙 Good evening'
-
-  const statCards = [
-    { label:'Pending Review',  value:stats.pending||0,         icon:ClockIcon,           gradient:'from-amber-400 to-orange-500',  shadow:'shadow-amber-500/30',  link:'/staff/requests' },
-    { label:'Reviewed Today',  value:stats.reviewed_today||0,  icon:ArrowTrendingUpIcon, gradient:'from-sky-400 to-blue-600',      shadow:'shadow-blue-500/30'   },
-    { label:'Approved',        value:stats.approved||0,        icon:CheckCircleIcon,     gradient:'from-emerald-400 to-green-600', shadow:'shadow-green-500/30'  },
-    { label:'Rejected',        value:stats.rejected||0,        icon:XCircleIcon,         gradient:'from-rose-400 to-red-600',      shadow:'shadow-rose-500/30'   },
+  const quickStats = [
+    { label: 'Pending', value: stats.pending || 0, icon: ClockIcon, accent: 'text-accent-amber', bg: 'from-accent-amber/20 to-accent-amber/5', border: 'border-accent-amber/10', path: '/staff/requests' },
+    { label: 'Today', value: stats.reviewed_today || 0, icon: ArrowTrendingUpIcon, accent: 'text-accent-cyan', bg: 'from-accent-cyan/20 to-accent-cyan/5', border: 'border-accent-cyan/10' },
+    { label: 'Approved', value: stats.approved || 0, icon: CheckCircleIcon, accent: 'text-accent-green', bg: 'from-accent-green/20 to-accent-green/5', border: 'border-accent-green/10' },
+    { label: 'Rejected', value: stats.rejected || 0, icon: XCircleIcon, accent: 'text-accent-magenta', bg: 'from-accent-magenta/20 to-accent-magenta/5', border: 'border-accent-magenta/10' },
   ]
 
-  if (loading) return (
-    <div className="space-y-6">
-      <div className="h-28 rounded-2xl skeleton" />
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">{[...Array(4)].map((_,i)=><div key={i} className="h-32 rounded-2xl skeleton" />)}</div>
-    </div>
-  )
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <div className="h-44 skeleton" />
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">{[...Array(4)].map((_, i) => <div key={i} className="h-28 skeleton" />)}</div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Banner */}
-      <motion.div initial={{ opacity:0, y:-10 }} animate={{ opacity:1, y:0 }}
-        className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 shadow-xl shadow-emerald-500/25"
-      >
-        <div className="absolute inset-0 bg-black/5" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20" />
-        <div className="absolute bottom-0 left-40 w-40 h-40 bg-white/5 rounded-full -mb-12" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <p className="text-white/70 text-sm mb-1">{greeting}</p>
-            <h1 className="text-2xl font-bold text-white">{user?.name || 'Staff'}</h1>
-            <p className="text-white/55 text-xs mt-1">
-              {stats.pending > 0 ? `${stats.pending} request${stats.pending>1?'s':''} awaiting your review` : '✅ All caught up — no pending requests'}
-            </p>
-          </div>
-          <Link to="/staff/requests" className="inline-flex items-center gap-2 bg-white text-emerald-700 font-bold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all text-sm w-fit">
-            <ClockIcon className="w-4 h-4" /> Review Requests
-          </Link>
-        </div>
-      </motion.div>
+    <motion.div variants={stagger} initial="initial" animate="animate" className="space-y-5">
 
-      {/* Stat Cards */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((card, i) => {
-          const W = card.link ? Link : 'div'
+      {/* ── Hero ── */}
+      <motion.section variants={fadeUp}
+        className="neural-grid scanline relative overflow-hidden rounded-2xl border border-accent-purple/8 bg-gradient-to-br from-neural-surface via-[#140a25]/50 to-neural-surface p-6 lg:p-7"
+      >
+        <div className="absolute top-0 right-[15%] w-64 h-64 rounded-full bg-accent-purple/6 blur-[80px]" />
+        <div className="absolute bottom-0 left-[5%] w-48 h-48 rounded-full bg-accent-cyan/4 blur-[60px]" />
+
+        <div className="relative z-10 grid gap-6 xl:grid-cols-[1.6fr_1fr] xl:items-end">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-accent-purple/15 bg-accent-purple/[0.04] px-3 py-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-accent-purple animate-glow-pulse" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-accent-purple/60">Faculty Intelligence</span>
+            </div>
+            <h1 className="font-display mt-4 text-3xl lg:text-4xl font-black text-white/90">Staff Review Hub</h1>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/35">
+              Review requests, validate submissions, and monitor workflow performance inside the AI & Data Science faculty console.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Link to="/staff/requests" className="btn btn-primary"><ClockIcon className="h-4 w-4" /> Review Requests</Link>
+              <Link to="/staff/history" className="btn btn-secondary"><CommandLineIcon className="h-4 w-4" /> History</Link>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            {[
+              { label: 'Faculty', value: user?.name || 'Staff' },
+              { label: 'Queue', value: stats.pending > 0 ? `${stats.pending} pending` : 'Synced' },
+              { label: 'Rate', value: `${analytics.approvalRate}%` },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl border border-white/[0.04] bg-white/[0.02] px-4 py-3">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/20">{item.label}</p>
+                <p className="mt-1 font-mono text-sm font-semibold text-white/70">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.section>
+
+      {/* ── Stat Cards ── */}
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {quickStats.map((item, i) => {
+          const Wrapper = item.path ? Link : 'div'
           return (
-            <motion.div key={card.label} initial={{ opacity:0, scale:0.9 }} animate={{ opacity:1, scale:1 }} transition={{ delay:i*0.08 }}>
-              <W to={card.link||undefined}
-                className={`relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br ${card.gradient} shadow-lg ${card.shadow} block ${card.link?'hover:scale-[1.03] active:scale-[0.98]':''} transition-transform`}
-              >
-                <div className="absolute right-2 top-1 text-white/15 pointer-events-none"><card.icon className="w-16 h-16" /></div>
-                <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-white/10 rounded-full" />
+            <motion.div key={item.label} variants={fadeUp}>
+              <Wrapper to={item.path || undefined}
+                className={`group relative block overflow-hidden rounded-2xl border ${item.border} bg-gradient-to-br ${item.bg} p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-neural`}>
+                <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-white/[0.03] blur-xl" />
                 <div className="relative z-10">
-                  <p className="text-white/70 text-[11px] font-semibold uppercase tracking-wider">{card.label}</p>
-                  <p className="text-4xl font-black text-white mt-1.5">{card.value}</p>
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.04] ${item.accent} mb-3`}>
+                    <item.icon className="h-4 w-4" />
+                  </span>
+                  <p className="font-mono text-3xl font-black text-white/90">{item.value}</p>
+                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/25">{item.label}</p>
                 </div>
-              </W>
+              </Wrapper>
             </motion.div>
           )
         })}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Analytics */}
-        {analytics.total > 0 && (
-          <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.3 }}
-            className={`rounded-2xl shadow-sm border p-6 ${isDark?'bg-gray-800 border-gray-700':'bg-white border-gray-100'}`}
-          >
-            <div className="flex items-center gap-2 mb-5">
-              <ChartBarIcon className="w-5 h-5 text-emerald-500" />
-              <h2 className={`font-bold ${isDark?'text-white':'text-gray-900'}`}>Review Performance</h2>
+      {/* ── Analytics + Queue ── */}
+      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <motion.section variants={fadeUp} className="card overflow-hidden">
+          <div className="flex items-center justify-between border-b border-white/[0.04] px-5 py-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/20">Performance</p>
+              <h2 className="font-display mt-1 text-lg font-bold text-white/80">Review Analytics</h2>
             </div>
-            <div className="mb-5">
-              <div className="flex justify-between text-sm mb-2">
-                <span className={isDark?'text-gray-400':'text-gray-600'}>Approval Rate</span>
-                <span className={`font-bold ${analytics.approvalRate>=70?'text-emerald-500':analytics.approvalRate>=40?'text-amber-500':'text-red-500'}`}>{analytics.approvalRate}%</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-cyan/10 text-accent-cyan">
+              <ChartBarIcon className="h-4 w-4" />
+            </span>
+          </div>
+          <div className="p-5 space-y-5">
+            <div className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm text-white/40">Approval Rate</p>
+                <p className="font-mono text-lg font-black text-accent-cyan">{analytics.approvalRate}%</p>
               </div>
-              <div className={`h-3 rounded-full overflow-hidden ${isDark?'bg-gray-700':'bg-gray-100'}`}>
-                <motion.div className="h-full rounded-full" initial={{width:0}} animate={{width:`${analytics.approvalRate}%`}} transition={{duration:1,delay:0.5}}
-                  style={{background: analytics.approvalRate>=70?'linear-gradient(90deg,#34d399,#10b981)':analytics.approvalRate>=40?'linear-gradient(90deg,#fbbf24,#f59e0b)':'linear-gradient(90deg,#f87171,#ef4444)'}}
-                />
+              <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
+                <motion.div className="h-full rounded-full bg-gradient-to-r from-accent-cyan via-accent-green to-accent-purple"
+                  initial={{ width: 0 }} animate={{ width: `${analytics.approvalRate}%` }} transition={{ duration: 1, delay: 0.3 }} />
               </div>
-              <p className={`text-xs mt-1.5 ${isDark?'text-gray-500':'text-gray-400'}`}>{analytics.total} total reviews</p>
             </div>
-            <div className="flex items-end gap-3 h-24">
-              {[{label:'Approved',value:stats.approved||0,color:'#10b981'},{label:'Rejected',value:stats.rejected||0,color:'#ef4444'},{label:'Pending',value:stats.pending||0,color:'#f59e0b'},{label:'Today',value:stats.reviewed_today||0,color:'#3b82f6'}].map(bar=>{
-                const max=Math.max(stats.approved||0,stats.rejected||0,stats.pending||0,stats.reviewed_today||0,1)
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Total', value: analytics.total, color: 'text-accent-cyan' },
+                { label: 'Today', value: stats.reviewed_today || 0, color: 'text-accent-green' },
+                { label: 'Approved', value: stats.approved || 0, color: 'text-accent-green' },
+                { label: 'Rejected', value: stats.rejected || 0, color: 'text-accent-magenta' },
+              ].map((i) => (
+                <div key={i.label} className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3 text-center">
+                  <p className={`font-mono text-2xl font-black ${i.color}`}>{i.value}</p>
+                  <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-white/20">{i.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Visual bar chart */}
+            <div className="flex items-end gap-3 h-32">
+              {[
+                { label: 'Approved', value: stats.approved || 0, color: 'from-accent-green to-accent-cyan' },
+                { label: 'Rejected', value: stats.rejected || 0, color: 'from-accent-magenta to-danger-400' },
+                { label: 'Pending', value: stats.pending || 0, color: 'from-accent-amber to-warning-400' },
+                { label: 'Today', value: stats.reviewed_today || 0, color: 'from-accent-cyan to-accent-purple' },
+              ].map((bar) => {
+                const max = Math.max(stats.approved || 0, stats.rejected || 0, stats.pending || 0, stats.reviewed_today || 0, 1)
                 return (
-                  <div key={bar.label} className="flex-1 flex flex-col items-center gap-1">
-                    <span className={`text-xs font-bold ${isDark?'text-gray-300':'text-gray-700'}`}>{bar.value}</span>
-                    <motion.div className="w-full rounded-t-lg" initial={{scaleY:0}} animate={{scaleY:1}} transition={{duration:0.8,delay:0.6}}
-                      style={{backgroundColor:bar.color,height:`${Math.max((bar.value/max)*100,6)}%`,minHeight:4,transformOrigin:'bottom'}}
+                  <div key={bar.label} className="flex flex-1 flex-col items-center gap-1.5">
+                    <span className="font-mono text-xs font-bold text-white/50">{bar.value}</span>
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: `${Math.max((bar.value / max) * 100, 10)}%` }}
+                      transition={{ duration: 0.8, delay: 0.4 }}
+                      className={`w-full rounded-t-xl bg-gradient-to-t ${bar.color}`}
                     />
-                    <span className={`text-[10px] ${isDark?'text-gray-500':'text-gray-400'}`}>{bar.label}</span>
+                    <span className="text-[9px] uppercase tracking-[0.15em] text-white/20">{bar.label}</span>
                   </div>
                 )
               })}
             </div>
-          </motion.div>
-        )}
-
-        {/* Pending Requests list */}
-        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.4 }}
-          className={`rounded-2xl shadow-sm border overflow-hidden ${isDark?'bg-gray-800 border-gray-700':'bg-white border-gray-100'}`}
-        >
-          <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark?'border-gray-700':'border-gray-100'}`}>
-            <h2 className={`font-bold flex items-center gap-2 ${isDark?'text-white':'text-gray-900'}`}>
-              <ClockIcon className="w-4 h-4 text-amber-500" /> Pending Requests
-            </h2>
-            <Link to="/staff/requests" className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1 font-semibold">
-              View All <ArrowRightIcon className="w-3 h-3" />
-            </Link>
           </div>
-          <div className={`divide-y ${isDark?'divide-gray-700/50':'divide-gray-50'}`}>
+        </motion.section>
+
+        <motion.section variants={fadeUp} className="card overflow-hidden">
+          <div className="flex items-center justify-between border-b border-white/[0.04] px-5 py-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/20">Queue</p>
+              <h2 className="font-display mt-1 text-lg font-bold text-white/80">Pending Requests</h2>
+            </div>
+            <Link to="/staff/requests" className="text-[11px] font-semibold text-accent-cyan/60 hover:text-accent-cyan">Open</Link>
+          </div>
+          <div className="divide-y divide-white/[0.03]">
             {pendingRequests.length === 0 ? (
-              <div className="py-12 text-center">
-                <CheckCircleIcon className={`w-10 h-10 mx-auto mb-2 ${isDark?'text-gray-600':'text-gray-300'}`} />
-                <p className={`text-sm ${isDark?'text-gray-400':'text-gray-500'}`}>All caught up!</p>
+              <div className="px-5 py-14 text-center">
+                <CheckCircleIcon className="mx-auto mb-2 h-8 w-8 text-white/10" />
+                <p className="text-sm text-white/25">All reviewed</p>
               </div>
-            ) : pendingRequests.map(req => (
+            ) : pendingRequests.map((req) => (
               <Link key={req.id} to={`/staff/review/${req.id}`}
-                className={`flex items-center gap-3 px-5 py-3 transition-colors ${isDark?'hover:bg-gray-700/40':'hover:bg-gray-50'}`}
-              >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-black text-sm text-white bg-gradient-to-br from-emerald-400 to-teal-500 shadow">
+                className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/[0.02]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent-purple/15 to-accent-cyan/10 text-white/80 font-bold text-sm">
                   {req.student_name?.charAt(0) || '?'}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`font-semibold truncate text-sm ${isDark?'text-gray-100':'text-gray-900'}`}>{req.event_name}</p>
-                  <p className={`text-xs truncate ${isDark?'text-gray-500':'text-gray-400'}`}>{req.student_name} · {req.student_department}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-white/70">{req.event_name}</p>
+                  <p className="truncate text-xs text-white/25 mt-0.5">{req.student_name} | {req.student_department}</p>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">Pending</span>
-                  <p className={`text-[10px] mt-0.5 ${isDark?'text-gray-500':'text-gray-400'}`}>{new Date(req.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</p>
-                </div>
+                <span className="rounded-lg bg-accent-amber/8 px-2.5 py-1 text-[10px] font-semibold text-accent-amber">Pending</span>
               </Link>
             ))}
           </div>
-        </motion.div>
+        </motion.section>
       </div>
 
-      {/* Leave Requests Widget */}
-      {leaveStats !== null && (
-        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.5 }}
-          className={`rounded-2xl shadow-sm border overflow-hidden ${isDark?'bg-gray-800 border-gray-700':'bg-white border-gray-100'}`}
-        >
-          <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark?'border-gray-700':'border-gray-100'}`}>
-            <h2 className={`font-bold flex items-center gap-2 ${isDark?'text-white':'text-gray-900'}`}>
-              <InboxStackIcon className="w-4 h-4 text-violet-500" /> Pending Leave Requests
-              {leaveStats.pending > 0 && (
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-black">{leaveStats.pending}</span>
-              )}
-            </h2>
-            <Link to="/staff/leaves" className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1 font-semibold">
-              Review All <ArrowRightIcon className="w-3 h-3" />
-            </Link>
-          </div>
-          {leaveStats.recent.length === 0 ? (
-            <div className="py-10 text-center">
-              <CheckCircleIcon className={`w-9 h-9 mx-auto mb-2 ${isDark?'text-gray-600':'text-gray-300'}`} />
-              <p className={`text-sm ${isDark?'text-gray-400':'text-gray-500'}`}>No pending leave requests</p>
+      {/* ── Leave + WA ── */}
+      <div className="grid gap-4 xl:grid-cols-2">
+        {leaveStats !== null && (
+          <motion.section variants={fadeUp} className="card overflow-hidden">
+            <div className="flex items-center justify-between border-b border-white/[0.04] px-5 py-4">
+              <h2 className="font-display flex items-center gap-2 text-base font-bold text-white/80">Leave Queue</h2>
+              <Link to="/staff/leaves" className="text-[11px] font-semibold text-accent-cyan/60 hover:text-accent-cyan">Review all</Link>
             </div>
-          ) : (
-            <div className={`divide-y ${isDark?'divide-gray-700/50':'divide-gray-50'}`}>
-              {leaveStats.recent.map(l => (
-                <Link key={l.id} to={`/staff/leave-letter/${l.id}`}
-                  className={`flex items-center gap-3 px-5 py-3 transition-colors ${isDark?'hover:bg-gray-700/40':'hover:bg-gray-50'}`}
-                >
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-black text-sm text-white bg-gradient-to-br from-violet-400 to-purple-500 shadow">
-                    {l.student_name?.charAt(0) || '?'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-semibold truncate text-sm ${isDark?'text-gray-100':'text-gray-900'}`}>{l.student_name}</p>
-                    <p className={`text-xs truncate ${isDark?'text-gray-500':'text-gray-400'}`}>
-                      {l.leave_type} leave · {l.days_count}d
-                    </p>
-                  </div>
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 font-semibold">Pending</span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </motion.div>
-      )}
-
-      {/* WhatsApp Connection Widget */}
-      {waStatus && waStatus.status !== 'disabled' && (
-        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.6 }}
-          className={`rounded-2xl shadow-sm border overflow-hidden ${isDark?'bg-gray-800 border-gray-700':'bg-white border-gray-100'}`}
-        >
-          <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark?'border-gray-700':'border-gray-100'}`}>
-            <h2 className={`font-bold flex items-center gap-2 ${isDark?'text-white':'text-gray-900'}`}>
-              <span className="text-lg">💬</span> WhatsApp Notifications
-            </h2>
-            {(waStatus.status === 'ready' || waStatus.status === 'ultramsg') && (
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1 rounded-full">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Connected
-              </span>
-            )}
-            {waStatus.status === 'connecting' && (
-              <span className="text-xs text-amber-600 font-semibold">Initialising...</span>
-            )}
-          </div>
-          <div className="p-5">
-            {waStatus.status === 'ultramsg' && (
-              <p className={`text-sm ${isDark?'text-gray-300':'text-gray-600'}`}>
-                ✅ <strong>UltraMsg connected</strong> — ready to send. Use the <a href="/staff/whatsapp-report" className="text-emerald-500 font-semibold underline">WA Report</a> page to manually send reports.
-              </p>
-            )}
-            {waStatus.status === 'ready' && (
-              <p className={`text-sm ${isDark?'text-gray-300':'text-gray-600'}`}>
-                ✅ WhatsApp is connected. Use the <a href="/staff/whatsapp-report" className="text-emerald-500 font-semibold underline">WA Report</a> page to send reports.
-              </p>
-            )}
-            {waStatus.status === 'qr' && (
-              <div className="flex flex-col items-center gap-4">
-                <p className={`text-sm text-center ${isDark?'text-gray-300':'text-gray-600'}`}>
-                  Scan this QR code with WhatsApp to enable notifications.<br/>
-                  <span className="text-xs text-gray-400">Open WhatsApp → Linked Devices → Link a Device</span>
-                </p>
-                <div className="p-3 bg-white rounded-2xl shadow-lg border border-gray-100">
-                  <img src={waStatus.qr} alt="WhatsApp QR Code" className="w-60 h-60 rounded-xl" />
+            <div className="p-5">
+              <div className="mb-4 grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-white/20">Pending</p>
+                  <p className="mt-1 font-mono text-2xl font-black text-white/80">{leaveStats.pending}</p>
                 </div>
-                <p className="text-xs text-gray-400">QR refreshes automatically. Scan once — stays connected forever.</p>
+                <div className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-white/20">Status</p>
+                  <p className="mt-1 text-sm font-semibold text-accent-cyan">{leaveStats.pending > 0 ? 'Action needed' : 'Stable'}</p>
+                </div>
               </div>
-            )}
-            {(waStatus.status === 'not_started' || waStatus.status === 'connecting') && (
-              <div className="flex flex-col items-center gap-3 py-4">
-                <p className={`text-sm text-center ${isDark?'text-gray-300':'text-gray-600'}`}>
-                  {waStatus.status === 'connecting' ? 'WhatsApp client is starting up, QR will appear shortly...' : 'WhatsApp client not started yet.'}
-                </p>
-                {waStatus.status === 'not_started' && (
-                  <button onClick={handleWAConnect}
-                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-bold shadow hover:scale-[1.03] transition-transform"
-                  >
-                    Connect WhatsApp
-                  </button>
-                )}
+              {leaveStats.recent.length === 0 ? (
+                <div className="py-8 text-center">
+                  <InboxStackIcon className="mx-auto mb-2 h-8 w-8 text-white/10" />
+                  <p className="text-sm text-white/25">No pending leaves</p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-white/[0.04] overflow-hidden divide-y divide-white/[0.03]">
+                  {leaveStats.recent.map((l) => (
+                    <Link key={l.id} to={`/staff/leave-letter/${l.id}`}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-accent-purple/15 to-accent-cyan/10 text-white/70 font-bold text-sm">
+                        {l.student_name?.charAt(0) || '?'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-white/60">{l.student_name}</p>
+                        <p className="truncate text-xs text-white/25 mt-0.5">{l.leave_type} | {l.days_count}d</p>
+                      </div>
+                      <span className="rounded-lg bg-accent-amber/8 px-2 py-1 text-[10px] font-semibold text-accent-amber">Pending</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.section>
+        )}
+
+        {waStatus && waStatus.status !== 'disabled' && (
+          <motion.section variants={fadeUp} className="card overflow-hidden">
+            <div className="flex items-center justify-between border-b border-white/[0.04] px-5 py-4">
+              <h2 className="font-display flex items-center gap-2 text-base font-bold text-white/80">WhatsApp Sync</h2>
+              <div className="flex items-center gap-1.5 rounded-lg bg-accent-green/8 px-2.5 py-1">
+                <SignalIcon className="h-3 w-3 text-accent-green" />
+                <span className="text-[11px] font-semibold text-accent-green">{waStatus.status}</span>
               </div>
-            )}
-          </div>
-        </motion.div>
-      )}
-    </div>
+            </div>
+            <div className="p-5">
+              {waStatus.status === 'qr' && (
+                <div className="flex flex-col items-center gap-4">
+                  <p className="text-sm text-white/35 text-center">Scan QR to connect WhatsApp.</p>
+                  <div className="rounded-xl bg-white p-3"><img src={waStatus.qr} alt="QR" className="h-52 w-52 rounded-lg" /></div>
+                </div>
+              )}
+              {(waStatus.status === 'not_started' || waStatus.status === 'connecting') && (
+                <div className="py-8 text-center">
+                  <p className="text-sm text-white/35 mb-4">{waStatus.status === 'connecting' ? 'Connecting...' : 'Not connected.'}</p>
+                  {waStatus.status === 'not_started' && <button onClick={handleWAConnect} className="btn btn-primary">Connect</button>}
+                </div>
+              )}
+              {(waStatus.status === 'ready' || waStatus.status === 'ultramsg') && (
+                <div className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-4">
+                  <p className="text-sm text-white/40">Connected and ready for reports.</p>
+                  <Link to="/staff/whatsapp-report" className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-cyan/70 hover:text-accent-cyan">
+                    Open Report <ArrowRightIcon className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              )}
+            </div>
+          </motion.section>
+        )}
+      </div>
+    </motion.div>
   )
 }

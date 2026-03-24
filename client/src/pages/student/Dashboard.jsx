@@ -1,23 +1,27 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { studentAPI, leaveAPI, featuresAPI } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 import { useTheme } from '../../context/ThemeContext'
 import {
   DocumentPlusIcon, ClockIcon, CheckCircleIcon, XCircleIcon,
-  CalendarIcon, MapPinIcon, ArrowRightIcon, DocumentTextIcon,
-  TrophyIcon, BoltIcon, SignalIcon, ExclamationTriangleIcon, InboxIcon,
+  CalendarIcon, MapPinIcon, DocumentTextIcon, TrophyIcon,
+  BoltIcon, SignalIcon, ExclamationTriangleIcon, InboxIcon,
+  ChartBarSquareIcon,
 } from '@heroicons/react/24/outline'
 
 const STATUS = {
-  pending:        { label: 'Pending',      dot: 'bg-amber-400',   badge: 'bg-amber-100 text-amber-800',    darkBadge: 'bg-amber-900/30 text-amber-300' },
-  staff_review:   { label: 'Staff Review', dot: 'bg-blue-400',    badge: 'bg-blue-100 text-blue-800',      darkBadge: 'bg-blue-900/30 text-blue-300' },
-  hod_review:     { label: 'HOD Review',   dot: 'bg-indigo-400',  badge: 'bg-indigo-100 text-indigo-800',  darkBadge: 'bg-indigo-900/30 text-indigo-300' },
-  approved:       { label: 'Approved',     dot: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-800',darkBadge: 'bg-emerald-900/30 text-emerald-300' },
-  rejected:       { label: 'Rejected',     dot: 'bg-red-400',     badge: 'bg-red-100 text-red-800',        darkBadge: 'bg-red-900/30 text-red-300' },
-  staff_rejected: { label: 'Rejected',     dot: 'bg-red-400',     badge: 'bg-red-100 text-red-800',        darkBadge: 'bg-red-900/30 text-red-300' },
+  pending: { label: 'Pending', dot: 'bg-accent-amber', glow: 'shadow-[0_0_8px_rgba(255,190,11,0.4)]' },
+  staff_review: { label: 'Staff Review', dot: 'bg-accent-cyan', glow: 'shadow-[0_0_8px_rgba(0,229,255,0.4)]' },
+  hod_review: { label: 'HOD Review', dot: 'bg-accent-purple', glow: 'shadow-[0_0_8px_rgba(139,92,246,0.4)]' },
+  approved: { label: 'Approved', dot: 'bg-accent-green', glow: 'shadow-[0_0_8px_rgba(0,245,160,0.4)]' },
+  rejected: { label: 'Rejected', dot: 'bg-accent-magenta', glow: 'shadow-[0_0_8px_rgba(244,63,138,0.4)]' },
+  staff_rejected: { label: 'Rejected', dot: 'bg-accent-magenta', glow: 'shadow-[0_0_8px_rgba(244,63,138,0.4)]' },
 }
+
+const stagger = { animate: { transition: { staggerChildren: 0.06 } } }
+const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0, transition: { duration: 0.4 } } }
 
 export default function StudentDashboard() {
   const [data, setData] = useState(null)
@@ -44,363 +48,365 @@ export default function StudentDashboard() {
           total: leaves.length,
           pending: leaves.filter(l => l.status === 'pending').length,
           approved: leaves.filter(l => l.status === 'approved').length,
-          rejected: leaves.filter(l => ['staff_rejected','rejected'].includes(l.status)).length,
+          rejected: leaves.filter(l => ['staff_rejected', 'rejected'].includes(l.status)).length,
           days: leaves.filter(l => l.status === 'approved').reduce((s, l) => s + (l.days_count || 0), 0),
           recent: leaves.slice(0, 3),
         })
       }
-    } catch (e) { console.error(e) } finally { setLoading(false) }
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
   }
 
   const hour = new Date().getHours()
-  const greeting = hour < 12 ? '🌤️ Good morning' : hour < 17 ? '☀️ Good afternoon' : '🌙 Good evening'
-
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   const stats = data?.stats || {}
+
   const statCards = [
-    { label: 'Total Requests', value: stats.total || 0,    icon: DocumentTextIcon, gradient: 'from-violet-500 to-purple-600', shadow: 'shadow-purple-500/30', link: '/student/my-requests' },
-    { label: 'Pending',        value: stats.pending || 0,  icon: ClockIcon,         gradient: 'from-amber-400 to-orange-500', shadow: 'shadow-amber-500/30',  link: '/student/my-requests' },
-    { label: 'Approved',       value: stats.approved || 0, icon: CheckCircleIcon,   gradient: 'from-emerald-400 to-green-600',shadow: 'shadow-green-500/30',  link: '/student/my-requests' },
-    { label: 'Rejected',       value: stats.rejected || 0, icon: XCircleIcon,       gradient: 'from-rose-400 to-red-600',     shadow: 'shadow-rose-500/30' },
+    { label: 'Total', value: stats.total || 0, icon: DocumentTextIcon, gradient: 'from-accent-cyan/20 to-accent-purple/20', border: 'border-accent-cyan/10', accent: 'text-accent-cyan', link: '/student/my-requests' },
+    { label: 'Pending', value: stats.pending || 0, icon: ClockIcon, gradient: 'from-accent-amber/20 to-accent-amber/5', border: 'border-accent-amber/10', accent: 'text-accent-amber', link: '/student/my-requests' },
+    { label: 'Approved', value: stats.approved || 0, icon: CheckCircleIcon, gradient: 'from-accent-green/20 to-accent-cyan/10', border: 'border-accent-green/10', accent: 'text-accent-green', link: '/student/my-requests' },
+    { label: 'Rejected', value: stats.rejected || 0, icon: XCircleIcon, gradient: 'from-accent-magenta/20 to-accent-magenta/5', border: 'border-accent-magenta/10', accent: 'text-accent-magenta' },
   ]
 
-  if (loading) return (
-    <div className="space-y-6">
-      <div className="h-28 rounded-2xl skeleton" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[...Array(4)].map((_,i) => <div key={i} className="h-32 rounded-2xl skeleton" />)}
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <div className="h-40 skeleton" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-28 skeleton" />)}
+        </div>
+        <div className="grid lg:grid-cols-2 gap-4">
+          <div className="h-64 skeleton" /><div className="h-64 skeleton" />
+        </div>
       </div>
-      <div className="grid lg:grid-cols-2 gap-6"><div className="h-64 rounded-2xl skeleton" /><div className="h-64 rounded-2xl skeleton" /></div>
-    </div>
-  )
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Banner */}
-      <motion.div initial={{ opacity:0, y:-10 }} animate={{ opacity:1, y:0 }}
-        className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 shadow-xl shadow-purple-500/25"
+    <motion.div variants={stagger} initial="initial" animate="animate" className="space-y-5">
+
+      {/* ── Hero Banner ── */}
+      <motion.div variants={fadeUp}
+        className="neural-grid scanline relative overflow-hidden rounded-2xl border border-accent-cyan/8 bg-gradient-to-br from-neural-surface via-neural-elevated/50 to-neural-surface p-6 lg:p-7"
       >
-        <div className="absolute inset-0 bg-black/5" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20" />
-        <div className="absolute bottom-0 left-40 w-40 h-40 bg-white/5 rounded-full -mb-12" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <p className="text-white/70 text-sm mb-1">{greeting}</p>
-            <h1 className="text-2xl font-bold text-white">{user?.name || 'Student'}</h1>
-            <p className="text-white/55 text-xs mt-1">{new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p>
+        <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent-purple/8 blur-[80px]" />
+        <div className="absolute bottom-0 left-1/4 w-48 h-48 rounded-full bg-accent-cyan/6 blur-[60px]" />
+
+        <div className="relative z-10 flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-accent-cyan/15 bg-accent-cyan/[0.04] px-3 py-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan animate-glow-pulse" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-accent-cyan/60">Student Neural Hub</span>
+            </div>
+            <p className="mt-4 text-sm text-white/30">{greeting}</p>
+            <h1 className="font-display text-3xl lg:text-4xl font-black gradient-text mt-1">
+              {user?.name || 'Student'}
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/35">
+              Track OD requests, monitor approvals, submit outcomes, and stay connected through the AI & Data Science workspace.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Link to="/student/new-request" className="btn btn-primary text-sm">
+                <DocumentPlusIcon className="h-4 w-4" /> New Request
+              </Link>
+              <Link to="/student/calendar" className="btn btn-secondary text-sm">
+                <CalendarIcon className="h-4 w-4" /> Calendar
+              </Link>
+            </div>
           </div>
-          <Link to="/student/new-request" className="inline-flex items-center gap-2 bg-white text-purple-700 font-bold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all text-sm w-fit">
-            <DocumentPlusIcon className="w-4 h-4" /> New OD Request
-          </Link>
+
+          <div className="hidden xl:grid grid-cols-2 gap-3 min-w-[260px]">
+            {[
+              { label: 'Today', value: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) },
+              { label: 'Status', value: 'Online' },
+              { label: 'Mode', value: 'Real-time' },
+              { label: 'Dept', value: 'AI & DS' },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/20">{item.label}</p>
+                <p className="mt-1 font-mono text-sm font-semibold text-white/60">{item.value}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </motion.div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── Stat Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {statCards.map((card, i) => {
-          const W = card.link ? Link : 'div'
+          const Wrapper = card.link ? Link : 'div'
           return (
-            <motion.div key={card.label} initial={{ opacity:0, scale:0.9 }} animate={{ opacity:1, scale:1 }} transition={{ delay: i*0.08 }}>
-              <W to={card.link || undefined}
-                className={`relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br ${card.gradient} shadow-lg ${card.shadow} block ${ card.link ? 'hover:scale-[1.03] active:scale-[0.98]' : ''} transition-transform`}
+            <motion.div key={card.label} variants={fadeUp}>
+              <Wrapper
+                to={card.link || undefined}
+                className={`group relative block overflow-hidden rounded-2xl border ${card.border} bg-gradient-to-br ${card.gradient} p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-neural`}
               >
-                <div className="absolute right-2 top-1 text-white/15 pointer-events-none"><card.icon className="w-16 h-16" /></div>
-                <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-white/10 rounded-full" />
+                <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-white/[0.03] blur-xl" />
                 <div className="relative z-10">
-                  <p className="text-white/70 text-[11px] font-semibold uppercase tracking-wider">{card.label}</p>
-                  <p className="text-4xl font-black text-white mt-1.5">{card.value}</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.04] ${card.accent}`}>
+                      <card.icon className="h-4 w-4" />
+                    </span>
+                  </div>
+                  <p className="font-mono text-3xl font-black text-white/90">{card.value}</p>
+                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/25">{card.label}</p>
                 </div>
-              </W>
+              </Wrapper>
             </motion.div>
           )
         })}
       </div>
 
-      {/* Leave Balance */}
+      {/* ── Leave Balance ── */}
       {leaveBalance && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <div className={`rounded-2xl p-5 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow`}>
-            <h3 className={`text-sm font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Leave Balance</h3>
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { label: 'Total', value: leaveBalance.total_allowed || 15, color: 'text-blue-500' },
-                { label: 'Used', value: leaveBalance.used || 0, color: 'text-orange-500' },
-                { label: 'Remaining', value: (leaveBalance.total_allowed || 15) - (leaveBalance.used || 0), color: 'text-green-500' },
-              ].map(b => (
-                <div key={b.label} className="text-center">
-                  <div className={`text-2xl font-black ${b.color}`}>{b.value}</div>
-                  <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{b.label}</div>
-                </div>
-              ))}
+        <motion.div variants={fadeUp} className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/20">Leave System</p>
+              <h3 className="font-display text-lg font-bold text-white/80 mt-1">Academic Leave Balance</h3>
             </div>
-            <div className="mt-3">
-              <div className={`w-full h-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all"
-                  style={{ width: `${Math.min(100, ((leaveBalance.used || 0) / (leaveBalance.total_allowed || 15)) * 100)}%` }}
-                />
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-purple/10 text-accent-purple">
+              <ChartBarSquareIcon className="h-5 w-5" />
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            {[
+              { label: 'Total', value: leaveBalance.total_allowed || 15, color: 'text-accent-cyan' },
+              { label: 'Used', value: leaveBalance.used || 0, color: 'text-accent-amber' },
+              { label: 'Remaining', value: (leaveBalance.total_allowed || 15) - (leaveBalance.used || 0), color: 'text-accent-green' },
+            ].map((b) => (
+              <div key={b.label} className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3 text-center">
+                <div className={`font-mono text-2xl font-black ${b.color}`}>{b.value}</div>
+                <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-white/20">{b.label}</div>
               </div>
-            </div>
+            ))}
+          </div>
+          <div className="h-2 w-full rounded-full bg-white/[0.04] overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-r from-accent-green via-accent-cyan to-accent-purple"
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(100, ((leaveBalance.used || 0) / (leaveBalance.total_allowed || 15)) * 100)}%` }}
+              transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
+            />
           </div>
         </motion.div>
       )}
 
-      {/* Active Events Alert */}
+      {/* ── Active Events ── */}
       {data?.activeEvents?.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <div className="space-y-3">
-            {data.activeEvents.map(evt => {
-              const lastCheckin = evt.last_checkin ? new Date(evt.last_checkin) : null
-              const minutesSince = lastCheckin ? (Date.now() - lastCheckin.getTime()) / (1000 * 60) : null
-              const interval = evt.checkin_interval_minutes || 180
-              const isOverdue = minutesSince != null && minutesSince > interval
-              return (
-                <Link key={evt.id} to="/student/active-event"
-                  className={`flex items-center gap-4 p-4 rounded-2xl shadow-lg transition-all hover:scale-[1.01] ${
-                    isOverdue
-                      ? 'bg-gradient-to-r from-red-500 to-rose-600 shadow-red-500/30'
-                      : 'bg-gradient-to-r from-emerald-500 to-teal-600 shadow-emerald-500/30'
-                  } text-white`}
-                >
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    <SignalIcon className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm truncate">{evt.event_name}</p>
-                    <p className="text-xs text-white/80">
-                      {isOverdue ? `Check-in overdue — last was ${Math.round(minutesSince / 60)}h ago`
-                       : lastCheckin ? `Last check-in ${Math.round(minutesSince)}m ago`
-                       : 'No check-ins yet — check in now!'}
+        <motion.div variants={fadeUp} className="space-y-2">
+          {data.activeEvents.map(evt => {
+            const lastCheckin = evt.last_checkin ? new Date(evt.last_checkin) : null
+            const minutesSince = lastCheckin ? (Date.now() - lastCheckin.getTime()) / (1000 * 60) : null
+            const interval = evt.checkin_interval_minutes || 180
+            const isOverdue = minutesSince != null && minutesSince > interval
+            return (
+              <Link key={evt.id} to="/student/active-event"
+                className={`block rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1 ${
+                  isOverdue
+                    ? 'border-danger-500/15 bg-gradient-to-r from-danger-500/10 to-accent-magenta/5'
+                    : 'border-accent-cyan/12 bg-gradient-to-r from-accent-cyan/8 to-accent-purple/5'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${isOverdue ? 'bg-danger-500/15 text-danger-400' : 'bg-accent-cyan/15 text-accent-cyan'}`}>
+                    <SignalIcon className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/25">Live Tracking</p>
+                    <p className="text-base font-semibold text-white/80 truncate mt-0.5">{evt.event_name}</p>
+                    <p className="text-sm text-white/35 mt-0.5">
+                      {isOverdue ? `Check-in overdue. Last was ${Math.round(minutesSince / 60)}h ago.` : lastCheckin ? `Last check-in ${Math.round(minutesSince)}m ago.` : 'No check-in yet.'}
                     </p>
                   </div>
-                  <span className="px-3 py-1.5 bg-white/20 rounded-xl text-xs font-bold flex-shrink-0">
-                    {isOverdue ? 'Check In Now' : 'Track'}
+                  <span className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold ${isOverdue ? 'bg-danger-500/10 text-danger-400' : 'bg-accent-cyan/10 text-accent-cyan'}`}>
+                    {isOverdue ? 'Check In' : 'Track'}
                   </span>
-                </Link>
-              )
-            })}
-          </div>
+                </div>
+              </Link>
+            )
+          })}
         </motion.div>
       )}
 
-      {/* Pending Results Alert */}
+      {/* ── Pending Results ── */}
       {data?.pendingResults?.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-          <div className="space-y-3">
-            {data.pendingResults.map(pr => {
-              const days = pr.days_until_deadline
-              const isOverdue = days != null && days < 0
-              const isUrgent = days != null && days >= 0 && days <= 3
-              return (
-                <Link key={pr.id} to="/student/submit-result"
-                  className={`flex items-center gap-4 p-4 rounded-2xl shadow-lg transition-all hover:scale-[1.01] ${
-                    isOverdue ? 'bg-gradient-to-r from-red-500 to-rose-600 shadow-red-500/30'
-                    : isUrgent ? 'bg-gradient-to-r from-amber-400 to-orange-500 shadow-amber-500/30'
-                    : 'bg-gradient-to-r from-purple-500 to-indigo-600 shadow-purple-500/30'
-                  } text-white`}
-                >
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    {isOverdue ? <ExclamationTriangleIcon className="w-5 h-5" /> : <TrophyIcon className="w-5 h-5" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm truncate">{pr.event_name}</p>
-                    <p className="text-xs text-white/80">
-                      {isOverdue ? `Result ${Math.abs(days)} day${Math.abs(days) !== 1 ? 's' : ''} overdue!`
-                       : days != null ? `Submit result within ${days} day${days !== 1 ? 's' : ''}`
-                       : 'Post-event result pending'}
+        <motion.div variants={fadeUp} className="space-y-2">
+          {data.pendingResults.map(pr => {
+            const days = pr.days_until_deadline
+            const isOverdue = days != null && days < 0
+            const isUrgent = days != null && days >= 0 && days <= 3
+            return (
+              <Link key={pr.id} to="/student/submit-result"
+                className={`block rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1 ${
+                  isOverdue ? 'border-danger-500/15 bg-gradient-to-r from-danger-500/10 to-accent-magenta/5'
+                  : isUrgent ? 'border-accent-amber/15 bg-gradient-to-r from-accent-amber/8 to-accent-amber/3'
+                  : 'border-accent-purple/12 bg-gradient-to-r from-accent-purple/8 to-accent-cyan/5'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${isOverdue ? 'bg-danger-500/15 text-danger-400' : 'bg-accent-amber/15 text-accent-amber'}`}>
+                    {isOverdue ? <ExclamationTriangleIcon className="h-5 w-5" /> : <TrophyIcon className="h-5 w-5" />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/25">Result Submission</p>
+                    <p className="text-base font-semibold text-white/80 truncate mt-0.5">{pr.event_name}</p>
+                    <p className="text-sm text-white/35 mt-0.5">
+                      {isOverdue ? `Overdue by ${Math.abs(days)} day(s).` : days != null ? `Submit within ${days} day(s).` : 'Result pending.'}
                     </p>
                   </div>
-                  <span className="px-3 py-1.5 bg-white/20 rounded-xl text-xs font-bold flex-shrink-0">
-                    Submit Result
-                  </span>
-                </Link>
-              )
-            })}
-          </div>
+                  <span className="rounded-lg bg-accent-amber/10 px-3 py-1.5 text-[11px] font-semibold text-accent-amber">Submit</span>
+                </div>
+              </Link>
+            )
+          })}
         </motion.div>
       )}
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent Requests */}
-        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.25 }}
-          className={`rounded-2xl shadow-sm border overflow-hidden ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}
-        >
-          <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-            <h2 className={`font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              <ClockIcon className="w-4 h-4 text-purple-500" /> Recent Requests
+      {/* ── Recent Requests & Upcoming Events ── */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <motion.div variants={fadeUp} className="card overflow-hidden">
+          <div className="flex items-center justify-between border-b border-white/[0.04] px-5 py-4">
+            <h2 className="font-display flex items-center gap-2 text-base font-bold text-white/80">
+              <ClockIcon className="h-4 w-4 text-accent-cyan" /> Recent Requests
             </h2>
-            <Link to="/student/my-requests" className="text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1 font-semibold">
-              View all <ArrowRightIcon className="w-3 h-3" />
-            </Link>
+            <Link to="/student/my-requests" className="text-[11px] font-semibold text-accent-cyan/60 hover:text-accent-cyan transition-colors">View all</Link>
           </div>
-          <div className={`divide-y ${isDark ? 'divide-gray-700/50' : 'divide-gray-50'}`}>
+          <div className="divide-y divide-white/[0.03]">
             {data?.recentRequests?.length > 0 ? data.recentRequests.map(req => {
               const s = STATUS[req.status] || STATUS.pending
               return (
                 <Link key={req.id} to={`/student/request/${req.id}`}
-                  className={`flex items-center gap-3 px-5 py-3 transition-colors ${isDark ? 'hover:bg-gray-700/40' : 'hover:bg-gray-50/80'}`}
-                >
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-semibold truncate text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{req.event_name}</p>
-                    <p className={`text-xs flex items-center gap-1 mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                      <CalendarIcon className="w-3 h-3" />{new Date(req.event_start_date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}
+                  className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/[0.02]">
+                  <span className={`h-2 w-2 rounded-full ${s.dot} ${s.glow}`} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-white/70">{req.event_name}</p>
+                    <p className="mt-0.5 flex items-center gap-1 text-xs text-white/25">
+                      <CalendarIcon className="h-3 w-3" />
+                      {new Date(req.event_start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                     </p>
                   </div>
-                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold flex-shrink-0 ${isDark ? s.darkBadge : s.badge}`}>{s.label}</span>
+                  <span className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold ${s.dot === 'bg-accent-green' ? 'bg-accent-green/8 text-accent-green' : s.dot === 'bg-accent-magenta' ? 'bg-accent-magenta/8 text-accent-magenta' : s.dot === 'bg-accent-amber' ? 'bg-accent-amber/8 text-accent-amber' : 'bg-accent-cyan/8 text-accent-cyan'}`}>
+                    {s.label}
+                  </span>
                 </Link>
               )
             }) : (
               <div className="py-12 text-center">
-                <DocumentPlusIcon className={`w-10 h-10 mx-auto mb-2 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No requests yet</p>
-                <Link to="/student/new-request" className="text-purple-600 hover:underline text-xs mt-1 inline-block">Create your first</Link>
+                <DocumentPlusIcon className="mx-auto mb-2 h-8 w-8 text-white/10" />
+                <p className="text-sm text-white/25">No requests yet</p>
+                <Link to="/student/new-request" className="mt-2 inline-block text-sm font-medium text-accent-cyan/60 hover:text-accent-cyan">Create first request</Link>
               </div>
             )}
           </div>
         </motion.div>
 
-        {/* Upcoming Events */}
-        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.35 }}
-          className={`rounded-2xl shadow-sm border overflow-hidden ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}
-        >
-          <div className={`px-5 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-            <h2 className={`font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              <CalendarIcon className="w-4 h-4 text-indigo-500" /> Upcoming Events
+        <motion.div variants={fadeUp} className="card overflow-hidden">
+          <div className="border-b border-white/[0.04] px-5 py-4">
+            <h2 className="font-display flex items-center gap-2 text-base font-bold text-white/80">
+              <CalendarIcon className="h-4 w-4 text-accent-green" /> Upcoming Events
             </h2>
           </div>
-          <div className={`divide-y ${isDark ? 'divide-gray-700/50' : 'divide-gray-50'}`}>
+          <div className="divide-y divide-white/[0.03]">
             {data?.upcomingEvents?.length > 0 ? data.upcomingEvents.map(event => {
               const d = new Date(event.event_start_date)
               return (
-                <div key={event.id} className={`flex items-center gap-4 px-5 py-3 ${isDark ? 'hover:bg-gray-700/30' : 'hover:bg-gray-50'} transition-colors`}>
-                  <div className="w-11 h-11 rounded-xl flex flex-col items-center justify-center flex-shrink-0 text-white bg-gradient-to-br from-indigo-500 to-purple-600 shadow">
-                    <span className="text-[9px] font-black uppercase opacity-80">{d.toLocaleDateString('en',{month:'short'})}</span>
-                    <span className="text-lg font-black leading-none">{d.getDate()}</span>
+                <div key={event.id} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors">
+                  <div className="flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-gradient-to-br from-accent-green/15 to-accent-cyan/10 border border-accent-green/10">
+                    <span className="text-[9px] font-black uppercase text-accent-green/70">{d.toLocaleDateString('en', { month: 'short' })}</span>
+                    <span className="text-lg font-black leading-none text-white/80">{d.getDate()}</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-semibold truncate text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{event.event_name}</p>
-                    {event.venue && <p className={`text-xs flex items-center gap-1 mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}><MapPinIcon className="w-3 h-3" />{event.venue}</p>}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-white/70">{event.event_name}</p>
+                    {event.venue && (
+                      <p className="mt-0.5 flex items-center gap-1 text-xs text-white/25">
+                        <MapPinIcon className="h-3 w-3" /> {event.venue}
+                      </p>
+                    )}
                   </div>
                 </div>
               )
             }) : (
               <div className="py-12 text-center">
-                <CalendarIcon className={`w-10 h-10 mx-auto mb-2 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No upcoming events</p>
+                <CalendarIcon className="mx-auto mb-2 h-8 w-8 text-white/10" />
+                <p className="text-sm text-white/25">No upcoming events</p>
               </div>
             )}
           </div>
         </motion.div>
       </div>
 
-      {/* Quick Actions */}
-      <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.45 }}>
-        <h2 className={`font-bold mb-3 flex items-center gap-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-          <BoltIcon className="w-4 h-4 text-yellow-500" /> QUICK ACTIONS
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* ── Quick Actions ── */}
+      <motion.div variants={fadeUp}>
+        <div className="mb-3 flex items-center gap-2">
+          <BoltIcon className="h-4 w-4 text-accent-amber" />
+          <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-white/25">Quick Actions</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[
-            { label: 'New OD Request',  path:'/student/new-request',   icon: DocumentPlusIcon, from:'from-violet-500', to:'to-purple-600'  },
-            { label: 'My Requests',     path:'/student/my-requests',   icon: DocumentTextIcon, from:'from-blue-500',   to:'to-indigo-600'  },
-            { label: 'Event Calendar',  path:'/student/calendar',      icon: CalendarIcon,     from:'from-teal-500',   to:'to-cyan-600'    },
-            { label: 'Submit Result',   path:'/student/submit-result', icon: TrophyIcon,       from:'from-amber-400',  to:'to-orange-500'  },
+            { label: 'New OD', path: '/student/new-request', icon: DocumentPlusIcon, color: 'from-accent-cyan/15 to-accent-purple/10', border: 'border-accent-cyan/10', accent: 'text-accent-cyan' },
+            { label: 'My Requests', path: '/student/my-requests', icon: DocumentTextIcon, color: 'from-accent-purple/15 to-accent-purple/5', border: 'border-accent-purple/10', accent: 'text-accent-purple' },
+            { label: 'Calendar', path: '/student/calendar', icon: CalendarIcon, color: 'from-accent-green/15 to-accent-cyan/5', border: 'border-accent-green/10', accent: 'text-accent-green' },
+            { label: 'Results', path: '/student/submit-result', icon: TrophyIcon, color: 'from-accent-amber/15 to-accent-amber/5', border: 'border-accent-amber/10', accent: 'text-accent-amber' },
           ].map(a => (
             <Link key={a.path} to={a.path}
-              className={`flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br ${a.from} ${a.to} text-white hover:scale-[1.03] hover:shadow-lg active:scale-[0.97] transition-all shadow-md`}
+              className={`flex items-center gap-3 rounded-xl border ${a.border} bg-gradient-to-br ${a.color} px-4 py-3.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-neural`}
             >
-              <a.icon className="w-5 h-5 flex-shrink-0" />
-              <span className="font-bold text-sm leading-tight">{a.label}</span>
+              <span className={`flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04] ${a.accent}`}>
+                <a.icon className="h-4 w-4" />
+              </span>
+              <span className="text-sm font-semibold text-white/70">{a.label}</span>
             </Link>
           ))}
         </div>
       </motion.div>
 
-      {/* Leave Overview */}
+      {/* ── Leave Summary ── */}
       {leaveStats !== null && (
-        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.55 }}
-          className={`rounded-2xl shadow-sm border overflow-hidden ${isDark?'bg-gray-800 border-gray-700':'bg-white border-gray-100'}`}
-        >
-          <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark?'border-gray-700':'border-gray-100'}`}>
-            <h2 className={`font-bold flex items-center gap-2 ${isDark?'text-white':'text-gray-900'}`}>
-              <InboxIcon className="w-4 h-4 text-indigo-500" /> My Leave Summary
+        <motion.div variants={fadeUp} className="card overflow-hidden">
+          <div className="flex items-center justify-between border-b border-white/[0.04] px-5 py-4">
+            <h2 className="font-display flex items-center gap-2 text-base font-bold text-white/80">
+              <InboxIcon className="h-4 w-4 text-accent-cyan" /> Leave Summary
             </h2>
-            <Link to="/student/leaves" className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1 font-semibold">
-              View All <ArrowRightIcon className="w-3 h-3" />
-            </Link>
+            <Link to="/student/leaves" className="text-[11px] font-semibold text-accent-cyan/60 hover:text-accent-cyan transition-colors flex items-center gap-1">View all</Link>
           </div>
           <div className="p-5">
-            <div className="grid grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-4 mb-4">
               {[
-                { label:'Total', value: leaveStats.total,    color:'from-indigo-400 to-purple-500' },
-                { label:'Pending', value: leaveStats.pending,  color:'from-amber-400 to-orange-500' },
-                { label:'Approved', value: leaveStats.approved, color:'from-emerald-400 to-green-500' },
-                { label:'Days Off', value: leaveStats.days,     color:'from-sky-400 to-blue-500' },
+                { label: 'Total', value: leaveStats.total, color: 'text-accent-cyan' },
+                { label: 'Pending', value: leaveStats.pending, color: 'text-accent-amber' },
+                { label: 'Approved', value: leaveStats.approved, color: 'text-accent-green' },
+                { label: 'Days Off', value: leaveStats.days, color: 'text-accent-purple' },
               ].map(s => (
-                <div key={s.label} className={`rounded-xl bg-gradient-to-br ${s.color} p-3 text-center shadow`}>
-                  <p className="text-2xl font-black text-white">{s.value}</p>
-                  <p className="text-white/70 text-[10px] font-semibold uppercase tracking-wide mt-0.5">{s.label}</p>
+                <div key={s.label} className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3 text-center">
+                  <p className={`font-mono text-2xl font-black ${s.color}`}>{s.value}</p>
+                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/20">{s.label}</p>
                 </div>
               ))}
             </div>
             {leaveStats.recent.length > 0 ? (
-              <div className={`divide-y ${isDark?'divide-gray-700':'divide-gray-50'} rounded-xl overflow-hidden border ${isDark?'border-gray-700':'border-gray-100'}`}>
+              <div className="rounded-xl border border-white/[0.04] overflow-hidden divide-y divide-white/[0.03]">
                 {leaveStats.recent.map(l => (
                   <Link key={l.id} to={`/student/leave-letter/${l.id}`}
-                    className={`flex items-center gap-3 px-4 py-2.5 ${isDark?'hover:bg-gray-700/40':'hover:bg-gray-50'} transition-colors`}
-                  >
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                      l.status==='approved'?'bg-emerald-400':l.status==='pending'?'bg-amber-400':'bg-red-400'
-                    }`} />
-                    <span className={`flex-1 text-sm font-medium capitalize truncate ${isDark?'text-gray-200':'text-gray-800'}`}>
-                      {l.leave_type} — {l.days_count}d
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors">
+                    <span className={`h-2 w-2 rounded-full ${l.status === 'approved' ? 'bg-accent-green shadow-[0_0_8px_rgba(0,245,160,0.4)]' : l.status === 'pending' ? 'bg-accent-amber shadow-[0_0_8px_rgba(255,190,11,0.4)]' : 'bg-accent-magenta shadow-[0_0_8px_rgba(244,63,138,0.4)]'}`} />
+                    <span className="flex-1 truncate text-sm font-medium capitalize text-white/60">{l.leave_type} - {l.days_count} day(s)</span>
+                    <span className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold ${l.status === 'approved' ? 'bg-accent-green/8 text-accent-green' : l.status === 'pending' ? 'bg-accent-amber/8 text-accent-amber' : 'bg-accent-magenta/8 text-accent-magenta'}`}>
+                      {l.status.replace(/_/g, ' ')}
                     </span>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
-                      l.status==='approved'?'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300':
-                      l.status==='pending'?'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300':
-                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                    }`}>{l.status.replace(/_/g,' ')}</span>
                   </Link>
                 ))}
               </div>
             ) : (
               <div className="text-center py-4">
-                <Link to="/student/leaves/new"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
-                >
-                  <DocumentPlusIcon className="w-4 h-4" /> Apply for Leave
+                <Link to="/student/leaves/new" className="btn btn-primary">
+                  <DocumentPlusIcon className="h-4 w-4" /> Apply for Leave
                 </Link>
               </div>
             )}
           </div>
         </motion.div>
       )}
-    </div>
+    </motion.div>
   )
-}
-
-const StatCard = ({ icon: Icon, title, value, color, bgColor }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="card p-6"
-  >
-    <div className="flex items-center gap-4">
-      <div className={`p-3 rounded-xl ${bgColor}`}>
-        <Icon className={`w-6 h-6 ${color}`} />
-      </div>
-      <div>
-        <p className="text-sm text-gray-500">{title}</p>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-      </div>
-    </div>
-  </motion.div>
-)
-
-const statusColors = {
-  pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' },
-  staff_review: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Staff Review' },
-  hod_review: { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'HOD Review' },
-  approved: { bg: 'bg-green-100', text: 'text-green-800', label: 'Approved' },
-  rejected: { bg: 'bg-red-100', text: 'text-red-800', label: 'Rejected' },
-  staff_rejected: { bg: 'bg-red-100', text: 'text-red-800', label: 'Rejected' }
 }
